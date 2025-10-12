@@ -1,0 +1,24 @@
+{% extends 'base/home.html' %}
+{% block content %}
+<h2 class="mb-3">All Posts</h2>
+<a href="{% url 'post_create' %}" class="btn btn-primary mb-3">Create Post</a>
+<a href="{% url 'notifications' %}" class="btn btn-outline-info mb-3 float-end">Notifications</a>
+
+{% for post in posts %}
+<div class="card mb-4 p-3">
+  <h5>{{ post.author.username }} — {{ post.created_at|date:"d M Y H:i" }}</h5>
+  {% if post.title %}<h6>{{ post.title }}</h6>{% endif %}
+  <p>{{ post.content }}</p>
+
+  {% if post.image %}<img src="{{ post.image.url }}" class="img-fluid rounded">{% endif %}
+  {% if post.video %}<video controls src="{{ post.video.url }}" class="w-100 mt-2"></video>{% endif %}
+
+  <a href="{% url 'post_detail' post.pk %}">Comments ({{ post.comments.count }})</a> |
+  <a href="{% url 'react_post' post.pk %}">
+    ❤️ {{ post.reactions.count }}
+  </a>
+</div>
+{% empty %}
+<p>No posts yet.</p>
+{% endfor %}
+{% endblock %}

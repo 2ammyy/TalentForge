@@ -1,0 +1,11 @@
+{% extends 'base/home.html' %}
+{% block content %}
+<h2>Notifications</h2>
+{% for notif in notifications %}
+<div class="alert alert-info">
+  {{ notif.message }} — <small>{{ notif.created_at|timesince }} ago</small>
+</div>
+{% empty %}
+<p>No notifications yet.</p>
+{% endfor %}
+{% endblock %}

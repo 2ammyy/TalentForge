@@ -1,0 +1,21 @@
+{% extends 'base/home.html' %}
+{% block content %}
+<h2>{{ post.author.username }}’s Post</h2>
+<p>{{ post.content }}</p>
+{% if post.image %}<img src="{{ post.image.url }}" class="img-fluid">{% endif %}
+{% if post.video %}<video controls src="{{ post.video.url }}" class="w-100 mt-2"></video>{% endif %}
+
+<hr>
+<h4>Comments</h4>
+{% for c in comments %}
+<p><strong>{{ c.author.username }}</strong>: {{ c.text }}</p>
+{% empty %}<p>No comments yet.</p>{% endfor %}
+
+{% if user.is_authenticated %}
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary">Add Comment</button>
+</form>
+{% endif %}
+{% endblock %}
