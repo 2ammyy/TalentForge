@@ -40,7 +40,6 @@
             font-weight: bold;
         }
         input[type="text"],
-        input[type="email"],
         input[type="password"] {
             width: 100%;
             padding: 10px;
@@ -97,7 +96,8 @@
         </form>
         
         <div class="forgot-password">
-            <a href="{% url 'base:password_reset' %}">Forgot your password?</a>
+            <!-- ✅ CORRECTION : Utilisez le nom d'URL correct -->
+            <a href="{% url 'password_reset' %}">Forgot your password?</a>
         </div>
         
         <div class="links">

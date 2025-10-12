@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.conf import settings
+from django.urls import reverse_lazy
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, CustomPasswordResetForm, CustomSetPasswordForm
 import random
 import string
@@ -74,7 +75,7 @@ def verify_email(request, email):
                     user.is_active = True
                     user.save()
                     
-                    # ✅ CORRECTION : Ré-authentifier l'utilisateur proprement
+                    # Ré-authentifier l'utilisateur proprement
                     auth_user = authenticate(
                         request, 
                         username=user.username,
@@ -142,34 +143,33 @@ def send_verification_email(email, code):
     '''
     
     try:
-        # ✅ CORRECTION : ENVOI RÉEL PAR EMAIL ACTIVÉ
+        # ENVOI RÉEL PAR EMAIL ACTIVÉ
         send_mail(
             subject,
             message,
-            settings.DEFAULT_FROM_EMAIL,  # Utilise l'email configuré dans settings.py
+            settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
         )
         print(f"✅ Email sent to {email} with code: {code}")
     except Exception as e:
         print(f"❌ Failed to send email to {email}: {e}")
-        # En cas d'erreur, on affiche dans la console
         print(f"DEVELOPMENT MODE - Code for {email}: {code}")
 
-# Vues pour la réinitialisation du mot de passe
-class CustomPasswordResetView(PasswordResetView):
-    form_class = CustomPasswordResetForm
-    template_name = 'registration/password_reset.html'
-    email_template_name = 'registration/password_reset_email.html'
-    success_url = '/password-reset/done/'
+# password reset views 
+# class CustomPasswordResetView(PasswordResetView):
+#     form_class = CustomPasswordResetForm
+#     template_name = 'registration/password_reset.html'
+#     email_template_name = 'registration/password_reset_email.html'
+#     success_url = reverse_lazy('base:password_reset_done')
 
-class CustomPasswordResetDoneView(PasswordResetDoneView):
-    template_name = 'registration/password_reset_done.html'
+# class CustomPasswordResetDoneView(PasswordResetDoneView):
+#     template_name = 'registration/password_reset_done.html'
 
-class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    form_class = CustomSetPasswordForm
-    template_name = 'registration/password_reset_confirm.html'
-    success_url = '/password-reset/complete/'
+# class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+#     form_class = CustomSetPasswordForm
+#     template_name = 'registration/password_reset_confirm.html'
+#     success_url = reverse_lazy('base:password_reset_complete')
 
-class CustomPasswordResetCompleteView(PasswordResetCompleteView):
-    template_name = 'registration/password_reset_complete.html'
+# class CustomPasswordResetCompleteView(PasswordResetCompleteView):
+#     template_name = 'registration/password_reset_complete.html'
