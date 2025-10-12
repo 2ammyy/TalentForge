@@ -156,7 +156,8 @@
             <div class="user-info">
                 <h2>Hello, {{ user.username }}! 👋</h2>
                 <p><strong>Welcome back to your TalentForge dashboard!</strong></p>
-                <p><strong>Email:</strong> {{ user.email|default:"Not provided" }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+<p><strong>Full Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
                 <p><strong>Last login:</strong> {{ user.last_login|date:"F j, Y, g:i a"|default:"First login" }}</p>
                 <p><strong>Account created:</strong> {{ user.date_joined|date:"F j, Y" }}</p>
                 <p><strong>Status:</strong> <span style="color: #28a745;">● Active</span></p>

@@ -121,3 +121,69 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# =============================================================================
+# CUSTOM CONFIGURATIONS FOR TALENTFORGE
+# =============================================================================
+
+# Email Configuration
+# For development - emails will be printed to console
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# For production (uncomment and configure when ready):
+# Email Configuration with dedicated Gmail
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'talentforge.app@gmail.com'  # Votre nouveau Gmail dédié
+EMAIL_HOST_PASSWORD = 'qpzl bwho pojs axhh'    # Le mot de passe d'application de 16 caractères
+DEFAULT_FROM_EMAIL = 'TalentForge <talentforge.app@gmail.com>'
+SERVER_EMAIL = 'talentforge.app@gmail.com'
+
+# Authentication Backends - Allow login with email or username
+AUTHENTICATION_BACKENDS = [
+    'base.backends.EmailBackend',  # Our custom backend for email authentication
+    'django.contrib.auth.backends.ModelBackend',  # Default backend
+]
+
+# Login/Logout URLs
+LOGIN_URL = 'base:login'
+LOGIN_REDIRECT_URL = 'base:home'
+LOGOUT_REDIRECT_URL = 'base:home'
+
+# Session settings
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Security settings (for development - adjust for production)
+if DEBUG:
+    # During development, you might want less strict security
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    # Production security settings
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Messages framework settings
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.DEBUG: 'debug',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'error',
+}
+
+# Custom settings for TalentForge
+TALENTFORGE = {
+    'VERIFICATION_CODE_EXPIRY_MINUTES': 15,
+    'MAX_LOGIN_ATTEMPTS': 5,
+    'PASSWORD_RESET_TIMEOUT': 86400,  # 24 hours in seconds
+}
