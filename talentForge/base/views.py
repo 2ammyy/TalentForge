@@ -5,6 +5,7 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView, 
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.conf import settings
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, CustomPasswordResetForm, CustomSetPasswordForm
 import random
 import string
@@ -140,12 +141,20 @@ def send_verification_email(email, code):
     The TalentForge Team
     '''
     
-    # Pour le développement, affichez le code dans la console au lieu de l'envoyer par email
-    print(f"VERIFICATION CODE for {email}: {code}")
-    print("In production, this would be sent via email")
-    
-    # Décommentez cette ligne quand vous aurez configuré l'email en production
-    # send_mail(subject, message, 'noreply@talentforge.com', [email])
+    try:
+        # ✅ CORRECTION : ENVOI RÉEL PAR EMAIL ACTIVÉ
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,  # Utilise l'email configuré dans settings.py
+            [email],
+            fail_silently=False,
+        )
+        print(f"✅ Email sent to {email} with code: {code}")
+    except Exception as e:
+        print(f"❌ Failed to send email to {email}: {e}")
+        # En cas d'erreur, on affiche dans la console
+        print(f"DEVELOPMENT MODE - Code for {email}: {code}")
 
 # Vues pour la réinitialisation du mot de passe
 class CustomPasswordResetView(PasswordResetView):

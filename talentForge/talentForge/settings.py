@@ -127,12 +127,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CUSTOM CONFIGURATIONS FOR TALENTFORGE
 # =============================================================================
 
-# Email Configuration
-# For development - emails will be printed to console
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# For production (uncomment and configure when ready):
-# Email Configuration with dedicated Gmail
+# Email Configuration - PRODUCTION MODE ACTIVÉ
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
