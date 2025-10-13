@@ -182,3 +182,18 @@ TALENTFORGE = {
     'MAX_LOGIN_ATTEMPTS': 5,
     'PASSWORD_RESET_TIMEOUT': 86400,  # 24 hours in seconds
 }
+
+import os
+
+# Configuration des médias
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Assurez-vous que ces settings existent déjà
+DEBUG = True  # Doit être True pour servir les fichiers médias via Django
+
+# Si vous voulez une image par défaut, créez un dossier static
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
