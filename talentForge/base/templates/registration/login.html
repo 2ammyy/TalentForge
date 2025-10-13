@@ -33,6 +33,7 @@
         }
         .form-group {
             margin-bottom: 15px;
+            position: relative;
         }
         label {
             display: block;
@@ -46,8 +47,22 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             box-sizing: border-box;
+            padding-right: 40px;
         }
-        button {
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+        }
+        .password-toggle:hover {
+            color: #333;
+        }
+        button[type="submit"] {
             width: 100%;
             padding: 12px;
             background: #007bff;
@@ -57,7 +72,7 @@
             cursor: pointer;
             font-size: 16px;
         }
-        button:hover {
+        button[type="submit"]:hover {
             background: #0056b3;
         }
         .links {
@@ -91,12 +106,14 @@
             <div class="form-group">
                 <label for="id_password">Password:</label>
                 {{ form.password }}
+                <button type="button" class="password-toggle" onclick="togglePassword('id_password', this)">
+                    👁️
+                </button>
             </div>
             <button type="submit">Login</button>
         </form>
         
         <div class="forgot-password">
-            <!-- ✅ CORRECTION : Utilisez le nom d'URL correct -->
             <a href="{% url 'password_reset' %}">Forgot your password?</a>
         </div>
         
@@ -104,5 +121,18 @@
             <p>Don't have an account? <a href="{% url 'base:signup' %}">Sign up here</a></p>
         </div>
     </div>
+
+    <script>
+        function togglePassword(inputId, button) {
+            const passwordInput = document.getElementById(inputId);
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+    </script>
 </body>
 </html>
