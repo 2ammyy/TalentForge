@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentForge - {% block subtitle %}{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .navbar {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .nav-button {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .nav-button:hover {
+            background-color: #0056b3;
+            color: white;
+            text-decoration: none;
+        }
+        .active {
+            background-color: #0056b3;
+            font-weight: bold;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .messages {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Barre de navigation -->
+    <nav class="navbar">
+        <div class="nav-buttons">
+            <a href="{% url 'base:home' %}" class="nav-button {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                🏠 Home
+            </a>
+            <a href="{% url 'posts:post_list' %}" class="nav-button {% if request.resolver_match.url_name == 'post_list' %}active{% endif %}">
+                📝 Posts
+            </a>
+            <a href="{% url 'posts:post_create' %}" class="nav-button {% if request.resolver_match.url_name == 'post_create' %}active{% endif %}">
+                ➕ Create Post
+            </a>
+            <a href="{% url 'posts:notifications' %}" class="nav-button {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                🔔 Notifications
+            </a>
+            
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'base:logout' %}" style="margin-left: auto;">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-button" style="background: #dc3545;">
+                        🚪 Logout
+                    </button>
+                </form>
+            {% else %}
+                <div style="margin-left: auto; display: flex; gap: 1rem;">
+                    <a href="{% url 'base:login' %}" class="nav-button" style="background: #28a745;">
+                        🔑 Login
+                    </a>
+                    <a href="{% url 'base:signup' %}" class="nav-button" style="background: #ffc107; color: black;">
+                        📝 Sign Up
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="messages {{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Contenu principal -->
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d;">
+        <p>© 2025 TalentForge. Empowering talent, building futures. 🚀</p>
+    </div>
+</body>
+</html>

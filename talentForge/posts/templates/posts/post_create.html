@@ -1,11 +1,343 @@
-{% extends 'posts/layout.html' %}
-{% block title %}Create Post{% endblock %}
+{% extends "layout.html" %}
+{% load static %}
+
+{% block subtitle %}Create Post{% endblock %}
 
 {% block content %}
-<h2>Create a New Post</h2>
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Publish</button>
-</form>
+<div class="post-create-container">
+    <h2>Create New Post</h2>
+    
+    <form method="post" enctype="multipart/form-data" class="post-form" id="postForm">
+        {% csrf_token %}
+        
+        <!-- Post Type -->
+        <div class="form-group">
+            <label for="{{ form.type.id_for_label }}">Post Type</label>
+            {{ form.type }}
+            {% if form.type.errors %}
+                <div class="error">{{ form.type.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <!-- Title -->
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}">Title (Optional)</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div class="error">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <!-- Content -->
+        <div class="form-group">
+            <label for="{{ form.content.id_for_label }}">Content</label>
+            {{ form.content }}
+            {% if form.content.errors %}
+                <div class="error">{{ form.content.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <!-- File Uploads -->
+        <div class="file-upload-section">
+            <div class="upload-options">
+                <div class="upload-option">
+                    <label for="{{ form.image.id_for_label }}" class="upload-label">
+                        📷 Image
+                    </label>
+                    {{ form.image }}
+                    <small class="file-info">Supported: JPG, PNG, GIF</small>
+                </div>
+                
+                <div class="upload-option">
+                    <label for="{{ form.video.id_for_label }}" class="upload-label">
+                        🎥 Video
+                    </label>
+                    {{ form.video }}
+                    <small class="file-info">Supported: MP4, AVI, MOV</small>
+                </div>
+            </div>
+            
+            <!-- File Preview -->
+            <div class="file-previews" id="filePreviews"></div>
+        </div>
+        
+        <!-- Character Counter -->
+        <div class="char-counter">
+            <span id="charCount">0</span>/5000
+        </div>
+        
+        <button type="submit" class="submit-button" id="submitBtn">
+            📝 Create Post
+        </button>
+    </form>
+</div>
+
+<style>
+    .post-create-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .form-group select,
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        font-family: Arial, sans-serif;
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+    
+    .file-upload-section {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .upload-options {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .upload-option {
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .upload-label {
+        display: block;
+        padding: 1rem;
+        background: white;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: bold;
+    }
+    
+    .upload-label:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+        transform: translateY(-2px);
+    }
+    
+    .upload-option input[type="file"] {
+        display: none;
+    }
+    
+    .file-info {
+        display: block;
+        margin-top: 0.5rem;
+        color: #666;
+        font-size: 0.8rem;
+    }
+    
+    .file-previews {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .file-preview {
+        position: relative;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0.5rem;
+        background: white;
+    }
+    
+    .file-preview img,
+    .file-preview video {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 4px;
+    }
+    
+    .remove-file {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    
+    .char-counter {
+        text-align: right;
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .submit-button {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .submit-button:hover {
+        background: linear-gradient(135deg, #0056b3, #004085);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+    
+    .submit-button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .error {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 0.25rem;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const postTypeSelect = document.getElementById('{{ form.type.id_for_label }}');
+        const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+        const contentTextarea = document.getElementById('{{ form.content.id_for_label }}');
+        const charCount = document.getElementById('charCount');
+        const fileInputs = {
+            image: document.getElementById('{{ form.image.id_for_label }}'),
+            video: document.getElementById('{{ form.video.id_for_label }}')
+        };
+        const filePreviews = document.getElementById('filePreviews');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('postForm');
+        
+        // Character counter
+        contentTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            charCount.textContent = length;
+            
+            if (length > 5000) {
+                charCount.style.color = '#dc3545';
+                submitBtn.disabled = true;
+            } else {
+                charCount.style.color = '#666';
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // Post type change handler
+        postTypeSelect.addEventListener('change', function() {
+            updateFormForPostType(this.value);
+        });
+        
+        function updateFormForPostType(type) {
+            // Reset file inputs when type changes
+            Object.values(fileInputs).forEach(input => {
+                if (input) input.value = '';
+            });
+            filePreviews.innerHTML = '';
+            
+            // Update labels and placeholders based on type
+            switch(type) {
+                case 'text':
+                    contentTextarea.placeholder = "What's on your mind?";
+                    break;
+                case 'image':
+                    contentTextarea.placeholder = "Describe your image...";
+                    break;
+                case 'video':
+                    contentTextarea.placeholder = "Describe your video...";
+                    break;
+                case 'poll':
+                    contentTextarea.placeholder = "Ask your question...";
+                    break;
+                case 'job':
+                    contentTextarea.placeholder = "Describe the job opportunity...";
+                    break;
+            }
+        }
+        
+        // File preview handling
+        Object.keys(fileInputs).forEach(type => {
+            const input = fileInputs[type];
+            if (input) {
+                input.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        createFilePreview(file, type);
+                    }
+                });
+            }
+        });
+        
+        function createFilePreview(file, type) {
+            const preview = document.createElement('div');
+            preview.className = 'file-preview';
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-file';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = function() {
+                preview.remove();
+                fileInputs[type].value = '';
+            };
+            
+            if (type === 'image' && file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                preview.appendChild(img);
+            } else if (type === 'video' && file.type.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.controls = true;
+                video.style.maxWidth = '200px';
+                preview.appendChild(video);
+            } else {
+                const docIcon = document.createElement('div');
+                docIcon.innerHTML = `📄 ${file.name}`;
+                docIcon.style.padding = '1rem';
+                preview.appendChild(docIcon);
+            }
+            
+            preview.appendChild(removeBtn);
+            filePreviews.appendChild(preview);
+        }
+        
+        // Initialize form based on current type
+        updateFormForPostType(postTypeSelect.value);
+    });
+</script>
 {% endblock %}

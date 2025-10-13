@@ -206,7 +206,7 @@
                 <a href="#" onclick="alert('Projects feature coming soon!')">💼 Projects</a>
                 <a href="#" onclick="alert('Skills feature coming soon!')">🔧 Skills</a>
                 <a href="#" onclick="alert('Notifications feature coming soon!')">🔔 Notifications</a>
-                <a href="{% url 'post_create' %}">➕ Create Post</a>
+                <a href="{% url 'posts:post_create' %}">➕ Create Post</a>
 
 <form method="post" action="{% url 'base:logout' %}" style="display: inline;">
     {% csrf_token %}
