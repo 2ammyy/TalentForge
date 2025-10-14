@@ -185,15 +185,17 @@ TALENTFORGE = {
 
 import os
 
-# Configuration des médias
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# Assurez-vous que ces settings existent déjà
-DEBUG = True  # Doit être True pour servir les fichiers médias via Django
-
-# Si vous voulez une image par défaut, créez un dossier static
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
+
+# folders where Django looks for additional static files
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    BASE_DIR / "static",  # Your custom static folder
 ]
+
+# folder where collectstatic gathers all static files
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

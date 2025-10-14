@@ -73,9 +73,7 @@
     <div class="profile-container">
         <div class="profile-header">
             <img src="{{ profile.get_profile_picture }}" 
-                 alt="Profile Picture" 
-                 class="profile-picture"
-                 onerror="this.src='/static/default_profile.png'">
+     alt="Profile Picture" class="profile-picture">
             <h1>{{ user.first_name }} {{ user.last_name }}</h1>
             <p>@{{ user.username }}</p>
             <div>

@@ -1,7 +1,4 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.contrib.auth.models import User
 
 class UserProfile(models.Model):
@@ -24,4 +21,5 @@ class UserProfile(models.Model):
         elif self.profile_picture_url:
             return self.profile_picture_url
         else:
-            return '/static/default_profile.png'
+            # SOLUTION TEMPORAIRE - Avatar généré automatiquement
+            return f'https://ui-avatars.com/api/?name={self.user.username}&background=007bff&color=fff&size=150&bold=true'
