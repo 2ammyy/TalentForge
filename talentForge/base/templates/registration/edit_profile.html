@@ -100,6 +100,26 @@
             color: #6c757d;
             margin-top: 5px;
         }
+
+        .form-check {
+    margin: 15px 0;
+    padding: 10px;
+    border: 1px solid #ff6b6b;
+    border-radius: 5px;
+    background: #fff5f5;
+}
+
+.form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.info {
+    background: #e7f3ff;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #007bff;
+}
     </style>
 </head>
 <body>
@@ -139,6 +159,30 @@
 <img id="profile-preview" src="{{ request.user.userprofile.get_profile_picture }}" 
      alt="Profile Preview">
                 </div>
+                <div class="form-section">
+    <h3>🗑️ Gestion de la photo</h3>
+    
+    <!-- Afficher un message si l'utilisateur a une photo uploadée -->
+    {% if request.user.userprofile.profile_picture %}
+    <div class="form-group">
+        <div class="form-check">
+            <input type="checkbox" name="remove_profile_picture" id="id_remove_profile_picture" 
+                   class="form-check-input">
+            <label for="id_remove_profile_picture" class="form-check-label">
+                ❌ delete my current profile picture
+            </label>
+            <div class="help-text">
+                Check this box to delete your photo and use the default avatar
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="info" style="background: #d1ecf1; padding: 10px; border-radius: 5px;">
+        <p>📷 You are currently using a generated avatar.</p>
+        <p>Upload a photo or enter a URL to customize your profile.</p>
+    </div>
+    {% endif %}
+</div>
                 <div class="form-group">
                     <label for="id_profile_picture">Upload Photo:</label>
                     {{ form.profile_picture }}

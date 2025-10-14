@@ -183,6 +183,7 @@ def send_verification_email(email, code):
 
 
 @login_required
+@login_required
 def edit_profile(request):
     try:
         profile = request.user.userprofile
@@ -195,6 +196,14 @@ def edit_profile(request):
             # Sauvegarder le profil
             profile = form.save(commit=False)
             profile.user = request.user
+            
+            # Gérer la suppression de la photo
+            if form.cleaned_data.get('remove_profile_picture'):
+                if profile.profile_picture:
+                    profile.profile_picture.delete(save=False)
+                    profile.profile_picture = None
+                profile.profile_picture_url = ''  # Supprimer aussi l'URL si elle existe
+            
             profile.save()
             
             # Mettre à jour les informations de l'utilisateur
@@ -216,7 +225,6 @@ def edit_profile(request):
         form = ProfileEditForm(instance=profile, initial=initial_data)
     
     return render(request, 'registration/edit_profile.html', {'form': form})
-
 @login_required
 def view_profile(request):
     try:

@@ -20,6 +20,15 @@ class ProfileEditForm(forms.ModelForm):
         'placeholder': 'Email'
     }))
     
+    # Field for delete profile picture
+    remove_profile_picture = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
+        label="Supprimer la photo de profil actuelle"
+    )
+    
     class Meta:
         model = UserProfile
         fields = ['bio', 'location', 'website', 'profile_picture', 'profile_picture_url']

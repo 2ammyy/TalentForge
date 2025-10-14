@@ -10,16 +10,28 @@ class UserProfile(models.Model):
     profile_picture_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    #  field for delete profile picture
+    remove_profile_picture = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
     @property
     def get_profile_picture(self):
-        if self.profile_picture:
-            return self.profile_picture.url
-        elif self.profile_picture_url:
-            return self.profile_picture_url
-        else:
-            # SOLUTION TEMPORAIRE - Avatar généré automatiquement
-            return f'https://ui-avatars.com/api/?name={self.user.username}&background=007bff&color=fff&size=150&bold=true'
+        # If the user requested deletion OR has no photo
+        if self.remove_profile_picture or not self.profile_picture:
+            if self.profile_picture_url:
+                return self.profile_picture_url
+            else:
+                # Automatically generated avatar
+                return f'https://ui-avatars.com/api/?name={self.user.username}&background=007bff&color=fff&size=150&bold=true'
+        return self.profile_picture.url
+
+    def save(self, *args, **kwargs):
+        # If remove_profile_picture is True, delete the photo
+        if self.remove_profile_picture and self.profile_picture:
+            self.profile_picture.delete(save=False)
+            self.profile_picture = None
+            self.remove_profile_picture = False  # Reset the flag
+        super().save(*args, **kwargs)
