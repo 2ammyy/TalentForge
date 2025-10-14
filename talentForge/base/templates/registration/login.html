@@ -112,7 +112,21 @@
             </div>
             <button type="submit">Login</button>
         </form>
-        
+        <!-- login with Google -->
+<div style="text-align: center; margin: 30px 0;">
+    <div style="margin: 20px 0; color: #666; font-size: 14px;">─ OU ─</div>
+    
+    <a href="/accounts/google/login/" 
+       style="display: inline-flex; align-items: center; justify-content: center;
+              padding: 12px 24px; background: white; color: #757575; 
+              border: 2px solid #ddd; border-radius: 8px; text-decoration: none; 
+              font-weight: bold; font-size: 16px; width: 100%; max-width: 300px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUxIDkuMjA0NTVWOS4wOTU0NUg5LjE4VjEwLjc3MjdIMTMuNDlDMTMuMTIgMTIuNjAwOSAxMS40OCAxMy45NTQ1IDkuMTggMTMuOTU0NUM2LjQzIDEzLjk1NDUgNC4xOCAxMS43MDQ1IDQuMTggOC45NTQ1NUM0LjE4IDYuMjA0NTUgNi40MyAzLjk1NDU1IDkuMTggMy45NTQ1NUMxMC42OSAzLjk1NDU1IDEyLjAzIDQuNjYzNjQgMTIuODkgNS43NzI3M0wxNC44MyAzLjgzMTgyQzEzLjI2IDIuMzQwOTEgMTEuMzEgMS40NTQ1NSA5LjE4IDEuNDU0NTVDNC42MiAxLjQ1NDU1IDEuMDEgNS4wNjM2NCAxLjAxIDkuNjM2MzZDMS4wMSAxNC4yMDkxIDQuNjIgMTcuODE4MiA5LjE4IDE3LjgxODJDMTMuMzMgMTcuODE4MiAxNi42NCAxNC43NzI3IDE2LjY0IDkuNjM2MzZDMTYuNjQgOC44NjM2NCAxNi41NiA4LjExODE4IDE2LjUxIDcuMzYzNjRMMTYuNTEgOS4yMDQ1NVoiIGZpbGw9IiM0Mjg1RjIiLz4KPC9zdmc+Cg==" 
+             alt="Google" style="width: 20px; height: 20px; margin-right: 12px;">
+        Continuer avec Google
+    </a>
+</div>
         <div class="forgot-password">
             <a href="{% url 'password_reset' %}">Forgot your password?</a>
         </div>

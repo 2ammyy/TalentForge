@@ -233,3 +233,11 @@ def view_profile(request):
         profile = UserProfile.objects.create(user=request.user)
     
     return render(request, 'registration/view_profile.html', {'profile': profile})
+
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def social_signup_redirect(request):
+    """Redirige IMMÉDIATEMENT après une inscription sociale réussie"""
+    return redirect('base:home')
