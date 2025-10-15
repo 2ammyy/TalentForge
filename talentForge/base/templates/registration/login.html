@@ -33,6 +33,7 @@
         }
         .form-group {
             margin-bottom: 15px;
+            position: relative;
         }
         label {
             display: block;
@@ -46,8 +47,22 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             box-sizing: border-box;
+            padding-right: 40px;
         }
-        button {
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+        }
+        .password-toggle:hover {
+            color: #333;
+        }
+        button[type="submit"] {
             width: 100%;
             padding: 12px;
             background: #007bff;
@@ -57,12 +72,16 @@
             cursor: pointer;
             font-size: 16px;
         }
-        button:hover {
+        button[type="submit"]:hover {
             background: #0056b3;
         }
         .links {
             text-align: center;
             margin-top: 20px;
+        }
+        .forgot-password {
+            text-align: center;
+            margin: 15px 0;
         }
     </style>
 </head>
@@ -81,19 +100,53 @@
         <form method="post">
             {% csrf_token %}
             <div class="form-group">
-                <label for="id_username">Username:</label>
+                <label for="id_username">Email or Username:</label>
                 {{ form.username }}
             </div>
             <div class="form-group">
                 <label for="id_password">Password:</label>
                 {{ form.password }}
+                <button type="button" class="password-toggle" onclick="togglePassword('id_password', this)">
+                    👁️
+                </button>
             </div>
             <button type="submit">Login</button>
         </form>
+        <!-- login with Google -->
+<div style="text-align: center; margin: 30px 0;">
+    <div style="margin: 20px 0; color: #666; font-size: 14px;">─ OU ─</div>
+    
+    <a href="/accounts/google/login/" 
+       style="display: inline-flex; align-items: center; justify-content: center;
+              padding: 12px 24px; background: white; color: #757575; 
+              border: 2px solid #ddd; border-radius: 8px; text-decoration: none; 
+              font-weight: bold; font-size: 16px; width: 100%; max-width: 300px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUxIDkuMjA0NTVWOS4wOTU0NUg5LjE4VjEwLjc3MjdIMTMuNDlDMTMuMTIgMTIuNjAwOSAxMS40OCAxMy45NTQ1IDkuMTggMTMuOTU0NUM2LjQzIDEzLjk1NDUgNC4xOCAxMS43MDQ1IDQuMTggOC45NTQ1NUM0LjE4IDYuMjA0NTUgNi40MyAzLjk1NDU1IDkuMTggMy45NTQ1NUMxMC42OSAzLjk1NDU1IDEyLjAzIDQuNjYzNjQgMTIuODkgNS43NzI3M0wxNC44MyAzLjgzMTgyQzEzLjI2IDIuMzQwOTEgMTEuMzEgMS40NTQ1NSA5LjE4IDEuNDU0NTVDNC42MiAxLjQ1NDU1IDEuMDEgNS4wNjM2NCAxLjAxIDkuNjM2MzZDMS4wMSAxNC4yMDkxIDQuNjIgMTcuODE4MiA5LjE4IDE3LjgxODJDMTMuMzMgMTcuODE4MiAxNi42NCAxNC43NzI3IDE2LjY0IDkuNjM2MzZDMTYuNjQgOC44NjM2NCAxNi41NiA4LjExODE4IDE2LjUxIDcuMzYzNjRMMTYuNTEgOS4yMDQ1NVoiIGZpbGw9IiM0Mjg1RjIiLz4KPC9zdmc+Cg==" 
+             alt="Google" style="width: 20px; height: 20px; margin-right: 12px;">
+        Continuer avec Google
+    </a>
+</div>
+        <div class="forgot-password">
+            <a href="{% url 'password_reset' %}">Forgot your password?</a>
+        </div>
         
         <div class="links">
             <p>Don't have an account? <a href="{% url 'base:signup' %}">Sign up here</a></p>
         </div>
     </div>
+
+    <script>
+        function togglePassword(inputId, button) {
+            const passwordInput = document.getElementById(inputId);
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                button.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                button.textContent = '👁️';
+            }
+        }
+    </script>
 </body>
 </html>
