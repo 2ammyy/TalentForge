@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,7 +38,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # ← Required for allauth
+    
     'base',
+    'posts',
+    
+    # Allauth apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',  # Google provider
 ]
 
 MIDDLEWARE = [
@@ -48,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'talentForge.urls'
@@ -115,7 +126,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -127,39 +138,56 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CUSTOM CONFIGURATIONS FOR TALENTFORGE
 # =============================================================================
 
-# Email Configuration - PRODUCTION MODE ACTIVÉ
+# Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'talentforge.app@gmail.com'  # Votre nouveau Gmail dédié
-EMAIL_HOST_PASSWORD = 'qpzl bwho pojs axhh'    # Le mot de passe d'application de 16 caractères
+EMAIL_HOST_USER = 'talentforge.app@gmail.com'
+EMAIL_HOST_PASSWORD = 'qpzl bwho pojs axhh'
 DEFAULT_FROM_EMAIL = 'TalentForge <talentforge.app@gmail.com>'
 SERVER_EMAIL = 'talentforge.app@gmail.com'
 
-# Authentication Backends - Allow login with email or username
+# Allauth Configuration
+SITE_ID = 1
+
 AUTHENTICATION_BACKENDS = [
-    'base.backends.EmailBackend',  # Our custom backend for email authentication
-    'django.contrib.auth.backends.ModelBackend',  # Default backend
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Login/Logout URLs
+# Modern Allauth settings (to fix deprecation warnings)
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+# Google OAuth Configuration
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = False  # IMPORTANT: Must be False for our custom redirect to work
+SOCIALACCOUNT_STORE_TOKENS = True
+
+# Disable email verification for social accounts
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_EMAIL_REQUIRED = False
+
+# For regular accounts, keep your email verification
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Change back to your preferred setting
+
+# Redirection URLs
 LOGIN_URL = 'base:login'
 LOGIN_REDIRECT_URL = 'base:home'
 LOGOUT_REDIRECT_URL = 'base:home'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'base:home'
 
 # Session settings
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_SAVE_EVERY_REQUEST = True
 
-# Security settings (for development - adjust for production)
+# Security settings (for development)
 if DEBUG:
-    # During development, you might want less strict security
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 else:
-    # Production security settings
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -182,3 +210,18 @@ TALENTFORGE = {
     'MAX_LOGIN_ATTEMPTS': 5,
     'PASSWORD_RESET_TIMEOUT': 86400,  # 24 hours in seconds
 }
+
+# Static files configuration
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# REMOVE these lines - we don't need custom adapters anymore
+# SOCIALACCOUNT_ADAPTER = 'base.adapters.CustomSocialAccountAdapter'
+# ACCOUNT_ADAPTER = 'base.adapters.CustomAccountAdapter'

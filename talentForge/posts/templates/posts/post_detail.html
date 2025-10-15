@@ -1,0 +1,243 @@
+
+
+{% extends "layout.html" %}
+{% load static %}
+
+{% block subtitle %}Post by {{ post.author.username }}{% endblock %}
+
+{% block content %}
+<div class="post-detail-container">
+    <!-- Post principal -->
+    <div class="post-card">
+        <div class="post-header">
+            <h3>{{ post.author.username }}’s Post</h3>
+            <span class="post-date">{{ post.created_at|date:"F j, Y, g:i a" }}</span>
+        </div>
+        
+        <div class="post-content">
+            <p>{{ post.content }}</p>
+        </div>
+        
+        {% if post.image %}
+        <div class="post-media">
+            <img src="{{ post.image.url }}" class="post-image">
+        </div>
+        {% endif %}
+        
+        {% if post.video %}
+        <div class="post-media">
+            <video controls src="{{ post.video.url }}" class="post-video"></video>
+        </div>
+        {% endif %}
+    </div>
+
+    <hr>
+
+    <!-- Section commentaires -->
+    <div class="comments-section">
+        <h4>Comments ({{ comments.count }})</h4>
+        
+        <div class="comments-list">
+            {% for comment in comments %}
+            <div class="comment-card">
+                <div class="comment-header">
+                    <strong>{{ comment.author.username }}</strong>
+                    <span class="comment-date">{{ comment.created_at|date:"M j, Y, g:i a" }}</span>
+                </div>
+                <p class="comment-text">{{ comment.text }}</p>
+            </div>
+            {% empty %}
+            <p class="no-comments">No comments yet. Be the first to comment!</p>
+            {% endfor %}
+        </div>
+
+        <!-- Formulaire de commentaire -->
+        {% if user.is_authenticated %}
+        <div class="comment-form">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.text.id_for_label }}">Add a comment:</label>
+                    {{ form.text }}
+                    {% if form.text.errors %}
+                        <div class="error">{{ form.text.errors }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="submit-button">Add Comment</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="login-prompt">
+            <p><a href="{% url 'login' %}">Log in</a> to add a comment.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .post-detail-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .post-card {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .post-header h3 {
+        margin: 0;
+        color: #333;
+    }
+
+    .post-date {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .post-content {
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    .post-media {
+        margin-top: 1rem;
+    }
+
+    .post-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+    }
+
+    .post-video {
+        width: 100%;
+        max-height: 500px;
+        border-radius: 8px;
+    }
+
+    .comments-section {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .comments-section h4 {
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .comment-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #007bff;
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .comment-header strong {
+        color: #333;
+    }
+
+    .comment-date {
+        color: #666;
+        font-size: 0.8rem;
+    }
+
+    .comment-text {
+        margin: 0;
+        color: #555;
+        line-height: 1.5;
+    }
+
+    .no-comments {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 2rem;
+    }
+
+    .comment-form {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #eee;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .submit-button {
+        background-color: #007bff;
+        color: white;
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .submit-button:hover {
+        background-color: #0056b3;
+    }
+
+    .error {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 0.25rem;
+    }
+
+    .login-prompt {
+        text-align: center;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .login-prompt a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .login-prompt a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}

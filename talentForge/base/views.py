@@ -7,12 +7,18 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse_lazy
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, CustomPasswordResetForm, CustomSetPasswordForm
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate, logout
+from django.contrib import messages
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, CustomPasswordResetForm, CustomSetPasswordForm, ProfileEditForm
+from .models import UserProfile
 import random
 import string
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+
+
 
 # Stockage temporaire pour les codes de vérification
 verification_codes = {}
@@ -173,3 +179,65 @@ def send_verification_email(email, code):
 
 # class CustomPasswordResetCompleteView(PasswordResetCompleteView):
 #     template_name = 'registration/password_reset_complete.html'
+
+
+
+@login_required
+@login_required
+def edit_profile(request):
+    try:
+        profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+
+    if request.method == 'POST':
+        form = ProfileEditForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            # Sauvegarder le profil
+            profile = form.save(commit=False)
+            profile.user = request.user
+            
+            # Gérer la suppression de la photo
+            if form.cleaned_data.get('remove_profile_picture'):
+                if profile.profile_picture:
+                    profile.profile_picture.delete(save=False)
+                    profile.profile_picture = None
+                profile.profile_picture_url = ''  # Supprimer aussi l'URL si elle existe
+            
+            profile.save()
+            
+            # Mettre à jour les informations de l'utilisateur
+            request.user.first_name = form.cleaned_data['first_name']
+            request.user.last_name = form.cleaned_data['last_name']
+            request.user.email = form.cleaned_data['email']
+            request.user.save()
+            
+            messages.success(request, '✅ Profile updated successfully!')
+            return redirect('base:view_profile')
+        else:
+            messages.error(request, '❌ Please correct the errors below.')
+    else:
+        initial_data = {
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'email': request.user.email,
+        }
+        form = ProfileEditForm(instance=profile, initial=initial_data)
+    
+    return render(request, 'registration/edit_profile.html', {'form': form})
+@login_required
+def view_profile(request):
+    try:
+        profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    return render(request, 'registration/view_profile.html', {'profile': profile})
+
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def social_signup_redirect(request):
+    """Redirige IMMÉDIATEMENT après une inscription sociale réussie"""
+    return redirect('base:home')
