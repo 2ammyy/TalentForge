@@ -32,9 +32,13 @@ def post_create(request):
     
     return render(request, 'posts/post_create.html', {'form': form})
 
-def post_list(request):
+def posts_list(request):
+    # Récupère tous les posts triés par date (plus récents en premier)
     posts = Post.objects.all().order_by('-created_at')
-    return render(request, 'posts/post_list.html', {'posts': posts})
+    print(f"🎯 Nombre de posts trouvés: {posts.count()}")
+    return render(request, 'posts/post_list.html', {
+        'posts': posts
+    })
 
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)

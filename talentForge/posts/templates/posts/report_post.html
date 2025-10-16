@@ -1,0 +1,47 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card post-card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="fas fa-flag"></i> Report Post</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    You are reporting a post by <strong>{{ post.user.username }}</strong>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Reporting</label>
+                        <select name="reason" class="form-select" required>
+                            <option value="">Select a reason</option>
+                            <option value="spam">Spam</option>
+                            <option value="inappropriate">Inappropriate Content</option>
+                            <option value="harassment">Harassment</option>
+                            <option value="fake">Fake Information</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Additional Details</label>
+                        <textarea name="description" class="form-control" rows="4" 
+                                  placeholder="Please provide more details about why you are reporting this post..." required></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-paper-plane"></i> Submit Report
+                        </button>
+                        <a href="{% url 'post_detail' post.pk %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
