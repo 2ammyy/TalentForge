@@ -6,6 +6,7 @@ from django.db.models import Q
 import re
 from .models import UserProfile
 
+
 class ProfileEditForm(forms.ModelForm):
     first_name = forms.CharField(
         max_length=30, 
