@@ -1,5 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+import os
+import shutil
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -11,7 +15,7 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    #  field for delete profile picture
+    # field for delete profile picture
     remove_profile_picture = models.BooleanField(default=False)
 
     def __str__(self):
@@ -35,3 +39,21 @@ class UserProfile(models.Model):
             self.profile_picture = None
             self.remove_profile_picture = False  # Reset the flag
         super().save(*args, **kwargs)
+
+
+# Signal to delete profile files when UserProfile is deleted
+@receiver(post_delete, sender=UserProfile)
+def delete_profile_files(sender, instance, **kwargs):
+    """Delete profile picture files when UserProfile is deleted"""
+    if instance.profile_picture:
+        if os.path.isfile(instance.profile_picture.path):
+            os.remove(instance.profile_picture.path)
+
+# Signal to handle user deletion
+@receiver(post_delete, sender=User)
+def delete_user_files(sender, instance, **kwargs):
+    """Delete user-related files when User is deleted"""
+    # Delete user's profile pictures folder
+    user_media_path = f"media/profile_pictures/{instance.username}"
+    if os.path.exists(user_media_path):
+        shutil.rmtree(user_media_path)
