@@ -4,6 +4,7 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 import os
 import shutil
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
@@ -13,9 +14,6 @@ class UserProfile(models.Model):
     profile_picture_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-    # REMOVE this field - we'll handle deletion in the form/view instead
-    # remove_profile_picture = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
@@ -37,8 +35,6 @@ class UserProfile(models.Model):
         """Check if user has either uploaded photo or URL photo"""
         return bool(self.profile_picture or self.profile_picture_url)
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
 
 # Signal to delete profile files when UserProfile is deleted
 @receiver(post_delete, sender=UserProfile)

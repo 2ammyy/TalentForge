@@ -19,16 +19,7 @@
                     {% endfor %}
                 {% endif %}
                 
-                <!-- DEBUG: Add this temporarily to see what's happening -->
-                <div class="alert alert-info d-none">
-                    <strong>Debug Info:</strong><br>
-                    Has uploaded photo: {{ request.user.userprofile.profile_picture|yesno:"Yes,No" }}<br>
-                    Has photo URL: {{ request.user.userprofile.profile_picture_url|yesno:"Yes,No" }}<br>
-                    Photo URL value: {{ request.user.userprofile.profile_picture_url }}<br>
-                    Has custom photo: {{ request.user.userprofile.has_custom_photo|yesno:"Yes,No" }}
-                </div>
-                
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" id="profile-form">
                     {% csrf_token %}
                     
                     <div class="mb-4">
@@ -37,15 +28,24 @@
                             <div class="col-md-6 mb-3">
                                 <label for="id_first_name" class="form-label">First Name:</label>
                                 {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="id_last_name" class="form-label">Last Name:</label>
                                 {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="id_email" class="form-label">Email:</label>
                             {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -56,7 +56,7 @@
                                  alt="Profile Preview" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #007bff;">
                         </div>
                         
-                        <!-- FIXED: Show delete option if user has ANY custom photo -->
+                        <!-- DELETE OPTION - Shows when user has custom photo -->
                         {% if request.user.userprofile.has_custom_photo %}
                         <div class="mb-3 border border-danger rounded p-3 bg-light">
                             <div class="form-check">
@@ -65,7 +65,7 @@
                                     ❌ Delete my current profile picture
                                 </label>
                                 <div class="form-text text-danger">
-                                    Check this box to permanently delete your current profile picture
+                                    Check this box to permanently delete your current profile picture and use default avatar
                                 </div>
                             </div>
                         </div>
@@ -76,15 +76,42 @@
                         </div>
                         {% endif %}
                         
+                        <!-- Photo Selection -->
                         <div class="mb-3">
-                            <label for="id_profile_picture" class="form-label">Upload Photo:</label>
-                            {{ form.profile_picture }}
-                            <div class="form-text">Upload a photo from your computer</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="id_profile_picture_url" class="form-label">Or use URL:</label>
-                            {{ form.profile_picture_url }}
-                            <div class="form-text">Enter a URL for your profile picture</div>
+                            <ul class="nav nav-tabs" id="photoTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">
+                                        📁 Upload Photo
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="url-tab" data-bs-toggle="tab" data-bs-target="#url" type="button" role="tab">
+                                        🔗 Use URL
+                                    </button>
+                                </li>
+                            </ul>
+                            <div class="tab-content border border-top-0 p-3" id="photoTabContent">
+                                <div class="tab-pane fade show active" id="upload" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="id_profile_picture" class="form-label">Choose a photo:</label>
+                                        {{ form.profile_picture }}
+                                        {% if form.profile_picture.errors %}
+                                            <div class="text-danger small">{{ form.profile_picture.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Supported formats: JPG, PNG, GIF. Max size: 5MB</div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="url" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label for="id_profile_picture_url" class="form-label">Enter image URL:</label>
+                                        {{ form.profile_picture_url }}
+                                        {% if form.profile_picture_url.errors %}
+                                            <div class="text-danger small">{{ form.profile_picture_url.errors }}</div>
+                                        {% endif %}
+                                        <div class="form-text">Enter a direct URL to your profile picture (jpg, png, gif, etc.)</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -93,14 +120,23 @@
                         <div class="mb-3">
                             <label for="id_bio" class="form-label">Bio:</label>
                             {{ form.bio }}
+                            {% if form.bio.errors %}
+                                <div class="text-danger small">{{ form.bio.errors }}</div>
+                            {% endif %}
                         </div>
                         <div class="mb-3">
                             <label for="id_location" class="form-label">Location:</label>
                             {{ form.location }}
+                            {% if form.location.errors %}
+                                <div class="text-danger small">{{ form.location.errors }}</div>
+                            {% endif %}
                         </div>
                         <div class="mb-3">
                             <label for="id_website" class="form-label">Website:</label>
                             {{ form.website }}
+                            {% if form.website.errors %}
+                                <div class="text-danger small">{{ form.website.errors }}</div>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -121,6 +157,8 @@
         const url = e.target.value;
         if (url) {
             document.getElementById('profile-preview').src = url;
+            // Clear file input when URL is used
+            document.getElementById('id_profile_picture').value = '';
         }
     });
 
@@ -131,21 +169,53 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('profile-preview').src = e.target.result;
+                // Clear URL input when file is uploaded
+                document.getElementById('id_profile_picture_url').value = '';
             }
             reader.readAsDataURL(file);
         }
     });
 
-    // Handle delete checkbox confirmation
+    // Handle tab switching - clear the other input
+    document.getElementById('upload-tab').addEventListener('click', function() {
+        document.getElementById('id_profile_picture_url').value = '';
+    });
+
+    document.getElementById('url-tab').addEventListener('click', function() {
+        document.getElementById('id_profile_picture').value = '';
+    });
+
+    // Handle delete checkbox - show confirmation
     const deleteCheckbox = document.getElementById('id_remove_profile_picture');
     if (deleteCheckbox) {
         deleteCheckbox.addEventListener('change', function(e) {
             if (this.checked) {
                 if (!confirm('Are you sure you want to delete your profile picture? This action cannot be undone.')) {
                     this.checked = false;
+                } else {
+                    // Clear file and URL inputs when delete is checked
+                    document.getElementById('id_profile_picture').value = '';
+                    document.getElementById('id_profile_picture_url').value = '';
+                    // Update preview to show default avatar
+                    document.getElementById('profile-preview').src = 'https://ui-avatars.com/api/?name={{ request.user.username }}&background=007bff&color=fff&size=150&bold=true';
                 }
             }
         });
     }
+
+    // Clear delete checkbox when new photo is selected
+    document.getElementById('id_profile_picture').addEventListener('change', function() {
+        const deleteCheckbox = document.getElementById('id_remove_profile_picture');
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = false;
+        }
+    });
+
+    document.getElementById('id_profile_picture_url').addEventListener('input', function() {
+        const deleteCheckbox = document.getElementById('id_remove_profile_picture');
+        if (deleteCheckbox && this.value) {
+            deleteCheckbox.checked = false;
+        }
+    });
 </script>
 {% endblock %}
