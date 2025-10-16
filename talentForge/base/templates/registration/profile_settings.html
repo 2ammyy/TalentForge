@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile Settings - TalentForge{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Profile Settings</h6>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'base:view_profile' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-user"></i> View Profile
+                </a>
+                <a href="{% url 'base:edit_profile' %}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </a>
+                <a href="{% url 'base:delete_profile' %}" class="list-group-item list-group-item-action text-danger">
+                    <i class="fas fa-trash-alt"></i> Delete Account
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Account Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-edit fa-3x text-primary mb-3"></i>
+                                <h5>Edit Profile</h5>
+                                <p class="text-muted">Update your personal information and profile picture</p>
+                                <a href="{% url 'base:edit_profile' %}" class="btn btn-primary">Edit Profile</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-light border-danger h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                                <h5 class="text-danger">Delete Account</h5>
+                                <p class="text-muted">Permanently delete your account and all data</p>
+                                <a href="{% url 'base:delete_profile' %}" class="btn btn-outline-danger">Delete Account</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
