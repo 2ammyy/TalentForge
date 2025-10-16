@@ -19,6 +19,15 @@
                     {% endfor %}
                 {% endif %}
                 
+                <!-- DEBUG: Add this temporarily to see what's happening -->
+                <div class="alert alert-info d-none">
+                    <strong>Debug Info:</strong><br>
+                    Has uploaded photo: {{ request.user.userprofile.profile_picture|yesno:"Yes,No" }}<br>
+                    Has photo URL: {{ request.user.userprofile.profile_picture_url|yesno:"Yes,No" }}<br>
+                    Photo URL value: {{ request.user.userprofile.profile_picture_url }}<br>
+                    Has custom photo: {{ request.user.userprofile.has_custom_photo|yesno:"Yes,No" }}
+                </div>
+                
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     
@@ -47,26 +56,25 @@
                                  alt="Profile Preview" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #007bff;">
                         </div>
                         
-                        <div class="mb-3">
-                            <h6>🗑️ Manage Photo</h6>
-                            {% if request.user.userprofile.profile_picture %}
+                        <!-- FIXED: Show delete option if user has ANY custom photo -->
+                        {% if request.user.userprofile.has_custom_photo %}
+                        <div class="mb-3 border border-danger rounded p-3 bg-light">
                             <div class="form-check">
-                                <input type="checkbox" name="remove_profile_picture" id="id_remove_profile_picture" 
-                                       class="form-check-input">
-                                <label for="id_remove_profile_picture" class="form-check-label text-danger">
+                                {{ form.remove_profile_picture }}
+                                <label for="id_remove_profile_picture" class="form-check-label text-danger fw-bold">
                                     ❌ Delete my current profile picture
                                 </label>
-                                <div class="form-text">
-                                    Check this box to delete your photo and use the default avatar
+                                <div class="form-text text-danger">
+                                    Check this box to permanently delete your current profile picture
                                 </div>
                             </div>
-                            {% else %}
-                            <div class="alert alert-info">
-                                <p class="mb-0">📷 You are currently using a generated avatar.</p>
-                                <p class="mb-0">Upload a photo or enter a URL to customize your profile.</p>
-                            </div>
-                            {% endif %}
                         </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">📷 You are currently using a generated avatar.</p>
+                            <p class="mb-0">Upload a photo or enter a URL to customize your profile.</p>
+                        </div>
+                        {% endif %}
                         
                         <div class="mb-3">
                             <label for="id_profile_picture" class="form-label">Upload Photo:</label>
@@ -127,5 +135,17 @@
             reader.readAsDataURL(file);
         }
     });
+
+    // Handle delete checkbox confirmation
+    const deleteCheckbox = document.getElementById('id_remove_profile_picture');
+    if (deleteCheckbox) {
+        deleteCheckbox.addEventListener('change', function(e) {
+            if (this.checked) {
+                if (!confirm('Are you sure you want to delete your profile picture? This action cannot be undone.')) {
+                    this.checked = false;
+                }
+            }
+        });
+    }
 </script>
 {% endblock %}

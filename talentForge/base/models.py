@@ -4,7 +4,6 @@ from django.db.models.signals import post_delete
 from django.dispatch import receiver
 import os
 import shutil
-
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
@@ -15,31 +14,31 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    # field for delete profile picture
-    remove_profile_picture = models.BooleanField(default=False)
+    # REMOVE this field - we'll handle deletion in the form/view instead
+    # remove_profile_picture = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
     @property
     def get_profile_picture(self):
-        # If the user requested deletion OR has no photo
-        if self.remove_profile_picture or not self.profile_picture:
-            if self.profile_picture_url:
-                return self.profile_picture_url
-            else:
-                # Automatically generated avatar
-                return f'https://ui-avatars.com/api/?name={self.user.username}&background=007bff&color=fff&size=150&bold=true'
-        return self.profile_picture.url
+        # If user has an uploaded profile picture
+        if self.profile_picture:
+            return self.profile_picture.url
+        
+        # If user has a profile picture URL
+        if self.profile_picture_url:
+            return self.profile_picture_url
+        
+        # If no photo is set, use generated avatar
+        return f'https://ui-avatars.com/api/?name={self.user.username}&background=007bff&color=fff&size=150&bold=true'
+
+    def has_custom_photo(self):
+        """Check if user has either uploaded photo or URL photo"""
+        return bool(self.profile_picture or self.profile_picture_url)
 
     def save(self, *args, **kwargs):
-        # If remove_profile_picture is True, delete the photo
-        if self.remove_profile_picture and self.profile_picture:
-            self.profile_picture.delete(save=False)
-            self.profile_picture = None
-            self.remove_profile_picture = False  # Reset the flag
         super().save(*args, **kwargs)
-
 
 # Signal to delete profile files when UserProfile is deleted
 @receiver(post_delete, sender=UserProfile)
