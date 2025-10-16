@@ -1,0 +1,182 @@
+
+{% extends "layout.html" %}
+{% load static %}
+
+{% block subtitle %}All Posts{% endblock %}
+
+{% block posts_content %}
+<div class="posts-container">
+    <div class="posts-header">
+        <h2>📝 All Posts</h2>
+    </div>
+
+    {% for post in posts %}
+    <div class="post-card">
+        <div class="post-header">
+            <div class="post-author">
+                <strong>{{ post.author.username }}</strong>
+                <span class="post-date">— {{ post.created_at|date:"d M Y H:i" }}</span>
+            </div>
+        </div>
+        
+        {% if post.title %}
+        <h4 class="post-title">{{ post.title }}</h4>
+        {% endif %}
+        
+        <div class="post-content">
+            <p>{{ post.content }}</p>
+        </div>
+
+        {% if post.image %}
+        <div class="post-media">
+            <img src="{{ post.image.url }}" class="post-image">
+        </div>
+        {% endif %}
+        
+        {% if post.video %}
+        <div class="post-media">
+            <video controls src="{{ post.video.url }}" class="post-video"></video>
+        </div>
+        {% endif %}
+
+        <div class="post-actions">
+            <a href="{% url 'posts:post_detail' post.pk %}" class="action-link">
+                💬 Comments ({{ post.comments.count }})
+            </a>
+            <span class="action-separator">|</span>
+            <a href="{% url 'posts:react_post' post.pk %}" class="action-link">
+                ❤️ Reactions ({{ post.reactions.count }})
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="no-posts">
+        <p>No posts yet. Be the first to create one!</p>
+        <a href="{% url 'posts:post_create' %}" class="create-first-post">Create First Post</a>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .posts-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .posts-header {
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .posts-header h2 {
+        color: #333;
+        margin: 0;
+    }
+
+    .post-card {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .post-author strong {
+        color: #333;
+        font-size: 1.1rem;
+    }
+
+    .post-date {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .post-title {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+    }
+
+    .post-content {
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+        color: #555;
+    }
+
+    .post-media {
+        margin: 1.5rem 0;
+    }
+
+    .post-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+    }
+
+    .post-video {
+        width: 100%;
+        max-height: 500px;
+        border-radius: 8px;
+    }
+
+    .post-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+
+    .action-link {
+        color: #007bff;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .action-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+    .action-separator {
+        color: #ddd;
+    }
+
+    .no-posts {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .no-posts p {
+        color: #666;
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .create-first-post {
+        background-color: #28a745;
+        color: white;
+        padding: 0.75rem 2rem;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+
+    .create-first-post:hover {
+        background-color: #218838;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}

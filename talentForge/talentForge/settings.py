@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',  # ← Required for allauth
     
     'base',
+    'posts',
     
     # Allauth apps
     'allauth',

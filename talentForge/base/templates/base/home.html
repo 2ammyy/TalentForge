@@ -206,6 +206,9 @@
                 <a href="#" onclick="alert('Dashboard feature coming soon!')">📊 Dashboard</a>
                 <a href="#" onclick="alert('Projects feature coming soon!')">💼 Projects</a>
                 <a href="#" onclick="alert('Skills feature coming soon!')">🔧 Skills</a>
+                <a href="#" onclick="alert('Notifications feature coming soon!')">🔔 Notifications</a>
+                <a href="{% url 'posts:post_create' %}">➕ Create Post</a>
+
 <form method="post" action="{% url 'base:logout' %}" style="display: inline;">
     {% csrf_token %}
     <button type="submit" class="logout-btn" style="background: #dc3545; color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block;">
