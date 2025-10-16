@@ -124,6 +124,7 @@ def custom_login(request):
                 else:
                     messages.error(request, 'Your account is not active. Please verify your email.')
             else:
+                # This will trigger the form errors
                 messages.error(request, 'Invalid email/username or password.')
     else:
         form = CustomAuthenticationForm()
