@@ -19,50 +19,178 @@
             {% endif %}
         </div>
         
-        <!-- Title -->
-        <div class="form-group">
-            <label for="{{ form.title.id_for_label }}">Title (Optional)</label>
-            {{ form.title }}
-            {% if form.title.errors %}
-                <div class="error">{{ form.title.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <!-- Content -->
-        <div class="form-group">
-            <label for="{{ form.content.id_for_label }}">Content</label>
-            {{ form.content }}
-            {% if form.content.errors %}
-                <div class="error">{{ form.content.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <!-- File Uploads -->
-        <div class="file-upload-section">
-            <div class="upload-options">
-                <div class="upload-option">
-                    <label for="{{ form.image.id_for_label }}" class="upload-label">
-                        📷 Image
-                    </label>
-                    {{ form.image }}
-                    <small class="file-info">Supported: JPG, PNG, GIF</small>
+        <!-- Section Dynamique selon le type -->
+        <div id="dynamic-sections">
+            <!-- Section Texte/Image/Video (par défaut) -->
+            <div id="default-section">
+                <!-- Title -->
+                <div class="form-group">
+                    <label for="{{ form.title.id_for_label }}">Title (Optional)</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <div class="error">{{ form.title.errors }}</div>
+                    {% endif %}
                 </div>
                 
-                <div class="upload-option">
-                    <label for="{{ form.video.id_for_label }}" class="upload-label">
-                        🎥 Video
-                    </label>
-                    {{ form.video }}
-                    <small class="file-info">Supported: MP4, AVI, MOV</small>
+                <!-- Content -->
+                <div class="form-group">
+                    <label for="{{ form.content.id_for_label }}">Content</label>
+                    {{ form.content }}
+                    {% if form.content.errors %}
+                        <div class="error">{{ form.content.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- File Uploads -->
+                <div class="file-upload-section">
+                    <div class="upload-options">
+                        <div class="upload-option">
+                            <label for="{{ form.image.id_for_label }}" class="upload-label">
+                                📷 Image
+                            </label>
+                            {{ form.image }}
+                            <small class="file-info">Supported: JPG, PNG, GIF</small>
+                        </div>
+                        
+                        <div class="upload-option">
+                            <label for="{{ form.video.id_for_label }}" class="upload-label">
+                                🎥 Video
+                            </label>
+                            {{ form.video }}
+                            <small class="file-info">Supported: MP4, AVI, MOV</small>
+                        </div>
+                    </div>
+                    
+                    <!-- File Preview -->
+                    <div class="file-previews" id="filePreviews"></div>
                 </div>
             </div>
-            
-            <!-- File Preview -->
-            <div class="file-previews" id="filePreviews"></div>
+            <!-- Section Poll (cachée par défaut) -->
+<div id="poll-section" class="dynamic-section" style="display: none;">
+    <div class="section-header">
+        <h3>📊 Create Poll</h3>
+        <p>Create an engaging poll for the community</p>
+    </div>
+        
+        <!-- Poll Question -->
+        <div class="form-group">
+            <label for="id_poll_question">Poll Question *</label>
+            {{ form.poll_question }}
+            {% if form.poll_question.errors %}
+                <div class="error">{{ form.poll_question.errors }}</div>
+            {% endif %}
+        </div>
+    
+        <!-- Poll Options -->
+        <div class="form-group">
+            <label>Poll Options *</label>
+            <div class="poll-options-container">
+                <div class="poll-option-group">
+                    <span class="option-number">1</span>
+                    {{ form.poll_option_1 }}
+                </div>
+                <div class="poll-option-group">
+                    <span class="option-number">2</span>
+                    {{ form.poll_option_2 }}
+                </div>
+                <div class="poll-option-group">
+                    <span class="option-number">3</span>
+                    {{ form.poll_option_3 }}
+                </div>
+                <div class="poll-option-group">
+                    <span class="option-number">4</span>
+                    {{ form.poll_option_4 }}
+                </div>
+            </div>
+            <small class="help-text">At least 2 options required. Options 3 & 4 are optional.</small>
         </div>
         
-        <!-- Character Counter -->
-        <div class="char-counter">
+        <!-- Poll Duration -->
+        <div class="form-group">
+            <label for="id_poll_duration">Poll Duration</label>
+            {{ form.poll_duration }}
+        </div>
+    </div>
+            
+                
+
+            
+            <!-- Section Job Offer (cachée par défaut) -->
+            <div id="job-section" class="dynamic-section" style="display: none;">
+                <div class="section-header">
+                    <h3>💼 Job Opportunity</h3>
+                    <p>Share a job opening with the community</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.title.id_for_label }}">Job Title *</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <div class="error">{{ form.title.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.company.id_for_label }}">Company Name *</label>
+                    {{ form.company }}
+                    {% if form.company.errors %}
+                        <div class="error">{{ form.company.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="{{ form.location.id_for_label }}">Location *</label>
+                        {{ form.location }}
+                        {% if form.location.errors %}
+                            <div class="error">{{ form.location.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group half">
+                        <label for="{{ form.work_mode.id_for_label }}">Work Mode</label>
+                        {{ form.work_mode }}
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="{{ form.employment_type.id_for_label }}">Employment Type</label>
+                        {{ form.employment_type }}
+                    </div>
+                    <div class="form-group half">
+                        <label for="{{ form.salary_range.id_for_label }}">Salary Range</label>
+                        {{ form.salary_range }}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.application_email.id_for_label }}">Application Email</label>
+                    {{ form.application_email }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.skills_required.id_for_label }}">Required Skills</label>
+                    {{ form.skills_required }}
+                    <small class="help-text">List one skill per line</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.benefits.id_for_label }}">Company Benefits</label>
+                    {{ form.benefits }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.content.id_for_label }}">Job Description</label>
+                    {{ form.content }}
+                    {% if form.content.errors %}
+                        <div class="error">{{ form.content.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Character Counter (seulement pour les types texte/image/video) -->
+        <div class="char-counter" id="charCounter">
             <span id="charCount">0</span>/5000
         </div>
         
@@ -74,13 +202,22 @@
 
 <style>
     .post-create-container {
-        max-width: 600px;
+        max-width: 700px;
         margin: 0 auto;
         padding: 2rem;
     }
     
     .form-group {
         margin-bottom: 1.5rem;
+    }
+    
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .form-group.half {
+        flex: 1;
     }
     
     .form-group label {
@@ -99,11 +236,84 @@
         border-radius: 8px;
         font-size: 16px;
         font-family: Arial, sans-serif;
+        transition: all 0.3s ease;
+    }
+    
+    .form-group select:focus,
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        outline: none;
     }
     
     .form-group textarea {
         resize: vertical;
         min-height: 120px;
+    }
+    
+    /* Sections dynamiques */
+    .dynamic-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        margin: 1.5rem 0;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .section-header h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+    }
+    
+    .section-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+    
+    /* Styles pour les polls */
+    .poll-options-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .poll-option-group {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .option-number {
+        background: #007bff;
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+    
+    /* Styles pour les offres d'emploi */
+    .job-details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
     }
     
     .file-upload-section {
@@ -147,7 +357,7 @@
         display: none;
     }
     
-    .file-info {
+    .file-info, .help-text {
         display: block;
         margin-top: 0.5rem;
         color: #666;
@@ -208,6 +418,7 @@
         font-weight: bold;
         width: 100%;
         transition: all 0.3s ease;
+        margin-top: 1rem;
     }
     
     .submit-button:hover {
@@ -227,13 +438,40 @@
         color: #dc3545;
         font-size: 12px;
         margin-top: 0.25rem;
+        font-weight: 500;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .poll-option-group {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+        
+        .option-number {
+            align-self: flex-start;
+        }
+        
+        .upload-options {
+            flex-direction: column;
+        }
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const postTypeSelect = document.getElementById('{{ form.type.id_for_label }}');
-        const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+        const dynamicSections = document.getElementById('dynamic-sections');
+        const defaultSection = document.getElementById('default-section');
+        const pollSection = document.getElementById('poll-section');
+        const jobSection = document.getElementById('job-section');
+        const charCounter = document.getElementById('charCounter');
         const contentTextarea = document.getElementById('{{ form.content.id_for_label }}');
         const charCount = document.getElementById('charCount');
         const fileInputs = {
@@ -242,7 +480,72 @@
         };
         const filePreviews = document.getElementById('filePreviews');
         const submitBtn = document.getElementById('submitBtn');
-        const form = document.getElementById('postForm');
+        
+        // Get all dynamic fields
+        const pollFields = document.querySelectorAll('.poll-field, .poll-option');
+        const jobFields = document.querySelectorAll('.job-field');
+        
+        // Gestion du changement de type de post
+        postTypeSelect.addEventListener('change', function() {
+            updateFormForPostType(this.value);
+        });
+        
+        function updateFormForPostType(type) {
+            // Masquer toutes les sections
+            defaultSection.style.display = 'none';
+            pollSection.style.display = 'none';
+            jobSection.style.display = 'none';
+            charCounter.style.display = 'block';
+            
+            // Reset file inputs when type changes
+            Object.values(fileInputs).forEach(input => {
+                if (input) input.value = '';
+            });
+            filePreviews.innerHTML = '';
+            
+            // Show/hide dynamic fields
+            pollFields.forEach(field => field.style.display = 'none');
+            jobFields.forEach(field => field.style.display = 'none');
+            
+            // Afficher la section appropriée
+            switch(type) {
+                case 'text':
+                case 'image':
+                case 'video':
+                    defaultSection.style.display = 'block';
+                    updatePlaceholder(type);
+                    break;
+                case 'poll':
+                    pollSection.style.display = 'block';
+                    charCounter.style.display = 'none';
+                    pollFields.forEach(field => field.style.display = 'block');
+                    break;
+                case 'job':
+                    jobSection.style.display = 'block';
+                    charCounter.style.display = 'none';
+                    jobFields.forEach(field => field.style.display = 'block');
+                    updateJobPlaceholders();
+                    break;
+            }
+        }
+        
+        function updatePlaceholder(type) {
+            switch(type) {
+                case 'text':
+                    contentTextarea.placeholder = "What's on your mind?";
+                    break;
+                case 'image':
+                    contentTextarea.placeholder = "Describe your image...";
+                    break;
+                case 'video':
+                    contentTextarea.placeholder = "Describe your video...";
+                    break;
+            }
+        }
+        
+        function updateJobPlaceholders() {
+            contentTextarea.placeholder = "Describe the job responsibilities, requirements, and what makes this opportunity special...";
+        }
         
         // Character counter
         contentTextarea.addEventListener('input', function() {
@@ -257,38 +560,6 @@
                 submitBtn.disabled = false;
             }
         });
-        
-        // Post type change handler
-        postTypeSelect.addEventListener('change', function() {
-            updateFormForPostType(this.value);
-        });
-        
-        function updateFormForPostType(type) {
-            // Reset file inputs when type changes
-            Object.values(fileInputs).forEach(input => {
-                if (input) input.value = '';
-            });
-            filePreviews.innerHTML = '';
-            
-            // Update labels and placeholders based on type
-            switch(type) {
-                case 'text':
-                    contentTextarea.placeholder = "What's on your mind?";
-                    break;
-                case 'image':
-                    contentTextarea.placeholder = "Describe your image...";
-                    break;
-                case 'video':
-                    contentTextarea.placeholder = "Describe your video...";
-                    break;
-                case 'poll':
-                    contentTextarea.placeholder = "Ask your question...";
-                    break;
-                case 'job':
-                    contentTextarea.placeholder = "Describe the job opportunity...";
-                    break;
-            }
-        }
         
         // File preview handling
         Object.keys(fileInputs).forEach(type => {
