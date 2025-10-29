@@ -12,5 +12,4 @@ urlpatterns = [
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('<int:pk>/share/', views.share_post, name='share_post'),
     path('<int:pk>/report/', views.report_post, name='report_post'),  
-    path('poll/vote/<int:option_id>/', views.vote_poll, name='vote_poll'),  
 ]

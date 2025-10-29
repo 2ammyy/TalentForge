@@ -6,7 +6,7 @@ class Post(models.Model):
         ('text', 'Text'),
         ('image', 'Image'),
         ('video', 'Video'),
-        ('poll', 'Poll'),
+        # ('poll', 'Poll'),
         ('job', 'Job Offer'),
     ]
 
@@ -23,21 +23,6 @@ class Post(models.Model):
 
     def average_rating(self):
         return self.ratings.aggregate(models.Avg('score'))['score__avg'] or 0
-
-    # AJOUTEZ CES PROPRIÉTÉS APRÈS LES MÉTHODES EXISTANTES
-    @property
-    def total_votes(self):
-        """Retourne le total des votes pour un poll"""
-        if self.type == 'poll':
-            return self.poll_options.aggregate(total=models.Sum('votes'))['total'] or 0
-        return 0
-
-    def user_can_vote(self, user):
-        """Vérifie si un utilisateur peut voter"""
-        if self.type != 'poll':
-            return False
-        # Implémentez votre logique pour vérifier si l'user a déjà voté
-        return True
 
 
 class Comment(models.Model):
@@ -57,7 +42,7 @@ class Reaction(models.Model):
     ]
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    type = models.CharField(max_length=10, choices=REACTIONS)
+    reaction_type = models.CharField(max_length=10, choices=REACTIONS)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -80,19 +65,6 @@ class Notification(models.Model):
     def __str__(self):
         return f"To {self.recipient} - {self.message}"
 
-
-# AJOUTEZ CES CLASSES APRÈS LES AUTRES MODÈLES
-class PollOption(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='poll_options')
-    text = models.CharField(max_length=200)
-    votes = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.text} ({self.votes} votes)"
-
-    class Meta:
-        ordering = ['created_at']
 
 
 class JobPost(models.Model):
