@@ -151,7 +151,27 @@
                 </button>
                 <span class="reaction-count" id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
             </div>
+            
+            <!-- BOUTON DE PARTAGE AJOUTÉ -->
+            <span class="action-separator">|</span>
+            <a href="{% url 'posts:share_post' post.id %}" class="action-link">
+                🔄 Share ({{ post.post_shares.count }})
+            </a>
         </div>
+        
+        <!-- SECTION DES PARTAGES AJOUTÉE -->
+        {% if post.post_shares.exists %}
+        <div class="shares-section" style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 8px;">
+            <small style="color: #666;">
+                🔄 Shared by: 
+                {% for share in post.post_shares.all|slice:":3" %}
+                    <strong>{{ share.user.username }}</strong>{% if share.caption %} - "{{ share.caption }}"{% endif %}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                {% if post.post_shares.count > 3 %} and {{ post.post_shares.count|add:"-3" }} more{% endif %}
+            </small>
+        </div>
+        {% endif %}
+        
     </div>
     {% empty %}
     <div class="no-posts">

@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Post, Comment, Reaction, Notification  , JobPost
-from .forms import PostForm, CommentForm
+from .models import Post, Comment, Reaction  , JobPost , Share 
+from .forms import PostForm, CommentForm , ShareForm
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -102,38 +102,6 @@ def post_detail(request, pk):
     })
 
 
-
-@login_required
-def share_post(request, pk):
-    """Gère le partage de posts"""
-    post = get_object_or_404(Post, pk=pk)
-    # Logique de partage à implémenter
-    messages.success(request, 'Post shared successfully!')
-    return redirect('posts:post_detail', pk=post.pk)
-
-@login_required
-def report_post(request, pk):
-    """Gère les signalements de posts"""
-    post = get_object_or_404(Post, pk=pk)
-    # Logique de signalement à implémenter
-    messages.success(request, 'Post reported to administrators.')
-    return redirect('posts:post_detail', pk=post.pk)
-
-@login_required
-def notifications(request):
-    """Affiche les notifications"""
-    user_notifications = request.user.notifications.filter(is_read=False).order_by('-created_at')
-    return render(request, 'posts/notifications.html', {'notifications': user_notifications})
-
-@login_required
-def mark_notification_read(request, notification_id):
-    """Marque une notification comme lue"""
-    notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
-    notification.is_read = True
-    notification.save()
-    return JsonResponse({'status': 'success'})
-
-
 @login_required
 def feed(request):
     posts = Post.objects.all().prefetch_related('poll_options')
@@ -163,3 +131,80 @@ def add_reaction(request, post_id):
         return JsonResponse({'success': False, 'error': 'Post not found'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def share_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Vérifier si l'utilisateur a déjà partagé ce post
+    existing_share = Share.objects.filter(post=post, user=request.user).first()
+    
+    if request.method == 'POST':
+        form = ShareForm(request.POST)
+        if form.is_valid():
+            if existing_share:
+                # Mettre à jour le partage existant
+                existing_share.caption = form.cleaned_data['caption']
+                existing_share.save()
+            else:
+                # Créer un nouveau partage
+                share = form.save(commit=False)
+                share.post = post
+                share.user = request.user
+                share.save()
+                
+                # Créer une notification pour l'auteur du post
+                if post.author != request.user:
+                    Notification.objects.create(
+                        recipient=post.author,
+                        sender=request.user,
+                        post=post,
+                        notif_type='share',
+                        message=f"{request.user.username} a partagé votre post"
+                    )
+            
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'share_count': post.post_shares.count()})
+            return redirect('posts:post_list')
+    
+    else:
+        initial = {'caption': existing_share.caption if existing_share else ''}
+        form = ShareForm(initial=initial)
+    
+    return render(request, 'posts/share_post.html', {
+        'form': form,
+        'post': post,
+        'existing_share': existing_share
+    })
+
+@login_required
+def unshare_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    Share.objects.filter(post=post, user=request.user).delete()
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'share_count': post.post_shares.count()})
+    return redirect('posts:posts_list')
+
+# @login_required
+# def notifications(request):
+#     """Affiche les notifications - version simplifiée"""
+#     user_notifications = request.user.notifications.filter(is_read=False).order_by('-created_at')
+#     return render(request, 'posts/notifications.html', {'notifications': user_notifications})
+
+# @login_required
+# def mark_notification_read(request, notification_id):
+#     """Marque une notification comme lue"""
+#     notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
+#     notification.is_read = True
+#     notification.save()
+#     return JsonResponse({'status': 'success'})
+#     return redirect('posts:notifications')
+
+@login_required
+def notifications(request):
+    """Vue simple pour les notifications"""
+    return render(request, 'posts/notifications.html', {
+        'notifications': []
+    })

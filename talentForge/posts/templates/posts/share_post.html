@@ -1,0 +1,69 @@
+<!-- Créer templates/posts/share_post.html -->
+{% extends "layout.html" %}
+{% load static %}
+
+{% block subtitle %}Share Post{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>
+                        {% if existing_share %}
+                            Modifier votre partage
+                        {% else %}
+                            Partager ce post
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Aperçu du post à partager -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-2">
+                                <strong>{{ post.author.username }}</strong>
+                                <small class="text-muted ms-2">{{ post.created_at|timesince }}</small>
+                            </div>
+                            {% if post.title %}<h6>{{ post.title }}</h6>{% endif %}
+                            <p class="mb-0">{{ post.content }}</p>
+                            {% if post.image %}
+                                <img src="{{ post.image.url }}" class="img-fluid mt-2" alt="Post image">
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Ajouter un commentaire (optionnel)</label>
+                            {{ form.caption }}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                {% if existing_share %}Mettre à jour{% else %}Partager{% endif %}
+                            </button>
+                            {% if existing_share %}
+                            <a href="{% url 'posts:unshare_post' post.id %}" class="btn btn-danger">
+                                Supprimer le partage
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'posts:post_list' %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.container { max-width: 800px; }
+.card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.card-header { background: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+.form-label { font-weight: bold; color: #333; }
+.form-control { border-radius: 8px; border: 1px solid #ddd; }
+.btn { border-radius: 8px; padding: 0.5rem 1.5rem; }
+</style>
+{% endblock %}

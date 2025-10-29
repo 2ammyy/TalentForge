@@ -1,5 +1,5 @@
 from django import forms
-from .models import Post, Comment, JobPost
+from .models import Post, Comment, JobPost , Share
 
 class PostForm(forms.ModelForm):
     
@@ -197,4 +197,19 @@ class CommentForm(forms.ModelForm):
                 'rows': 2,
                 'class': 'form-control'
             }),
+        }
+
+class ShareForm(forms.ModelForm):
+    class Meta:
+        model = Share
+        fields = ['caption']
+        widgets = {
+            'caption': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ajouter un commentaire...',
+                'rows': 3
+            }),
+        }
+        labels = {
+            'caption': 'Votre commentaire'
         }
