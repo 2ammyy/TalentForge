@@ -1,207 +1,122 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sign Up - TalentForge</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .signup-container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .messages {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .errorlist {
-            color: #dc3545;
-            font-size: 0.9em;
-            margin: 5px 0;
-            padding: 0;
-            list-style: none;
-        }
-        .form-group {
-            margin-bottom: 15px;
-            position: relative;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-sizing: border-box;
-            padding-right: 40px;
-        }
-        .password-toggle {
-            position: absolute;
-            right: 10px;
-            top: 35px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #666;
-            font-size: 14px;
-        }
-        .password-toggle:hover {
-            color: #333;
-        }
-        button[type="submit"] {
-            width: 100%;
-            padding: 12px;
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button[type="submit"]:hover {
-            background: #218838;
-        }
-        .links {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .help-text {
-            font-size: 0.8em;
-            color: #6c757d;
-            margin-top: 5px;
-        }
-    </style>
-</head>
-<body>
-    <div class="signup-container">
-        <h2>Create Your TalentForge Account</h2>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="messages {{ message.tags }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-        
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="id_first_name">First Name:</label>
-                {{ form.first_name }}
-                {% if form.first_name.errors %}
-                    <div class="errorlist">{{ form.first_name.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_last_name">Last Name:</label>
-                {{ form.last_name }}
-                {% if form.last_name.errors %}
-                    <div class="errorlist">{{ form.last_name.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_username">Username:</label>
-                {{ form.username }}
-                <div class="help-text">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</div>
-                {% if form.username.errors %}
-                    <div class="errorlist">{{ form.username.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_email">Email:</label>
-                {{ form.email }}
-                {% if form.email.errors %}
-                    <div class="errorlist">{{ form.email.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_password1">Password:</label>
-                {{ form.password1 }}
-                <button type="button" class="password-toggle" onclick="togglePassword('id_password1', this)">
-                    👁️
-                </button>
-                <div class="help-text">
-                    Your password must contain at least 8 characters and can't be too common.
-                </div>
-                {% if form.password1.errors %}
-                    <div class="errorlist">{{ form.password1.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_password2">Confirm Password:</label>
-                {{ form.password2 }}
-                <button type="button" class="password-toggle" onclick="togglePassword('id_password2', this)">
-                    👁️
-                </button>
-                {% if form.password2.errors %}
-                    <div class="errorlist">{{ form.password2.errors }}</div>
-                {% endif %}
-            </div>
-            
-            <button type="submit">Sign Up</button>
-        </form>
+{% extends 'base.html' %}
 
-        <!-- Après le formulaire d'inscription existant -->
-<div style="text-align: center; margin: 30px 0;">
-    <div style="margin: 20px 0; color: #666; font-size: 14px;">─ OU ─</div>
-    
-    <a href="/accounts/google/login/" 
-       style="display: inline-flex; align-items: center; justify-content: center;
-              padding: 12px 24px; background: white; color: #757575; 
-              border: 2px solid #ddd; border-radius: 8px; text-decoration: none; 
-              font-weight: bold; font-size: 16px; width: 100%; max-width: 300px;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;">
-        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUxIDkuMjA0NTVWOS4wOTU0NUg5LjE4VjEwLjc3MjdIMTMuNDlDMTMuMTIgMTIuNjAwOSAxMS40OCAxMy45NTQ1IDkuMTggMTMuOTU0NUM2LjQzIDEzLjk1NDUgNC4xOCAxMS43MDQ1IDQuMTggOC45NTQ1NUM0LjE4IDYuMjA0NTUgNi40MyAzLjk1NDU1IDkuMTggMy45NTQ1NUMxMC42OSAzLjk1NDU1IDEyLjAzIDQuNjYzNjQgMTIuODkgNS43NzI3M0wxNC44MyAzLjgzMTgyQzEzLjI2IDIuMzQwOTEgMTEuMzEgMS40NTQ1NSA5LjE4IDEuNDU0NTVDNC42MiAxLjQ1NDU1IDEuMDEgNS4wNjM2NCAxLjAxIDkuNjM2MzZDMS4wMSAxNC4yMDkxIDQuNjIgMTcuODE4MiA5LjE4IDE3LjgxODJDMTMuMzMgMTcuODE4MiAxNi42NCAxNC43NzI3IDE2LjY0IDkuNjM2MzZDMTYuNjQgOC44NjM2NCAxNi41NiA4LjExODE4IDE2LjUxIDcuMzYzNjRMMTYuNTEgOS4yMDQ1NVoiIGZpbGw9IiM0Mjg1RjIiLz4KPC9zdmc+Cg==" 
-             alt="Google" style="width: 20px; height: 20px; margin-right: 12px;">
-        S'inscrire avec Google
-    </a>
-</div>
-        
-        <div class="links">
-            <p>Already have an account? <a href="{% url 'base:login' %}">Login here</a></p>
+{% block title %}Sign Up - TalentForge{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Create Your TalentForge Account</h4>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_first_name" class="form-label">First Name:</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small">{{ form.first_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="id_last_name" class="form-label">Last Name:</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small">{{ form.last_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Username:</label>
+                        {{ form.username }}
+                        <div class="form-text">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</div>
+                        {% if form.username.errors %}
+                            <div class="text-danger small">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">Email:</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 position-relative">
+                        <label for="id_password1" class="form-label">Password:</label>
+                        {{ form.password1 }}
+                        <button type="button" class="btn btn-sm position-absolute top-50 end-0 me-2" 
+                                onclick="togglePassword('id_password1', this)" style="background: none; border: none;">
+                            👁️
+                        </button>
+                        <div class="form-text">
+                            Your password must contain at least 8 characters and can't be too common.
+                        </div>
+                        {% if form.password1.errors %}
+                            <div class="text-danger small">{{ form.password1.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 position-relative">
+                        <label for="id_password2" class="form-label">Confirm Password:</label>
+                        {{ form.password2 }}
+                        <button type="button" class="btn btn-sm position-absolute top-50 end-0 me-2" 
+                                onclick="togglePassword('id_password2', this)" style="background: none; border: none;">
+                            👁️
+                        </button>
+                        {% if form.password2.errors %}
+                            <div class="text-danger small">{{ form.password2.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100 mb-3">Sign Up</button>
+                </form>
+
+                <div class="text-center mb-3">
+                    <div class="text-muted my-3">─ OR ─</div>
+                    
+                    <a href="/accounts/google/login/" 
+                       class="btn btn-outline-dark d-flex align-items-center justify-content-center w-100"
+                       style="padding: 10px; text-decoration: none;">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUxIDkuMjA0NTVWOS4wOTU0NUg5LjE4VjEwLjc3MjdIMTMuNDlDMTMuMTIgMTIuNjAwOSAxMS40OCAxMy45NTQ1IDkuMTggMTMuOTU0NUM2LjQzIDEzLjk1NDUgNC4xOCAxMS43MDQ1IDQuMTggOC45NTQ1NUM0LjE4IDYuMjA0NTUgNi40MyAzLjk1NDU1IDkuMTggMy45NTQ1NUMxMC42OSAzLjk1NDU1IDEyLjAzIDQuNjYzNjQgMTIuODkgNS43NzI3M0wxNC44MyAzLjgzMTgyQzEzLjI2IDIuMzQwOTEgMTEuMzEgMS40NTQ1NSA5LjE4IDEuNDU0NTVDNC42MiAxLjQ1NDU1IDEuMDEgNS4wNjM2NCAxLjAxIDkuNjM2MzZDMS4wMSAxNC4yMDkxIDQuNjIgMTcuODE4MiA5LjE4IDE3LjgxODJDMTMuMzMgMTcuODE4MiAxNi42NCAxNC43NzI3IDE2LjY0IDkuNjM2MzZDMTYuNjQgOC44NjM2NCAxNi41NiA4LjExODE4IDE2LjUxIDcuMzYzNjRMMTYuNTEgOS4yMDQ1NVoiIGZpbGw9IiM0Mjg1RjIiLz4KPC9zdmc+Cg==" 
+                             alt="Google" style="width: 20px; height: 20px; margin-right: 12px;">
+                        Sign up with Google
+                    </a>
+                </div>
+                
+                <div class="text-center">
+                    <p class="mb-0">Already have an account? <a href="{% url 'base:login' %}" class="text-decoration-none">Login here</a></p>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-        function togglePassword(inputId, button) {
-            const passwordInput = document.getElementById(inputId);
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                button.textContent = '🙈';
-            } else {
-                passwordInput.type = 'password';
-                button.textContent = '👁️';
-            }
+<script>
+    function togglePassword(inputId, button) {
+        const passwordInput = document.getElementById(inputId);
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            button.textContent = '🙈';
+        } else {
+            passwordInput.type = 'password';
+            button.textContent = '👁️';
         }
-    </script>
-</body>
-</html>
+    }
+</script>
+{% endblock %}

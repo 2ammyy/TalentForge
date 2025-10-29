@@ -1,49 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Logged Out - TalentForge</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 100px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-            text-align: center;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .success {
-            color: #28a745;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 10px;
-            background: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-        .btn:hover {
-            background: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="success">✓ You have been successfully logged out!</div>
-        <p>Thank you for using TalentForge.</p>
-        <div>
-            <a href="{% url 'base:login' %}" class="btn">Login Again</a>
-            <a href="{% url 'base:home' %}" class="btn">Go to Home</a>
+{% extends 'base.html' %}
+
+{% block title %}Logged Out - TalentForge{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow text-center">
+            <div class="card-body p-5">
+                <div class="text-success mb-3">
+                    <i class="fas fa-check-circle fa-4x"></i>
+                </div>
+                <h2 class="mb-3">You have been successfully logged out!</h2>
+                <p class="text-muted mb-4">Thank you for using TalentForge.</p>
+                <div class="d-grid gap-2 d-md-block">
+                    <a href="{% url 'base:login' %}" class="btn btn-primary me-2">Login Again</a>
+                    <a href="{% url 'base:home' %}" class="btn btn-outline-secondary">Go to Home</a>
+                </div>
+            </div>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

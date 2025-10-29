@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Account - TalentForge{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-danger text-white text-center">
+                <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Delete Account</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="alert-heading">Warning: This action cannot be undone!</h5>
+                    <hr>
+                    <p class="mb-0">All your data will be permanently deleted including:</p>
+                    <ul class="mb-2">
+                        <li>Your profile information</li>
+                        <li>Your posts and contributions</li>
+                        <li>Your profile pictures</li>
+                        <li>Your account settings</li>
+                    </ul>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="confirmation_text" class="form-label">
+                            To confirm, type <strong class="text-danger">DELETE MY ACCOUNT</strong> below:
+                        </label>
+                        <input type="text" class="form-control" id="confirmation_text" name="confirmation_text" 
+                               placeholder="DELETE MY ACCOUNT" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Enter your password:</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="Your current password" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg" 
+                                onclick="return confirm('Are you absolutely sure? This action cannot be reversed!')">
+                            <i class="fas fa-trash-alt"></i> Permanently Delete My Account
+                        </button>
+                        <a href="{% url 'base:profile_settings' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
