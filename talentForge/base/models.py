@@ -5,10 +5,6 @@ from django.dispatch import receiver
 import os
 import shutil
 
-<<<<<<< HEAD
-
-=======
->>>>>>> main
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)

@@ -238,10 +238,6 @@ def edit_profile(request):
             # Save the profile with form handling
             form.save()
             
-<<<<<<< HEAD
-            
-=======
->>>>>>> main
             # Update user information
             request.user.first_name = form.cleaned_data['first_name']
             request.user.last_name = form.cleaned_data['last_name']
