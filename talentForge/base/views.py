@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
@@ -7,16 +7,14 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse_lazy
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate, logout
-from django.contrib import messages
+from django.contrib.auth.models import User
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, CustomPasswordResetForm, CustomSetPasswordForm, ProfileEditForm
 from .models import UserProfile
 import random
 import string
-from django.contrib.auth.models import User
-from django.utils import timezone
 from datetime import timedelta
+from .forms import ProfileEditForm
+
 
 
 
@@ -128,6 +126,7 @@ def custom_login(request):
                 else:
                     messages.error(request, 'Your account is not active. Please verify your email.')
             else:
+                # This will trigger the form errors
                 messages.error(request, 'Invalid email/username or password.')
     else:
         form = CustomAuthenticationForm()
@@ -181,8 +180,48 @@ def send_verification_email(email, code):
 #     template_name = 'registration/password_reset_complete.html'
 
 
-
+# ✅ ADDED: Delete profile view
 @login_required
+def delete_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        password = request.POST.get('password')
+        
+        # Verify password
+        if not user.check_password(password):
+            messages.error(request, "❌ Incorrect password. Please try again.")
+            return redirect('base:delete_profile')
+        
+        # Confirm deletion text
+        confirmation_text = request.POST.get('confirmation_text', '')
+        if confirmation_text != 'DELETE MY ACCOUNT':
+            messages.error(request, "❌ Please type 'DELETE MY ACCOUNT' to confirm deletion.")
+            return redirect('base:delete_profile')
+        
+        # Store username for success message
+        username = user.username
+        
+        # Logout the user before deletion
+        logout(request)
+        
+        # Delete the user (this will cascade to UserProfile due to CASCADE delete)
+        user.delete()
+        
+        messages.success(request, f"✅ Account '{username}' has been permanently deleted.")
+        return redirect('base:home')
+    
+    return render(request, 'registration/delete_profile.html')
+
+#  Profile settings page with delete option
+@login_required
+def profile_settings(request):
+    try:
+        profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    return render(request, 'registration/profile_settings.html', {'profile': profile})
+
 @login_required
 def edit_profile(request):
     try:
@@ -193,20 +232,10 @@ def edit_profile(request):
     if request.method == 'POST':
         form = ProfileEditForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            # Sauvegarder le profil
-            profile = form.save(commit=False)
-            profile.user = request.user
+            # Save the profile with form handling
+            form.save()
             
-            # Gérer la suppression de la photo
-            if form.cleaned_data.get('remove_profile_picture'):
-                if profile.profile_picture:
-                    profile.profile_picture.delete(save=False)
-                    profile.profile_picture = None
-                profile.profile_picture_url = ''  # Supprimer aussi l'URL si elle existe
-            
-            profile.save()
-            
-            # Mettre à jour les informations de l'utilisateur
+            # Update user information
             request.user.first_name = form.cleaned_data['first_name']
             request.user.last_name = form.cleaned_data['last_name']
             request.user.email = form.cleaned_data['email']
@@ -225,6 +254,7 @@ def edit_profile(request):
         form = ProfileEditForm(instance=profile, initial=initial_data)
     
     return render(request, 'registration/edit_profile.html', {'form': form})
+
 @login_required
 def view_profile(request):
     try:
@@ -233,11 +263,10 @@ def view_profile(request):
         profile = UserProfile.objects.create(user=request.user)
     
     return render(request, 'registration/view_profile.html', {'profile': profile})
-
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 
 @login_required
 def social_signup_redirect(request):
-    """Redirige IMMÉDIATEMENT après une inscription sociale réussie"""
+    """redirect immediately after a successful social signup"""
     return redirect('base:home')
