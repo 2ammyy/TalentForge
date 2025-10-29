@@ -13,6 +13,8 @@ from .models import UserProfile
 import random
 import string
 from datetime import timedelta
+from .forms import ProfileEditForm
+
 
 from .forms import ProfileEditForm
 
@@ -224,7 +226,6 @@ def profile_settings(request):
     return render(request, 'registration/profile_settings.html', {'profile': profile})
 
 @login_required
-@login_required
 def edit_profile(request):
     try:
         profile = request.user.userprofile
@@ -237,7 +238,10 @@ def edit_profile(request):
             # Save the profile with form handling
             form.save()
             
+<<<<<<< HEAD
             
+=======
+>>>>>>> main
             # Update user information
             request.user.first_name = form.cleaned_data['first_name']
             request.user.last_name = form.cleaned_data['last_name']

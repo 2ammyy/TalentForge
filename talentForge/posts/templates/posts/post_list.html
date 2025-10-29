@@ -1,10 +1,9 @@
-
 {% extends "layout.html" %}
 {% load static %}
 
 {% block subtitle %}All Posts{% endblock %}
 
-{% block posts_content %}
+{% block content %}
 <div class="posts-container">
     <div class="posts-header">
         <h2>📝 All Posts</h2>
@@ -19,24 +18,162 @@
             </div>
         </div>
         
-        {% if post.title %}
-        <h4 class="post-title">{{ post.title }}</h4>
-        {% endif %}
-        
-        <div class="post-content">
-            <p>{{ post.content }}</p>
+        <div class="post-type-badge">
+            <span class="badge {{ post.type }}">{{ post.get_type_display }}</span>
         </div>
 
-        {% if post.image %}
-        <div class="post-media">
-            <img src="{{ post.image.url }}" class="post-image">
+        {% if post.type == 'poll' %}
+        <div class="poll-section">
+            <h5 class="poll-question">📊 {{ post.content }}</h5>
+            
+            {% if post.poll_options.all %}
+            <form class="poll-form" data-post-id="{{ post.id }}">
+                {% csrf_token %}
+                <div class="poll-options">
+                    {% for option in post.poll_options.all %}
+                    <div class="poll-option" id="option-{{ option.id }}">
+                        <label class="poll-label">
+                            <input type="radio" name="poll_option" value="{{ option.id }}" class="poll-radio">
+                            <span class="option-text">{{ option.text }}</span>
+                        </label>
+                        <div class="vote-info">
+                            <span class="vote-count" id="votes-{{ option.id }}">{{ option.votes }}</span>
+                            <span class="vote-label">votes</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <button type="submit" class="submit-vote-btn" disabled>🗳️ Submit Vote</button>
+                
+                <div class="poll-total">
+                    <small>Total votes: <strong id="total-{{ post.id }}">{{ post.total_votes|default:0 }}</strong></small>
+                </div>
+            </form>
+            {% else %}
+            <div class="no-options">
+                <p>⚠️ No voting options available for this poll</p>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
-        
-        {% if post.video %}
-        <div class="post-media">
-            <video controls src="{{ post.video.url }}" class="post-video"></video>
-        </div>
+
+        {% else %}
+            {% if post.title %}
+            <h4 class="post-title">{{ post.title }}</h4>
+            {% endif %}
+            
+            <div class="post-content">
+                <p>{{ post.content }}</p>
+            </div>
+
+            <!-- JOB OFFERS WITH DEBUG INFO -->
+            {% if post.type == 'job' %}
+            <div class="job-section">
+                <!-- DEBUG INFO - Visible for troubleshooting -->
+                <div style="background: {% if post.job_details %}#e8f5e8{% else %}#ffeaa7{% endif %}; padding: 0.5rem; border-radius: 5px; margin-bottom: 1rem;">
+                    <small style="color: {% if post.job_details %}#2d5016{% else %}#856404{% endif %};">
+                        {% if post.job_details %}✅ JobDetails FOUND - {{ post.job_details.company }}{% else %}❌ NO JobDetails - Post ID: {{ post.id }}{% endif %}
+                    </small>
+                </div>
+                
+                <div class="job-header">
+                    <div class="job-title-section">
+                        <h5 class="job-title">💼 {{ post.title|default:"Job Position" }}</h5>
+                        {% if post.job_details %}
+                        <span class="company-name">at {{ post.job_details.company }}</span>
+                        {% else %}
+                        <span class="company-name">at Company Name</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="job-meta">
+                        {% if post.job_details %}
+                            <span class="job-location">📍 {{ post.job_details.location|default:"Location not specified" }}</span>
+                            <span class="job-work-mode">🏢 {{ post.job_details.get_work_mode_display|default:"Work mode not specified" }}</span>
+                        {% else %}
+                            <span class="job-location">📍 Location not specified</span>
+                            <span class="job-work-mode">🏢 Work mode not specified</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="job-details-grid">
+                    <div class="job-detail-card">
+                        <div class="detail-icon">🕒</div>
+                        <div class="detail-content">
+                            <strong>Employment Type</strong>
+                            <span>
+                                {% if post.job_details and post.job_details.employment_type %}
+                                    {{ post.job_details.get_employment_type_display }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% if post.job_details and post.job_details.salary_range %}
+                    <div class="job-detail-card">
+                        <div class="detail-icon">💰</div>
+                        <div class="detail-content">
+                            <strong>Salary Range</strong>
+                            <span>
+                                {% if post.job_details.salary_range == '0-30k' %}$0 - $30,000
+                                {% elif post.job_details.salary_range == '30k-50k' %}$30,000 - $50,000
+                                {% elif post.job_details.salary_range == '50k-80k' %}$50,000 - $80,000
+                                {% elif post.job_details.salary_range == '80k-120k' %}$80,000 - $120,000
+                                {% elif post.job_details.salary_range == '120k+' %}$120,000+
+                                {% elif post.job_details.salary_range == 'negotiable' %}Negotiable
+                                {% else %}{{ post.job_details.salary_range }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if post.job_details and post.job_details.skills_required %}
+                <div class="job-skills">
+                    <h6>🛠️ Required Skills</h6>
+                    <div class="skills-list">
+                        {% for skill in post.job_details.skills_list %}
+                        <span class="skill-tag">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if post.job_details and post.job_details.benefits %}
+                <div class="job-benefits">
+                    <h6>🎁 Company Benefits</h6>
+                    <p>{{ post.job_details.benefits }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="job-apply">
+                    {% if post.job_details and post.job_details.application_email %}
+                    <a href="mailto:{{ post.job_details.application_email }}?subject=Application for {{ post.title|default:'Job Position' }}" class="apply-btn">
+                        📧 Apply Now
+                    </a>
+                    {% else %}
+                    <a href="#" class="apply-btn" onclick="alert('Application email not specified. Please contact the poster for application details.')">
+                        📧 Apply Now
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if post.image %}
+            <div class="post-media">
+                <img src="{{ post.image.url }}" class="post-image">
+            </div>
+            {% endif %}
+            
+            {% if post.video %}
+            <div class="post-media">
+                <video controls src="{{ post.video.url }}" class="post-video"></video>
+            </div>
+            {% endif %}
         {% endif %}
 
         <div class="post-actions">
@@ -44,9 +181,18 @@
                 💬 Comments ({{ post.comments.count }})
             </a>
             <span class="action-separator">|</span>
-            <a href="{% url 'posts:react_post' post.pk %}" class="action-link">
-                ❤️ Reactions ({{ post.reactions.count }})
-            </a>
+            
+            <div class="reaction-section">
+                <button class="reaction-btn like-btn" data-post-id="{{ post.id }}" data-reaction-type="like">
+                    ❤️ Like
+                </button>
+                <span class="reaction-count" id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
+            </div>
+            
+            {% if post.type == 'poll' %}
+            <span class="action-separator">|</span>
+            <span class="action-link">🗳️ {{ post.total_votes|default:0 }} votes</span>
+            {% endif %}
         </div>
     </div>
     {% empty %}
@@ -58,125 +204,246 @@
 </div>
 
 <style>
-    .posts-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-
-    .posts-header {
-        margin-bottom: 2rem;
-        text-align: center;
-    }
-
-    .posts-header h2 {
-        color: #333;
-        margin: 0;
-    }
-
-    .post-card {
-        background: white;
-        border-radius: 10px;
-        padding: 2rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-    }
-
-    .post-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .post-author strong {
-        color: #333;
-        font-size: 1.1rem;
-    }
-
-    .post-date {
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    .post-title {
-        color: #2c3e50;
-        margin-bottom: 1rem;
-        font-size: 1.3rem;
-    }
-
-    .post-content {
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
-        color: #555;
-    }
-
-    .post-media {
-        margin: 1.5rem 0;
-    }
-
-    .post-image {
-        max-width: 100%;
-        height: auto;
-        border-radius: 8px;
-    }
-
-    .post-video {
-        width: 100%;
-        max-height: 500px;
-        border-radius: 8px;
-    }
-
-    .post-actions {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid #eee;
-    }
-
-    .action-link {
-        color: #007bff;
-        text-decoration: none;
-        font-size: 0.9rem;
-    }
-
-    .action-link:hover {
-        color: #0056b3;
-        text-decoration: underline;
-    }
-
-    .action-separator {
-        color: #ddd;
-    }
-
-    .no-posts {
-        text-align: center;
-        padding: 4rem 2rem;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    .no-posts p {
-        color: #666;
-        font-size: 1.1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .create-first-post {
-        background-color: #28a745;
-        color: white;
-        padding: 0.75rem 2rem;
-        text-decoration: none;
-        border-radius: 5px;
-        font-weight: bold;
-    }
-
-    .create-first-post:hover {
-        background-color: #218838;
-        color: white;
-        text-decoration: none;
-    }
+/* Your existing CSS here - keep it exactly as you had it */
+.posts-container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+.posts-header { margin-bottom: 2rem; text-align: center; }
+.posts-header h2 { color: #333; margin: 0; }
+.post-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 2rem; border: 1px solid #e9ecef; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.post-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); }
+.post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.post-author strong { color: #333; font-size: 1.1rem; }
+.post-date { color: #666; font-size: 0.9rem; }
+.post-type-badge { margin-bottom: 1rem; }
+.badge { padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge.poll { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.badge.job { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+.badge.text { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+.badge.image { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+.badge.video { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+.post-title { color: #2c3e50; margin-bottom: 1rem; font-size: 1.3rem; font-weight: 600; }
+.post-content { margin-bottom: 1.5rem; line-height: 1.6; color: #555; }
+.poll-section { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 1.5rem; border-radius: 12px; margin: 1rem 0; border: 1px solid #e1e8ed; }
+.poll-question { font-size: 1.2em; font-weight: 600; color: #2c3e50; margin-bottom: 1.5rem; text-align: center; }
+.poll-form { margin-top: 1rem; }
+.poll-options { display: flex; flex-direction: column; gap: 0.8rem; }
+.poll-option { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 10px; transition: all 0.3s ease; border: 2px solid transparent; background: white; cursor: pointer; }
+.poll-option:hover { border-color: #007bff; transform: translateX(5px); }
+.poll-option.selected { background: #e3f2fd; border-color: #007bff; box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2); }
+.poll-option.voted { background: #e8f5e8; border-color: #28a745; }
+.poll-label { display: flex; align-items: center; cursor: pointer; flex: 1; margin: 0; }
+.poll-radio { margin-right: 12px; transform: scale(1.2); cursor: pointer; }
+.option-text { font-size: 1rem; flex: 1; font-weight: 500; }
+.vote-info { display: flex; flex-direction: column; align-items: center; min-width: 60px; }
+.vote-count { color: #2c3e50; font-size: 1.1rem; font-weight: bold; transition: transform 0.3s ease; }
+.vote-label { color: #666; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.submit-vote-btn { width: 100%; padding: 14px; background: #6c757d; color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; margin-top: 1.5rem; }
+.submit-vote-btn:not(:disabled) { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.submit-vote-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+.submit-vote-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+.poll-total { text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #dee2e6; color: #666; font-weight: bold; }
+.job-section { background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; border: 1px solid #fed7d7; }
+.job-header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #fed7d7; }
+.job-title-section { margin-bottom: 0.5rem; }
+.job-title { margin: 0 0 0.25rem 0; color: #2d3748; font-size: 1.3rem; font-weight: 700; }
+.company-name { color: #718096; font-size: 1rem; font-style: italic; }
+.job-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
+.job-location, .job-work-mode { background: white; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500; color: #4a5568; border: 1px solid #e2e8f0; }
+.job-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.job-detail-card { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: white; border-radius: 10px; border: 1px solid #e2e8f0; transition: transform 0.2s ease; }
+.job-detail-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+.detail-icon { font-size: 1.5rem; }
+.detail-content { display: flex; flex-direction: column; }
+.detail-content strong { color: #4a5568; font-size: 0.85rem; margin-bottom: 0.25rem; }
+.detail-content span { color: #2d3748; font-weight: 600; font-size: 0.95rem; }
+.job-skills, .job-benefits { margin-bottom: 1.5rem; }
+.job-skills h6, .job-benefits h6 { margin: 0 0 0.75rem 0; color: #2d3748; font-size: 1rem; font-weight: 600; }
+.skills-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.skill-tag { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 0.8rem; border-radius: 15px; font-size: 0.8rem; font-weight: 500; }
+.job-benefits p { margin: 0; line-height: 1.5; color: #4a5568; background: white; padding: 1rem; border-radius: 8px; border-left: 4px solid #f56565; }
+.job-apply { text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #fed7d7; }
+.apply-btn { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 0.75rem 2rem; text-decoration: none; border-radius: 25px; font-weight: bold; transition: all 0.3s ease; display: inline-block; }
+.apply-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4); color: white; text-decoration: none; }
+.post-media { margin: 1.5rem 0; }
+.post-image { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+.post-video { width: 100%; max-height: 500px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+.post-actions { display: flex; align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef; margin-top: 1rem; flex-wrap: wrap; }
+.action-link { color: #007bff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s ease; }
+.action-link:hover { color: #0056b3; text-decoration: underline; }
+.action-separator { color: #ddd; }
+.reaction-section { display: flex; align-items: center; gap: 0.5rem; }
+.reaction-btn { background: none; border: 1px solid #e9ecef; padding: 0.4rem 0.8rem; border-radius: 20px; cursor: pointer; transition: all 0.2s ease; font-size: 0.9rem; }
+.reaction-btn:hover { background: #f8f9fa; border-color: #007bff; transform: scale(1.05); }
+.reaction-btn.liked { background: #fff5f5; border-color: #dc3545; color: #dc3545; }
+.reaction-count { font-size: 0.9rem; font-weight: 500; color: #666; }
+.no-options { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1rem; text-align: center; color: #856404; }
+.no-posts { text-align: center; padding: 4rem 2rem; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.no-posts p { color: #666; font-size: 1.1rem; margin-bottom: 1.5rem; }
+.create-first-post { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 2rem; text-decoration: none; border-radius: 25px; font-weight: bold; transition: all 0.3s ease; }
+.create-first-post:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); color: white; text-decoration: none; }
+@media (max-width: 768px) { .posts-container { padding: 1rem; } .post-card { padding: 1rem; } .job-details-grid { grid-template-columns: 1fr; } .job-meta { flex-direction: column; gap: 0.5rem; } .poll-option { flex-direction: column; align-items: stretch; gap: 0.5rem; } .vote-info { flex-direction: row; justify-content: space-between; width: 100%; } .post-actions { flex-direction: column; align-items: flex-start; gap: 0.5rem; } .action-separator { display: none; } }
 </style>
+
+<script>
+// Your existing JavaScript here - keep it exactly as you had it
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Poll and reaction script loaded');
+    document.querySelectorAll('.poll-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const form = this.closest('.poll-form');
+            const submitBtn = form.querySelector('.submit-vote-btn');
+            if (this.checked) {
+                submitBtn.disabled = false;
+                form.querySelectorAll('.poll-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.closest('.poll-option').classList.add('selected');
+            }
+        });
+    });
+    document.querySelectorAll('.poll-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const selectedRadio = this.querySelector('input[name="poll_option"]:checked');
+            if (!selectedRadio) {
+                alert('Please select an option first!');
+                return;
+            }
+            const optionId = selectedRadio.value;
+            submitVote(optionId, this);
+        });
+    });
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const reactionType = this.dataset.reactionType;
+            addReaction(postId, reactionType, this);
+        });
+    });
+    function submitVote(optionId, formElement) {
+        console.log('🚀 Submitting vote for option:', optionId);
+        const submitBtn = formElement.querySelector('.submit-vote-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Voting...';
+        submitBtn.style.background = '#6c757d';
+        fetch(`/posts/poll/vote/${optionId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `csrfmiddlewaretoken=${getCSRFToken()}`
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                console.log('✅ Vote successful!');
+                updatePollResults(data, formElement);
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+                resetForm(formElement);
+            }
+        })
+        .catch(error => {
+            console.error('💥 Error:', error);
+            alert('Error voting. Please try again.');
+            resetForm(formElement);
+        });
+    }
+    function addReaction(postId, reactionType, buttonElement) {
+        console.log('❤️ Adding reaction for post:', postId);
+        buttonElement.classList.add('liked');
+        buttonElement.textContent = '❤️ Liked!';
+        buttonElement.disabled = true;
+        fetch(`/posts/reaction/${postId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'reaction_type': reactionType
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const reactionCount = document.querySelector(`#reaction-count-${postId}`);
+                if (reactionCount) {
+                    reactionCount.textContent = data.total_reactions;
+                    reactionCount.style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        reactionCount.style.transform = 'scale(1)';
+                    }, 300);
+                }
+            } else {
+                resetReactionButton(buttonElement);
+                alert('Error adding reaction: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('💥 Reaction error:', error);
+            resetReactionButton(buttonElement);
+            alert('Error adding reaction. Please try again.');
+        });
+    }
+    function resetReactionButton(buttonElement) {
+        buttonElement.classList.remove('liked');
+        buttonElement.textContent = '❤️ Like';
+        buttonElement.disabled = false;
+    }
+    function updatePollResults(data, formElement) {
+        console.log('🔄 Updating poll results');
+        if (data.all_options) {
+            data.all_options.forEach(optionData => {
+                const voteCountElement = document.querySelector(`#votes-${optionData.id}`);
+                if (voteCountElement) {
+                    voteCountElement.textContent = optionData.votes;
+                    voteCountElement.style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        voteCountElement.style.transform = 'scale(1)';
+                    }, 300);
+                }
+            });
+        }
+        const postId = formElement.dataset.postId;
+        const totalElement = document.querySelector(`#total-${postId}`);
+        if (totalElement && data.total_votes !== undefined) {
+            totalElement.textContent = data.total_votes;
+        }
+        if (data.voted_option_id) {
+            const votedOption = document.querySelector(`input[value="${data.voted_option_id}"]`);
+            if (votedOption) {
+                votedOption.closest('.poll-option').classList.add('voted');
+                votedOption.closest('.poll-option').classList.remove('selected');
+            }
+        }
+        formElement.querySelectorAll('input, button').forEach(element => {
+            element.disabled = true;
+        });
+        formElement.querySelector('.submit-vote-btn').textContent = '✓ Voted!';
+        formElement.querySelector('.submit-vote-btn').style.background = '#28a745';
+    }
+    function resetForm(formElement) {
+        const submitBtn = formElement.querySelector('.submit-vote-btn');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🗳️ Submit Vote';
+        submitBtn.style.background = '';
+    }
+    function getCSRFToken() {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        return csrfToken ? csrfToken.value : '';
+    }
+});
+</script>
+
 {% endblock %}

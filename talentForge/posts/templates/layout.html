@@ -75,7 +75,7 @@
             <a href="{% url 'base:home' %}" class="nav-button {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
                 🏠 Home
             </a>
-            <a href="{% url 'posts:post_list' %}" class="nav-button {% if request.resolver_match.url_name == 'post_list' %}active{% endif %}">
+            <a href="{% url 'posts:posts_list' %}" class="nav-button {% if request.resolver_match.url_name == 'posts_list' %}active{% endif %}">
                 📝 Posts
             </a>
             <a href="{% url 'posts:post_create' %}" class="nav-button {% if request.resolver_match.url_name == 'post_create' %}active{% endif %}">
