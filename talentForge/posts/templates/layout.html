@@ -75,15 +75,20 @@
             <a href="{% url 'base:home' %}" class="nav-button {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
                 🏠 Home
             </a>
-            <a href="{% url 'posts:posts_list' %}" class="nav-button {% if request.resolver_match.url_name == 'posts_list' %}active{% endif %}">
+            <a href="{% url 'posts:post_list' %}" class="nav-button {% if request.resolver_match.url_name == 'posts_list' %}active{% endif %}">
                 📝 Posts
             </a>
             <a href="{% url 'posts:post_create' %}" class="nav-button {% if request.resolver_match.url_name == 'post_create' %}active{% endif %}">
                 ➕ Create Post
             </a>
+            <!-- Ceci est remplacé temprairement par un lien inactif -->
             <a href="{% url 'posts:notifications' %}" class="nav-button {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
                 🔔 Notifications
             </a>
+            <a href="#" class="nav-button" onclick="alert('Notifications feature coming soon!')">
+                🔔 Notifications
+            </a>
+            
             
             {% if user.is_authenticated %}
                 <form method="post" action="{% url 'base:logout' %}" style="margin-left: auto;">

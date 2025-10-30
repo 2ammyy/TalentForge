@@ -1,95 +1,24 @@
+<!-- templates/posts/notifications.html -->
 {% extends "layout.html" %}
 {% load static %}
 
 {% block subtitle %}Notifications{% endblock %}
 
 {% block content %}
-<div class="notifications-container">
-    <h2>🔔 Notifications</h2>
-    
-    {% if notifications %}
-    <div class="notifications-list">
-        {% for notification in notifications %}
-        <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
-            <div class="notification-content">
-                <p>{{ notification.message }}</p>
-                <small>{{ notification.created_at|timesince }} ago</small>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>🔔 Notifications</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-center text-muted">
+                        No new notifications.
+                    </p>
+                </div>
             </div>
-            <button class="mark-read-btn" data-notification-id="{{ notification.id }}">
-                ✓
-            </button>
         </div>
-        {% endfor %}
     </div>
-    {% else %}
-    <div class="no-notifications">
-        <p>No new notifications</p>
-    </div>
-    {% endif %}
 </div>
-
-<style>
-.notifications-container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-.notification-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: white;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.notification-item.unread {
-    background: #f0f8ff;
-    border-left: 4px solid #007bff;
-}
-
-.mark-read-btn {
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    cursor: pointer;
-}
-
-.no-notifications {
-    text-align: center;
-    padding: 3rem;
-    background: white;
-    border-radius: 8px;
-    color: #666;
-}
-</style>
-
-<script>
-// Script pour marquer les notifications comme lues
-document.querySelectorAll('.mark-read-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const notificationId = this.dataset.notificationId;
-        
-        fetch(`/posts/notifications/${notificationId}/read/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                this.closest('.notification-item').classList.remove('unread');
-                this.style.display = 'none';
-            }
-        });
-    });
-});
-</script>
 {% endblock %}
