@@ -14,4 +14,5 @@ urlpatterns = [
     path('notifications/', views.notifications, name='notifications'),
     path('report/<int:post_id>/', views.report_post, name='report_post'),
     path('my-reports/', views.my_reports, name='my_reports'),
+    path('test-email/', views.test_email_view, name='test_email'),
 ]
