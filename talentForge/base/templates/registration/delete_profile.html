@@ -11,8 +11,9 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-warning" role="alert">
-                    <h5 class="alert-heading">Warning: This action cannot be undone!</h5>
+                    <h5 class="alert-heading">Two-Step Account Deletion</h5>
                     <hr>
+                    <p class="mb-3">For security reasons, account deletion requires email verification.</p>
                     <p class="mb-0">All your data will be permanently deleted including:</p>
                     <ul class="mb-2">
                         <li>Your profile information</li>
@@ -22,27 +23,28 @@
                     </ul>
                 </div>
 
+                {% if user_email %}
+                <div class="alert alert-info">
+                    <i class="fas fa-envelope"></i>
+                    Verification code will be sent to: <strong>{{ user_email }}</strong>
+                </div>
+                {% endif %}
+
                 <form method="POST">
                     {% csrf_token %}
                     
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label for="confirmation_text" class="form-label">
-                            To confirm, type <strong class="text-danger">DELETE MY ACCOUNT</strong> below:
+                            To proceed, type <strong class="text-danger">DELETE MY ACCOUNT</strong> below:
                         </label>
                         <input type="text" class="form-control" id="confirmation_text" name="confirmation_text" 
                                placeholder="DELETE MY ACCOUNT" required>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="password" class="form-label">Enter your password:</label>
-                        <input type="password" class="form-control" id="password" name="password" 
-                               placeholder="Your current password" required>
+                        <div class="form-text">After confirmation, we'll send a verification code to your email automatically.</div>
                     </div>
                     
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-danger btn-lg" 
-                                onclick="return confirm('Are you absolutely sure? This action cannot be reversed!')">
-                            <i class="fas fa-trash-alt"></i> Permanently Delete My Account
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="fas fa-envelope"></i> Send Verification Code
                         </button>
                         <a href="{% url 'base:profile_settings' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Cancel
@@ -53,4 +55,14 @@
         </div>
     </div>
 </div>
+
+<script>
+// Auto-submit when user types the correct confirmation text
+document.getElementById('confirmation_text').addEventListener('input', function(e) {
+    if (this.value.toUpperCase() === 'DELETE MY ACCOUNT') {
+        // You can optionally auto-submit here, but it's better to let user click
+        document.querySelector('button[type="submit"]').focus();
+    }
+});
+</script>
 {% endblock %}

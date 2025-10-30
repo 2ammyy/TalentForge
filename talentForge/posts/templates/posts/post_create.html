@@ -65,55 +65,6 @@
                     <div class="file-previews" id="filePreviews"></div>
                 </div>
             </div>
-            <!-- Section Poll (cachée par défaut) -->
-<div id="poll-section" class="dynamic-section" style="display: none;">
-    <div class="section-header">
-        <h3>📊 Create Poll</h3>
-        <p>Create an engaging poll for the community</p>
-    </div>
-        
-        <!-- Poll Question -->
-        <div class="form-group">
-            <label for="id_poll_question">Poll Question *</label>
-            {{ form.poll_question }}
-            {% if form.poll_question.errors %}
-                <div class="error">{{ form.poll_question.errors }}</div>
-            {% endif %}
-        </div>
-    
-        <!-- Poll Options -->
-        <div class="form-group">
-            <label>Poll Options *</label>
-            <div class="poll-options-container">
-                <div class="poll-option-group">
-                    <span class="option-number">1</span>
-                    {{ form.poll_option_1 }}
-                </div>
-                <div class="poll-option-group">
-                    <span class="option-number">2</span>
-                    {{ form.poll_option_2 }}
-                </div>
-                <div class="poll-option-group">
-                    <span class="option-number">3</span>
-                    {{ form.poll_option_3 }}
-                </div>
-                <div class="poll-option-group">
-                    <span class="option-number">4</span>
-                    {{ form.poll_option_4 }}
-                </div>
-            </div>
-            <small class="help-text">At least 2 options required. Options 3 & 4 are optional.</small>
-        </div>
-        
-        <!-- Poll Duration -->
-        <div class="form-group">
-            <label for="id_poll_duration">Poll Duration</label>
-            {{ form.poll_duration }}
-        </div>
-    </div>
-            
-                
-
             
             <!-- Section Job Offer (cachée par défaut) -->
             <div id="job-section" class="dynamic-section" style="display: none;">
@@ -282,33 +233,6 @@
         font-size: 0.95rem;
     }
     
-    /* Styles pour les polls */
-    .poll-options-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .poll-option-group {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-    
-    .option-number {
-        background: #007bff;
-        color: white;
-        width: 35px;
-        height: 35px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-        flex-shrink: 0;
-    }
-    
     /* Styles pour les offres d'emploi */
     .job-details-grid {
         display: grid;
@@ -448,16 +372,6 @@
             gap: 0;
         }
         
-        .poll-option-group {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.5rem;
-        }
-        
-        .option-number {
-            align-self: flex-start;
-        }
-        
         .upload-options {
             flex-direction: column;
         }
@@ -469,7 +383,6 @@
         const postTypeSelect = document.getElementById('{{ form.type.id_for_label }}');
         const dynamicSections = document.getElementById('dynamic-sections');
         const defaultSection = document.getElementById('default-section');
-        const pollSection = document.getElementById('poll-section');
         const jobSection = document.getElementById('job-section');
         const charCounter = document.getElementById('charCounter');
         const contentTextarea = document.getElementById('{{ form.content.id_for_label }}');
@@ -482,7 +395,6 @@
         const submitBtn = document.getElementById('submitBtn');
         
         // Get all dynamic fields
-        const pollFields = document.querySelectorAll('.poll-field, .poll-option');
         const jobFields = document.querySelectorAll('.job-field');
         
         // Gestion du changement de type de post
@@ -493,7 +405,6 @@
         function updateFormForPostType(type) {
             // Masquer toutes les sections
             defaultSection.style.display = 'none';
-            pollSection.style.display = 'none';
             jobSection.style.display = 'none';
             charCounter.style.display = 'block';
             
@@ -504,7 +415,6 @@
             filePreviews.innerHTML = '';
             
             // Show/hide dynamic fields
-            pollFields.forEach(field => field.style.display = 'none');
             jobFields.forEach(field => field.style.display = 'none');
             
             // Afficher la section appropriée
@@ -514,11 +424,6 @@
                 case 'video':
                     defaultSection.style.display = 'block';
                     updatePlaceholder(type);
-                    break;
-                case 'poll':
-                    pollSection.style.display = 'block';
-                    charCounter.style.display = 'none';
-                    pollFields.forEach(field => field.style.display = 'block');
                     break;
                 case 'job':
                     jobSection.style.display = 'block';

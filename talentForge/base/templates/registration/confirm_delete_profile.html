@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Account Deletion - TalentForge{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-danger text-white text-center">
+                <h4 class="mb-0"><i class="fas fa-shield-alt"></i> Confirm Account Deletion</h4>
+            </div>
+            <div class="card-body">
+                {% if user_email %}
+                <div class="alert alert-info">
+                    <i class="fas fa-envelope"></i>
+                    Enter the verification code sent to: <strong>{{ user_email }}</strong>
+                </div>
+                {% endif %}
+
+                {% if debug %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-bug"></i>
+                    <strong>Development Mode:</strong> Check your console for the verification code.
+                </div>
+                {% endif %}
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Final Warning:</strong> This action cannot be undone. All your data will be permanently deleted.
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="verification_code" class="form-label">Verification Code:</label>
+                        <input type="text" class="form-control text-center" id="verification_code" name="verification_code" 
+                               maxlength="6" pattern="[0-9]{6}" title="Please enter a 6-digit code"
+                               placeholder="000000" required style="font-size: 18px; letter-spacing: 8px; font-weight: bold;">
+                        <div class="form-text">Enter the 6-digit code sent to your email</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="confirmation_text" class="form-label">
+                            Type <strong class="text-danger">DELETE MY ACCOUNT</strong> to confirm:
+                        </label>
+                        <input type="text" class="form-control" id="confirmation_text" name="confirmation_text" 
+                               placeholder="DELETE MY ACCOUNT" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="fas fa-trash-alt"></i> Permanently Delete My Account
+                        </button>
+                        <a href="{% url 'base:delete_profile' %}" class="btn btn-warning">
+                            <i class="fas fa-redo"></i> Resend Code
+                        </a>
+                        <a href="{% url 'base:profile_settings' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel Deletion
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-advance to next input (for better UX)
+document.getElementById('verification_code').addEventListener('input', function(e) {
+    if (this.value.length === 6) {
+        document.getElementById('confirmation_text').focus();
+    }
+});
+
+// Auto-submit when both fields are correctly filled
+function checkAutoSubmit() {
+    const code = document.getElementById('verification_code').value;
+    const confirmation = document.getElementById('confirmation_text').value;
+    
+    if (code.length === 6 && confirmation.toUpperCase() === 'DELETE MY ACCOUNT') {
+        document.querySelector('button[type="submit"]').focus();
+    }
+}
+
+document.getElementById('verification_code').addEventListener('input', checkAutoSubmit);
+document.getElementById('confirmation_text').addEventListener('input', checkAutoSubmit);
+</script>
+{% endblock %}

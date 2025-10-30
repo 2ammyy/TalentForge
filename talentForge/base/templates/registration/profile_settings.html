@@ -41,15 +41,17 @@
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <div class="card bg-light border-danger h-100">
-                            <div class="card-body text-center">
-                                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                                <h5 class="text-danger">Delete Account</h5>
-                                <p class="text-muted">Permanently delete your account and all data</p>
-                                <a href="{% url 'base:delete_profile' %}" class="btn btn-outline-danger">Delete Account</a>
-                            </div>
-                        </div>
-                    </div>
+    <div class="card bg-light border-danger h-100">
+        <div class="card-body text-center">
+            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+            <h5 class="text-danger">Delete Account</h5>
+            <p class="text-muted">Permanently delete your account and all data</p>
+            <a href="{% url 'base:delete_profile' %}" class="btn btn-outline-danger">
+                <i class="fas fa-trash-alt"></i> Delete Account
+            </a>
+        </div>
+    </div>
+</div>
                 </div>
             </div>
         </div>

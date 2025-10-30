@@ -1,5 +1,3 @@
-
-
 {% extends "layout.html" %}
 {% load static %}
 
@@ -10,8 +8,26 @@
     <!-- Post principal -->
     <div class="post-card">
         <div class="post-header">
-            <h3>{{ post.author.username }}’s Post</h3>
-            <span class="post-date">{{ post.created_at|date:"F j, Y, g:i a" }}</span>
+            <div class="post-header-content">
+                <h3>{{ post.author.username }}'s Post</h3>
+                <span class="post-date">{{ post.created_at|date:"F j, Y, g:i a" }}</span>
+            </div>
+            
+            <!-- BOUTON DE SIGNALEMENT AJOUTÉ ICI -->
+            <div class="post-actions-dropdown">
+                <div class="dropdown">
+                    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'posts:report_post' post.id %}">
+                                <i class="fas fa-flag"></i> Report Post
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
         
         <div class="post-content">
@@ -27,6 +43,42 @@
         {% if post.video %}
         <div class="post-media">
             <video controls src="{{ post.video.url }}" class="post-video"></video>
+        </div>
+        {% endif %}
+
+        <!-- ACTIONS DU POST -->
+        <div class="post-actions" style="display: flex; align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef; margin-top: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'posts:post_detail' post.pk %}" class="action-link" style="color: #007bff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s ease;">
+                💬 Comments ({{ post.comments.count }})
+            </a>
+            <span class="action-separator" style="color: #ddd;">|</span>
+            
+            <div class="reaction-section" style="display: flex; align-items: center; gap: 0.5rem;">
+                <button class="reaction-btn like-btn" data-post-id="{{ post.id }}" data-reaction-type="like" style="background: none; border: 1px solid #e9ecef; padding: 0.4rem 0.8rem; border-radius: 20px; cursor: pointer; transition: all 0.2s ease; font-size: 0.9rem;">
+                    ❤️ Like
+                </button>
+                <span class="reaction-count" id="reaction-count-{{ post.id }}" style="font-size: 0.9rem; font-weight: 500; color: #666;">{{ post.reactions.count }}</span>
+            </div>
+            
+            <span class="action-separator" style="color: #ddd;">|</span>
+            <a href="{% url 'posts:share_post' post.id %}" class="action-link" style="color: #007bff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s ease;">
+                🔄 Share ({{ post.post_shares.count }})
+            </a>
+        </div>
+
+        <!-- SECTION DES PARTAGES -->
+        {% if post.post_shares.exists %}
+        <div class="shares-section" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+            <h6 style="margin-bottom: 0.5rem; color: #333;">🔄 Shared by</h6>
+            {% for share in post.post_shares.all %}
+            <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: white; border-radius: 5px;">
+                <strong>{{ share.user.username }}</strong>
+                {% if share.caption %}
+                <p style="margin: 0.25rem 0 0 0; color: #555; font-style: italic;">"{{ share.caption }}"</p>
+                {% endif %}
+                <small style="color: #999;">{{ share.created_at|timesince }} ago</small>
+            </div>
+            {% endfor %}
         </div>
         {% endif %}
     </div>
@@ -87,23 +139,78 @@
         padding: 2rem;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         margin-bottom: 2rem;
+        position: relative;
     }
 
     .post-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         margin-bottom: 1rem;
     }
 
+    .post-header-content {
+        flex: 1;
+    }
+
     .post-header h3 {
-        margin: 0;
+        margin: 0 0 0.5rem 0;
         color: #333;
     }
 
     .post-date {
         color: #666;
         font-size: 0.9rem;
+    }
+
+    /* STYLES POUR LE BOUTON DE SIGNALEMENT */
+    .post-actions-dropdown {
+        position: relative;
+    }
+
+    .dropdown-toggle {
+        background: none;
+        border: 1px solid #e9ecef;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #666;
+    }
+
+    .dropdown-toggle:hover {
+        background: #f8f9fa;
+        border-color: #007bff;
+        color: #007bff;
+    }
+
+    .dropdown-menu {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e9ecef;
+        min-width: 160px;
+    }
+
+    .dropdown-item {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .dropdown-item.text-danger {
+        color: #dc3545;
+    }
+
+    .dropdown-item.text-danger:hover {
+        background-color: #fff5f5;
+        color: #dc3545;
     }
 
     .post-content {
@@ -239,5 +346,119 @@
     .login-prompt a:hover {
         text-decoration: underline;
     }
+
+    /* Styles pour les actions du post */
+    .action-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+    .reaction-btn:hover {
+        background: #f8f9fa;
+        border-color: #007bff;
+        transform: scale(1.05);
+    }
+
+    .reaction-btn.liked {
+        background: #fff5f5;
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+
+    @media (max-width: 768px) {
+        .post-detail-container {
+            padding: 1rem;
+        }
+        
+        .post-card {
+            padding: 1.5rem;
+        }
+        
+        .post-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .post-actions-dropdown {
+            align-self: flex-end;
+        }
+        
+        .comments-section {
+            padding: 1.5rem;
+        }
+    }
 </style>
+
+<!-- Ajouter Bootstrap Icons si pas déjà inclus -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Post reactions script loaded');
+    
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const reactionType = this.dataset.reactionType;
+            addReaction(postId, reactionType, this);
+        });
+    });
+
+    function addReaction(postId, reactionType, buttonElement) {
+        console.log('❤️ Adding reaction for post:', postId);
+        buttonElement.classList.add('liked');
+        buttonElement.textContent = '❤️ Liked!';
+        buttonElement.disabled = true;
+        
+        fetch(`/posts/reaction/${postId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'reaction_type': reactionType
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const reactionCount = document.querySelector(`#reaction-count-${postId}`);
+                if (reactionCount) {
+                    reactionCount.textContent = data.total_reactions;
+                    reactionCount.style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        reactionCount.style.transform = 'scale(1)';
+                    }, 300);
+                }
+            } else {
+                resetReactionButton(buttonElement);
+                alert('Error adding reaction: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('💥 Reaction error:', error);
+            resetReactionButton(buttonElement);
+            alert('Error adding reaction. Please try again.');
+        });
+    }
+
+    function resetReactionButton(buttonElement) {
+        buttonElement.classList.remove('liked');
+        buttonElement.textContent = '❤️ Like';
+        buttonElement.disabled = false;
+    }
+
+    function getCSRFToken() {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        return csrfToken ? csrfToken.value : '';
+    }
+});
+</script>
+
 {% endblock %}

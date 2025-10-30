@@ -13,16 +13,111 @@ from .models import UserProfile
 import random
 import string
 from datetime import timedelta
-from .forms import ProfileEditForm
-
-
-
 
 # Stockage temporaire pour les codes de vérification
 verification_codes = {}
+deletion_verification_codes = {}
 
 def generate_verification_code():
     return ''.join(random.choices(string.digits, k=6))
+
+def get_user_email(user):
+    """Get user email, handling both regular and social authentication users"""
+    # First try the regular email field
+    if user.email:
+        return user.email
+    
+    # For social authentication users
+    if hasattr(user, 'socialaccount_set'):
+        social_accounts = user.socialaccount_set.all()
+        if social_accounts:
+            social_account = social_accounts[0]
+            extra_data = social_account.extra_data
+            
+            # Debug: Print social account data
+            print(f"DEBUG: Social account extra_data: {extra_data}")
+            
+            # Try different possible email fields in social account data
+            email = extra_data.get('email')
+            if email:
+                return email
+                
+            # For Google, email might be in different fields
+            email = extra_data.get('emailAddress')
+            if email:
+                return email
+                
+            # Some providers might have it under 'emails'
+            emails = extra_data.get('emails')
+            if emails and isinstance(emails, list) and len(emails) > 0:
+                email_entry = emails[0]
+                if isinstance(email_entry, dict):
+                    return email_entry.get('value')
+                else:
+                    return email_entry
+    
+    # If we still can't find email, try to get from username if it looks like email
+    if '@' in user.username:
+        return user.username
+    
+    return None
+
+def send_verification_email(email, code):
+    subject = 'Verify Your TalentForge Account'
+    message = f'''
+    Welcome to TalentForge!
+    
+    Your verification code is: {code}
+    
+    This code will expire in 15 minutes.
+    
+    If you didn't create an account, please ignore this email.
+    
+    Best regards,
+    The TalentForge Team
+    '''
+    
+    try:
+        # ENVOI RÉEL PAR EMAIL ACTIVÉ
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        print(f"✅ Email sent to {email} with code: {code}")
+    except Exception as e:
+        print(f"❌ Failed to send email to {email}: {e}")
+        print(f"DEVELOPMENT MODE - Code for {email}: {code}")
+
+def send_deletion_verification_email(email, code):
+    """Send verification email for account deletion"""
+    subject = 'Confirm Account Deletion - TalentForge'
+    message = f'''
+You have requested to delete your TalentForge account.
+
+Your verification code is: {code}
+
+This code will expire in 15 minutes.
+
+If you did not request account deletion, please secure your account immediately.
+
+Best regards,
+The TalentForge Team
+'''
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        print(f"✅ Deletion verification email sent to {email} with code: {code}")
+    except Exception as e:
+        print(f"❌ Failed to send email to {email}: {e}")
+        print(f"DEVELOPMENT MODE - Deletion code for {email}: {code}")
 
 @login_required
 def home(request):
@@ -132,87 +227,159 @@ def custom_login(request):
         form = CustomAuthenticationForm()
     return render(request, 'registration/login.html', {'form': form})
 
-def send_verification_email(email, code):
-    subject = 'Verify Your TalentForge Account'
-    message = f'''
-    Welcome to TalentForge!
-    
-    Your verification code is: {code}
-    
-    This code will expire in 15 minutes.
-    
-    If you didn't create an account, please ignore this email.
-    
-    Best regards,
-    The TalentForge Team
-    '''
-    
-    try:
-        # ENVOI RÉEL PAR EMAIL ACTIVÉ
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
-        print(f"✅ Email sent to {email} with code: {code}")
-    except Exception as e:
-        print(f"❌ Failed to send email to {email}: {e}")
-        print(f"DEVELOPMENT MODE - Code for {email}: {code}")
-
-# password reset views 
-# class CustomPasswordResetView(PasswordResetView):
-#     form_class = CustomPasswordResetForm
-#     template_name = 'registration/password_reset.html'
-#     email_template_name = 'registration/password_reset_email.html'
-#     success_url = reverse_lazy('base:password_reset_done')
-
-# class CustomPasswordResetDoneView(PasswordResetDoneView):
-#     template_name = 'registration/password_reset_done.html'
-
-# class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-#     form_class = CustomSetPasswordForm
-#     template_name = 'registration/password_reset_confirm.html'
-#     success_url = reverse_lazy('base:password_reset_complete')
-
-# class CustomPasswordResetCompleteView(PasswordResetCompleteView):
-#     template_name = 'registration/password_reset_complete.html'
-
-
-# ✅ ADDED: Delete profile view
 @login_required
 def delete_profile(request):
+    """First step: initiate account deletion and send verification code"""
+    user = request.user
+    
+    # Get user's email - with better social auth handling
+    user_email = get_user_email(user)
+    
+    if not user_email:
+        messages.error(request, "❌ Cannot retrieve your email address. Please contact support.")
+        return redirect('base:profile_settings')
+    
     if request.method == 'POST':
-        user = request.user
-        password = request.POST.get('password')
-        
-        # Verify password
-        if not user.check_password(password):
-            messages.error(request, "❌ Incorrect password. Please try again.")
-            return redirect('base:delete_profile')
-        
-        # Confirm deletion text
+        # This is the initial deletion request
         confirmation_text = request.POST.get('confirmation_text', '')
+        
         if confirmation_text != 'DELETE MY ACCOUNT':
             messages.error(request, "❌ Please type 'DELETE MY ACCOUNT' to confirm deletion.")
             return redirect('base:delete_profile')
         
-        # Store username for success message
+        # Generate verification code
+        verification_code = generate_verification_code()
+        
+        # Store in deletion_verification_codes
+        deletion_verification_codes[user_email] = {
+            'code': verification_code,
+            'user_id': user.id,
+            'created_at': timezone.now()
+        }
+        
+        # Send verification email IMMEDIATELY
+        try:
+            send_deletion_verification_email(user_email, verification_code)
+            messages.info(request, f'📧 Verification code has been sent to {user_email}')
+            print(f"✅ Email sent to {user_email} with code: {verification_code}")
+        except Exception as e:
+            messages.error(request, '❌ Failed to send verification email. Please try again.')
+            print(f"Email error: {e}")
+            # In development, still continue but show the code
+            # if settings.DEBUG:
+            #     messages.info(request, f'DEVELOPMENT: Your code is: {verification_code}')
+        
+        # REDIRECT TO CONFIRMATION PAGE REGARDLESS OF EMAIL SUCCESS
+        return redirect('base:confirm_delete_profile')
+    
+    return render(request, 'registration/delete_profile.html', {'user_email': user_email})
+
+@login_required
+def confirm_delete_profile(request):
+    """Second step: verify code and complete account deletion"""
+    user = request.user
+    
+    # Get user's email
+    user_email = get_user_email(user)
+    
+    if not user_email:
+        messages.error(request, "❌ Cannot retrieve your email address.")
+        return redirect('base:delete_profile')
+    
+    # Check if we have a verification code for this email
+    stored_data = deletion_verification_codes.get(user_email)
+    
+    if not stored_data:
+        messages.error(request, "❌ No verification code found. Please start the deletion process from the beginning.")
+        return redirect('base:delete_profile')
+    
+    # Check if code is expired (15 minutes)
+    if timezone.now() - stored_data['created_at'] > timedelta(minutes=15):
+        del deletion_verification_codes[user_email]
+        messages.error(request, "❌ Verification code has expired. Please start over.")
+        return redirect('base:delete_profile')
+    
+    # Verify user matches
+    if stored_data['user_id'] != user.id:
+        messages.error(request, "❌ User mismatch detected. Please start over.")
+        return redirect('base:delete_profile')
+    
+    if request.method == 'POST':
+        entered_code = request.POST.get('verification_code', '').strip()
+        stored_code = stored_data['code']
+        confirmation_text = request.POST.get('confirmation_text', '')
+        
+        # Verify code
+        if entered_code != stored_code:
+            messages.error(request, "❌ Invalid verification code. Please try again.")
+            # Show the code in development for testing
+            # if settings.DEBUG:
+            #     messages.info(request, f'DEVELOPMENT: Expected code: {stored_code}')
+            return render(request, 'registration/confirm_delete_profile.html')
+        
+        # Verify confirmation text
+        if confirmation_text != 'DELETE MY ACCOUNT':
+            messages.error(request, "❌ Please type 'DELETE MY ACCOUNT' to confirm deletion.")
+            return render(request, 'registration/confirm_delete_profile.html')
+        
+        # All checks passed - proceed with deletion
         username = user.username
         
-        # Logout the user before deletion
+        # Logout before deletion
         logout(request)
         
-        # Delete the user (this will cascade to UserProfile due to CASCADE delete)
+        # Delete the user
         user.delete()
+        
+        # Clean up verification code
+        if user_email in deletion_verification_codes:
+            del deletion_verification_codes[user_email]
         
         messages.success(request, f"✅ Account '{username}' has been permanently deleted.")
         return redirect('base:home')
     
-    return render(request, 'registration/delete_profile.html')
+    # In development, show the code for testing
+    # if settings.DEBUG and stored_data:
+    #     messages.info(request, f'DEVELOPMENT: Your verification code is: {stored_data["code"]}')
+    
+    return render(request, 'registration/confirm_delete_profile.html', {
+        'user_email': user_email,
+        'debug': settings.DEBUG
+    })
 
-#  Profile settings page with delete option
+@login_required
+def resend_delete_code(request):
+    """Resend deletion verification code"""
+    user = request.user
+    user_email = get_user_email(user)
+    
+    if not user_email:
+        messages.error(request, "❌ Cannot retrieve your email address.")
+        return redirect('base:delete_profile')
+    
+    # Generate new verification code
+    verification_code = generate_verification_code()
+    
+    # Update the stored code
+    deletion_verification_codes[user_email] = {
+        'code': verification_code,
+        'user_id': user.id,
+        'created_at': timezone.now()
+    }
+    
+    # Send verification email
+    try:
+        send_deletion_verification_email(user_email, verification_code)
+        messages.info(request, f'📧 New verification code sent to {user_email}')
+        print(f"✅ New code sent to {user_email}: {verification_code}")
+    except Exception as e:
+        messages.error(request, '❌ Failed to send verification email.')
+        print(f"Email error: {e}")
+        # if settings.DEBUG:
+        #     messages.info(request, f'DEVELOPMENT: Your new code is: {verification_code}')
+    
+    return redirect('base:confirm_delete_profile')
+
 @login_required
 def profile_settings(request):
     try:
@@ -263,8 +430,6 @@ def view_profile(request):
         profile = UserProfile.objects.create(user=request.user)
     
     return render(request, 'registration/view_profile.html', {'profile': profile})
-from django.shortcuts import redirect
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def social_signup_redirect(request):
