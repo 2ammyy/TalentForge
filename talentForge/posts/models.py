@@ -155,12 +155,15 @@ class Report(models.Model):
     
     def save(self, *args, **kwargs):
         is_new = self.pk is None
+        print(f"🔍 DEBUG: Saving Report - is_new: {is_new}, Reporter: {self.reporter.username}")
         super().save(*args, **kwargs)
         
         # Send email only for new reports
         if is_new:
             self.send_confirmation_email()
-    
+        else:
+            print("ℹ️ DEBUG: Report updated, no email sent")
+
     def send_confirmation_email(self):
         subject = "Report Confirmation - TalentForge"
         message = f"""

@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse 
 from .models import Post, Comment, Reaction  , JobPost , Share  ,Report
 from .forms import PostForm, CommentForm , ShareForm , ReportForm
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail
 import json
 
 @login_required
@@ -154,15 +155,15 @@ def share_post(request, post_id):
                 share.user = request.user
                 share.save()
                 
-                # Créer une notification pour l'auteur du post
-                if post.author != request.user:
-                    Notification.objects.create(
-                        recipient=post.author,
-                        sender=request.user,
-                        post=post,
-                        notif_type='share',
-                        message=f"{request.user.username} a partagé votre post"
-                    )
+                # # Créer une notification pour l'auteur du post
+                # if post.author != request.user:
+                #     Notifications.objects.create(
+                #         recipient=post.author,
+                #         sender=request.user,
+                #         post=post,
+                #         notif_type='share',
+                #         message=f"{request.user.username} a partagé votre post"
+                #     )
             
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'share_count': post.post_shares.count()})
@@ -213,7 +214,10 @@ def notifications(request):
 @login_required
 def report_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    
+    # Vérifier que l'utilisateur a un email
+    print(f"🔍 DEBUG: User email: {request.user.email}")
+    if not request.user.email:
+        messages.warning(request, 'Please add an email address to your account to receive confirmation emails.')
     # Check if user has already reported this post
     existing_report = Report.objects.filter(post=post, reporter=request.user).first()
     
@@ -260,3 +264,17 @@ def my_reports(request):
         'reports': reports
     }
     return render(request, 'posts/my_reports.html', context)
+
+@login_required
+def test_email_view(request):
+    try:
+        send_mail(
+            'Test Email from TalentForge',
+            f'This is a test email sent to {request.user.email}',
+            'talentforge.app@gmail.com',
+            [request.user.email],
+            fail_silently=False,
+        )
+        return HttpResponse(f"✅ Test email sent to {request.user.email}! Check your inbox.")
+    except Exception as e:
+        return HttpResponse(f"❌ Failed to send test email: {str(e)}")
