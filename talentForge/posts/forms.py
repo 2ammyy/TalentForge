@@ -1,5 +1,5 @@
 from django import forms
-from .models import Post, Comment, JobPost , Share
+from .models import Post, Comment, JobPost , Share,Report
 
 class PostForm(forms.ModelForm):
     
@@ -212,4 +212,24 @@ class ShareForm(forms.ModelForm):
         }
         labels = {
             'caption': 'Votre commentaire'
+        }
+
+class ReportForm(forms.ModelForm):
+    class Meta:
+        model = Report
+        fields = ['reason', 'description']
+        widgets = {
+            'reason': forms.Select(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Please provide additional details about why you are reporting this post...'
+            }),
+        }
+        labels = {
+            'reason': 'Reason for Reporting',
+            'description': 'Additional Details (Optional)',
         }

@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.conf import settings
 
 class Post(models.Model):
     POST_TYPES = [
@@ -123,3 +125,77 @@ class Share(models.Model):
 
     def __str__(self):
         return f"{self.user.username} shared {self.post.id}"
+
+
+
+class Report(models.Model):
+    REPORT_CHOICES = [
+        ('spam', 'Spam'),
+        ('harassment', 'Harassment'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('violence', 'Violence'),
+        ('hate_speech', 'Hate Speech'),
+        ('other', 'Other'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('under_review', 'Under Review'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+    
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='reports')
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
+    reason = models.CharField(max_length=20, choices=REPORT_CHOICES)
+    description = models.TextField(blank=True, null=True, help_text="Additional details about the report")
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Send email only for new reports
+        if is_new:
+            self.send_confirmation_email()
+    
+    def send_confirmation_email(self):
+        subject = "Report Confirmation - TalentForge"
+        message = f"""
+        Dear {self.reporter.username},
+        
+        Thank you for reporting content on TalentForge. We have received your report and will review it shortly.
+        
+        Report Details:
+        - Post ID: {self.post.id}
+        - Reason: {self.get_reason_display()}
+        - Date: {self.created_at.strftime('%Y-%m-%d %H:%M')}
+        - Status: {self.get_status_display()}
+        
+        We take all reports seriously and will investigate this matter. You will be notified once we've taken action.
+        
+        Thank you for helping us keep TalentForge a safe and professional community.
+        
+        Best regards,
+        TalentForge Team
+        """
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                'talentforge.app@gmail.com',  # From email
+                [self.reporter.email],        # To email
+                fail_silently=False,
+            )
+        except Exception as e:
+            # Log the error but don't break the report creation
+            print(f"Failed to send email: {e}")
+    
+    def __str__(self):
+        return f"Report #{self.id} - {self.post} by {self.reporter}"
+    
+    class Meta:
+        ordering = ['-created_at']

@@ -12,4 +12,6 @@ urlpatterns = [
     path('unshare/<int:post_id>/', views.unshare_post, name='unshare_post'),
     # path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/', views.notifications, name='notifications'),
+    path('report/<int:post_id>/', views.report_post, name='report_post'),
+    path('my-reports/', views.my_reports, name='my_reports'),
 ]

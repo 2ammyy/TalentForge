@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from .models import Post, Comment, Reaction  , JobPost , Share 
-from .forms import PostForm, CommentForm , ShareForm
+from .models import Post, Comment, Reaction  , JobPost , Share  ,Report
+from .forms import PostForm, CommentForm , ShareForm , ReportForm
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -208,3 +208,55 @@ def notifications(request):
     return render(request, 'posts/notifications.html', {
         'notifications': []
     })
+
+
+@login_required
+def report_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Check if user has already reported this post
+    existing_report = Report.objects.filter(post=post, reporter=request.user).first()
+    
+    if request.method == 'POST':
+        form = ReportForm(request.POST)
+        if form.is_valid():
+            # If user already reported, update the existing report
+            if existing_report:
+                existing_report.reason = form.cleaned_data['reason']
+                existing_report.description = form.cleaned_data['description']
+                existing_report.status = 'pending'
+                existing_report.save()
+                messages.success(request, 'Your report has been updated successfully.')
+            else:
+                report = form.save(commit=False)
+                report.post = post
+                report.reporter = request.user
+                report.save()
+                messages.success(request, 'Thank you for reporting this post. We have sent you a confirmation email.')
+            
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Report submitted successfully'})
+            return redirect('posts:post_detail', pk=post.id)
+    else:
+        initial_data = {}
+        if existing_report:
+            initial_data = {
+                'reason': existing_report.reason,
+                'description': existing_report.description
+            }
+        form = ReportForm(initial=initial_data)
+    
+    context = {
+        'form': form,
+        'post': post,
+        'existing_report': existing_report,
+    }
+    return render(request, 'posts/report_post.html', context)
+
+@login_required
+def my_reports(request):
+    reports = Report.objects.filter(reporter=request.user).select_related('post')
+    context = {
+        'reports': reports
+    }
+    return render(request, 'posts/my_reports.html', context)

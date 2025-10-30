@@ -16,8 +16,25 @@
                 <strong>{{ post.author.username }}</strong>
                 <span class="post-date">— {{ post.created_at|date:"d M Y H:i" }}</span>
             </div>
+            
+            <!-- BOUTON DE SIGNALEMENT AJOUTÉ ICI -->
+            <div class="post-actions-dropdown">
+                <div class="dropdown">
+                    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'posts:report_post' post.id %}">
+                                <i class="fas fa-flag"></i> Report Post
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
         
+        <!-- Le reste de votre code existant... -->
         <div class="post-type-badge">
             <span class="badge {{ post.type }}">{{ post.get_type_display }}</span>
         </div>
@@ -40,90 +57,7 @@
                 </small>
             </div>
             
-            <div class="job-header">
-                <div class="job-title-section">
-                    <h5 class="job-title">💼 {{ post.title|default:"Job Position" }}</h5>
-                    {% if post.job_details %}
-                    <span class="company-name">at {{ post.job_details.company }}</span>
-                    {% else %}
-                    <span class="company-name">at Company Name</span>
-                    {% endif %}
-                </div>
-                
-                <div class="job-meta">
-                    {% if post.job_details %}
-                        <span class="job-location">📍 {{ post.job_details.location|default:"Location not specified" }}</span>
-                        <span class="job-work-mode">🏢 {{ post.job_details.get_work_mode_display|default:"Work mode not specified" }}</span>
-                    {% else %}
-                        <span class="job-location">📍 Location not specified</span>
-                        <span class="job-work-mode">🏢 Work mode not specified</span>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="job-details-grid">
-                <div class="job-detail-card">
-                    <div class="detail-icon">🕒</div>
-                    <div class="detail-content">
-                        <strong>Employment Type</strong>
-                        <span>
-                            {% if post.job_details and post.job_details.employment_type %}
-                                {{ post.job_details.get_employment_type_display }}
-                            {% else %}
-                                Not specified
-                            {% endif %}
-                        </span>
-                    </div>
-                </div>
-                
-                {% if post.job_details and post.job_details.salary_range %}
-                <div class="job-detail-card">
-                    <div class="detail-icon">💰</div>
-                    <div class="detail-content">
-                        <strong>Salary Range</strong>
-                        <span>
-                            {% if post.job_details.salary_range == '0-30k' %}$0 - $30,000
-                            {% elif post.job_details.salary_range == '30k-50k' %}$30,000 - $50,000
-                            {% elif post.job_details.salary_range == '50k-80k' %}$50,000 - $80,000
-                            {% elif post.job_details.salary_range == '80k-120k' %}$80,000 - $120,000
-                            {% elif post.job_details.salary_range == '120k+' %}$120,000+
-                            {% elif post.job_details.salary_range == 'negotiable' %}Negotiable
-                            {% else %}{{ post.job_details.salary_range }}{% endif %}
-                        </span>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            
-            {% if post.job_details and post.job_details.skills_required %}
-            <div class="job-skills">
-                <h6>🛠️ Required Skills</h6>
-                <div class="skills-list">
-                    {% for skill in post.job_details.skills_list %}
-                    <span class="skill-tag">{{ skill }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if post.job_details and post.job_details.benefits %}
-            <div class="job-benefits">
-                <h6>🎁 Company Benefits</h6>
-                <p>{{ post.job_details.benefits }}</p>
-            </div>
-            {% endif %}
-            
-            <div class="job-apply">
-                {% if post.job_details and post.job_details.application_email %}
-                <a href="mailto:{{ post.job_details.application_email }}?subject=Application for {{ post.title|default:'Job Position' }}" class="apply-btn">
-                    📧 Apply Now
-                </a>
-                {% else %}
-                <a href="#" class="apply-btn" onclick="alert('Application email not specified. Please contact the poster for application details.')">
-                    📧 Apply Now
-                </a>
-                {% endif %}
-            </div>
+            <!-- ... Le reste de votre code job existant ... -->
         </div>
         {% endif %}
 
@@ -152,14 +86,13 @@
                 <span class="reaction-count" id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
             </div>
             
-            <!-- BOUTON DE PARTAGE AJOUTÉ -->
             <span class="action-separator">|</span>
             <a href="{% url 'posts:share_post' post.id %}" class="action-link">
                 🔄 Share ({{ post.post_shares.count }})
             </a>
         </div>
         
-        <!-- SECTION DES PARTAGES AJOUTÉE -->
+        <!-- SECTION DES PARTAGES -->
         {% if post.post_shares.exists %}
         <div class="shares-section" style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 8px;">
             <small style="color: #666;">
@@ -185,9 +118,72 @@
 .posts-container { max-width: 800px; margin: 0 auto; padding: 2rem; }
 .posts-header { margin-bottom: 2rem; text-align: center; }
 .posts-header h2 { color: #333; margin: 0; }
-.post-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 2rem; border: 1px solid #e9ecef; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.post-card { 
+    background: white; 
+    border-radius: 12px; 
+    padding: 1.5rem; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+    margin-bottom: 2rem; 
+    border: 1px solid #e9ecef; 
+    transition: transform 0.2s ease, box-shadow 0.2s ease; 
+    position: relative;
+}
 .post-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); }
-.post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+
+/* STYLES POUR LE BOUTON DE SIGNALEMENT */
+.post-actions-dropdown {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.dropdown-toggle {
+    background: none;
+    border: 1px solid #e9ecef;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #666;
+}
+
+.dropdown-toggle:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropdown-item.text-danger:hover {
+    background-color: #fff5f5;
+    color: #dc3545;
+}
+
+/* Le reste de vos styles existants... */
+.post-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; 
+    margin-bottom: 1rem; 
+    position: relative;
+}
 .post-author strong { color: #333; font-size: 1.1rem; }
 .post-date { color: #666; font-size: 0.9rem; }
 .post-type-badge { margin-bottom: 1rem; }
@@ -236,6 +232,7 @@
 .no-posts p { color: #666; font-size: 1.1rem; margin-bottom: 1.5rem; }
 .create-first-post { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 2rem; text-decoration: none; border-radius: 25px; font-weight: bold; transition: all 0.3s ease; }
 .create-first-post:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); color: white; text-decoration: none; }
+
 @media (max-width: 768px) { 
     .posts-container { padding: 1rem; } 
     .post-card { padding: 1rem; } 
@@ -243,8 +240,15 @@
     .job-meta { flex-direction: column; gap: 0.5rem; } 
     .post-actions { flex-direction: column; align-items: flex-start; gap: 0.5rem; } 
     .action-separator { display: none; } 
+    .post-actions-dropdown {
+        top: 0.5rem;
+        right: 0.5rem;
+    }
 }
 </style>
+
+<!-- Ajouter Bootstrap Icons si pas déjà inclus -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
