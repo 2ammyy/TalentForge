@@ -186,7 +186,7 @@ def unshare_post(request, post_id):
     
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'share_count': post.post_shares.count()})
-    return redirect('posts:posts_list')
+    return redirect('posts:post_list')
 
 # @login_required
 # def notifications(request):
