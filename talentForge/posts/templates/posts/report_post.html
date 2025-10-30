@@ -1,95 +1,735 @@
 {% extends 'layout.html' %}
+{% load static %}
+
+{% block subtitle %}Report Post{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Report Post</h4>
-                </div>
-                <div class="card-body">
+<div class="report-container">
+    <div class="report-card">
+        <!-- Header avec icône -->
+        <div class="report-header">
+            <div class="report-icon">
+                <i class="fas fa-flag"></i>
+            </div>
+            <div class="report-title">
+                <h2>
                     {% if existing_report %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        You have already reported this post. You can update your report below.
-                    </div>
+                        🚨 Update Your Report
+                    {% else %}
+                        🚩 Report This Post
                     {% endif %}
-                    
-                    <!-- Post Preview -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h6>Post you're reporting:</h6>
-                            <div class="d-flex align-items-center mb-2">
+                </h2>
+                <p class="report-subtitle">
+                    {% if existing_report %}
+                        You've already reported this post. You can update your report details below.
+                    {% else %}
+                        Help us keep TalentForge safe by reporting inappropriate content.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="report-body">
+            {% if existing_report %}
+            <div class="alert alert-info existing-report-alert">
+                <div class="alert-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="alert-content">
+                    <strong>Report Status: {{ existing_report.get_status_display }}</strong>
+                    <p>You reported this post on {{ existing_report.created_at|date:"M d, Y" }}. You can update your report below.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Aperçu du post signalé -->
+            <div class="post-preview-section">
+                <h5 class="preview-title">📝 Post You're Reporting</h5>
+                <div class="post-preview-card">
+                    <div class="preview-header">
+                        <div class="author-info">
+                            <div class="author-avatar">
                                 {% if post.author.profile.profile_picture %}
                                     <img src="{{ post.author.profile.profile_picture.url }}" 
-                                         alt="{{ post.author.username }}" 
-                                         class="rounded-circle me-2" 
-                                         width="32" height="32">
+                                         alt="{{ post.author.username }}">
+                                {% else %}
+                                    <div class="default-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
                                 {% endif %}
-                                <div>
-                                    <strong>{{ post.author.username }}</strong>
-                                    <small class="text-muted">• {{ post.created_at|timesince }} ago</small>
+                            </div>
+                            <div class="author-details">
+                                <strong class="author-name">{{ post.author.username }}</strong>
+                                <span class="post-time">{{ post.created_at|timesince }} ago</span>
+                            </div>
+                        </div>
+                        <div class="post-type">
+                            <span class="post-badge {{ post.type }}">{{ post.get_type_display }}</span>
+                        </div>
+                    </div>
+
+                    <div class="preview-content">
+                        {% if post.title %}
+                        <h6 class="post-title">{{ post.title }}</h6>
+                        {% endif %}
+                        <p class="post-text">{{ post.content|truncatewords:50 }}</p>
+                        
+                        {% if post.image %}
+                        <div class="post-media">
+                            <div class="media-indicator">
+                                <i class="fas fa-image"></i>
+                                <span>Contains image</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if post.video %}
+                        <div class="post-media">
+                            <div class="media-indicator">
+                                <i class="fas fa-video"></i>
+                                <span>Contains video</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="preview-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-heart"></i>
+                            <span>{{ post.reactions.count }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-comment"></i>
+                            <span>{{ post.comments.count }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-share"></i>
+                            <span>{{ post.post_shares.count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire de signalement -->
+            <div class="report-form-section">
+                <form method="POST" class="report-form">
+                    {% csrf_token %}
+                    
+                    <!-- Raison du signalement -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h5>📋 Reason for Reporting</h5>
+                            <p class="section-subtitle">Select the primary reason for your report</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.reason.id_for_label }}" class="form-label">
+                                Report Category *
+                            </label>
+                            <div class="select-container">
+                                {{ form.reason }}
+                                <div class="select-icon">
+                                    <i class="fas fa-chevron-down"></i>
                                 </div>
                             </div>
-                            <p class="mb-1">{{ post.content|truncatewords:30 }}</p>
-                            {% if post.image %}
-                                <small class="text-muted">[Contains image]</small>
+                            {% if form.reason.errors %}
+                                <div class="error-messages">
+                                    {% for error in form.reason.errors %}
+                                        <div class="error-item">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                     </div>
-                    
-                    <form method="POST">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.reason.id_for_label }}" class="form-label">
-                                {{ form.reason.label }} *
-                            </label>
-                            {{ form.reason }}
-                            {% if form.reason.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.reason.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+
+                    <!-- Description détaillée -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h5>💬 Additional Details</h5>
+                            <p class="section-subtitle">Help us understand the issue better</p>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label for="{{ form.description.id_for_label }}" class="form-label">
-                                {{ form.description.label }}
+                                Detailed Explanation
                             </label>
-                            {{ form.description }}
+                            <div class="textarea-container">
+                                {{ form.description }}
+                                <div class="textarea-icon">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                            </div>
+                            <div class="char-count">
+                                <span id="charCount">0</span>/500 characters
+                            </div>
                             {% if form.description.errors %}
-                                <div class="text-danger">
+                                <div class="error-messages">
                                     {% for error in form.description.errors %}
-                                        {{ error }}
+                                        <div class="error-item">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            {{ error }}
+                                        </div>
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <div class="form-text">
+                            <div class="form-help">
+                                <i class="fas fa-lightbulb"></i>
                                 Please provide specific details about why you believe this post violates our community guidelines.
                             </div>
                         </div>
-                        
-                        <div class="alert alert-warning">
+                    </div>
+
+                    <!-- Avertissement -->
+                    <div class="warning-alert">
+                        <div class="warning-icon">
                             <i class="fas fa-exclamation-triangle"></i>
-                            <strong>Important:</strong> False reporting may result in account restrictions. 
-                            Please only report content that genuinely violates our community guidelines.
                         </div>
+                        <div class="warning-content">
+                            <strong>Important Notice</strong>
+                            <p>False reporting may result in account restrictions. Please only report content that genuinely violates our <a href="#" class="guidelines-link">Community Guidelines</a>.</p>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary report-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            {% if existing_report %}Update Report{% else %}Submit Report{% endif %}
+                        </button>
                         
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-flag"></i>
-                                {% if existing_report %}Update Report{% else %}Submit Report{% endif %}
-                            </button>
-                            <a href="{% url 'posts:post_detail' post.id %}" class="btn btn-secondary">Cancel</a>
+                        <div class="action-buttons">
+                            <a href="{% url 'posts:post_detail' post.id %}" class="btn btn-secondary cancel-btn">
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </a>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.report-container {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.report-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: 1px solid #ffe6e6;
+}
+
+.report-header {
+    background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+    color: white;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.report-icon {
+    font-size: 2rem;
+    opacity: 0.9;
+}
+
+.report-title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.report-subtitle {
+    margin: 0.25rem 0 0 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.report-body {
+    padding: 2rem;
+}
+
+/* Alert Styles */
+.existing-report-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.alert-icon {
+    color: #1976d2;
+    font-size: 1.2rem;
+}
+
+.alert-content strong {
+    color: #1976d2;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.alert-content p {
+    margin: 0;
+    color: #546e7a;
+}
+
+/* Post Preview Styles */
+.post-preview-section {
+    margin-bottom: 2rem;
+}
+
+.preview-title {
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.post-preview-card {
+    border: 2px solid #f3f4f6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: #fafbfc;
+    transition: all 0.3s ease;
+}
+
+.post-preview-card:hover {
+    border-color: #fbb6ce;
+    transform: translateY(-2px);
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.author-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.author-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.author-name {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.95rem;
+}
+
+.post-time {
+    font-size: 0.8rem;
+    color: #718096;
+}
+
+.post-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.post-badge.job { background: #fed7d7; color: #c53030; }
+.post-badge.text { background: #bee3f8; color: #2c5282; }
+.post-badge.image { background: #c6f6d5; color: #276749; }
+.post-badge.video { background: #faf089; color: #744210; }
+
+.preview-content {
+    margin-bottom: 1rem;
+}
+
+.post-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.post-text {
+    color: #4a5568;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.post-media {
+    margin-top: 0.75rem;
+}
+
+.media-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f7fafc;
+    border-radius: 8px;
+    color: #4a5568;
+    border: 1px dashed #cbd5e0;
+    font-size: 0.9rem;
+}
+
+.preview-stats {
+    display: flex;
+    gap: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #718096;
+    font-size: 0.85rem;
+}
+
+/* Form Styles */
+.report-form-section {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 2rem;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.section-header h5 {
+    margin: 0 0 0.5rem 0;
+    color: #2d3748;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.section-subtitle {
+    margin: 0;
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.form-group {
+    margin-top: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.select-container, .textarea-container {
+    position: relative;
+}
+
+#id_reason {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    background: #fafbfc;
+    transition: all 0.3s ease;
+    appearance: none;
+}
+
+#id_reason:focus {
+    outline: none;
+    border-color: #f56565;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
+}
+
+.select-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    pointer-events: none;
+}
+
+#id_description {
+    width: 100%;
+    min-height: 120px;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: vertical;
+    transition: all 0.3s ease;
+    background: #fafbfc;
+}
+
+#id_description:focus {
+    outline: none;
+    border-color: #f56565;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
+}
+
+.textarea-icon {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    color: #a0aec0;
+}
+
+.char-count {
+    text-align: right;
+    font-size: 0.8rem;
+    color: #a0aec0;
+    margin-top: 0.5rem;
+}
+
+.form-help {
+    background: #f0fff4;
+    border: 1px solid #9ae6b4;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: #22543d;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.form-help i {
+    color: #38a169;
+}
+
+.error-messages {
+    margin-top: 0.5rem;
+}
+
+.error-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #e53e3e;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Warning Alert */
+.warning-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: #fffaf0;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+
+.warning-icon {
+    color: #dd6b20;
+    font-size: 1.2rem;
+}
+
+.warning-content strong {
+    color: #dd6b20;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.warning-content p {
+    margin: 0;
+    color: #744210;
+}
+
+.guidelines-link {
+    color: #dd6b20;
+    text-decoration: underline;
+}
+
+.guidelines-link:hover {
+    color: #c05621;
+}
+
+/* Button Styles */
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.report-btn {
+    background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.report-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(245, 101, 101, 0.4);
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.cancel-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    transform: translateY(-1px);
+    background: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .report-container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+    
+    .report-header {
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .report-body {
+        padding: 1.5rem;
+    }
+    
+    .post-preview-card {
+        padding: 1rem;
+    }
+    
+    .preview-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .action-buttons {
+        justify-content: center;
+    }
+    
+    .warning-alert {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const descriptionTextarea = document.getElementById('id_description');
+    const charCount = document.getElementById('charCount');
+    
+    if (descriptionTextarea && charCount) {
+        // Update character count
+        function updateCharCount() {
+            const length = descriptionTextarea.value.length;
+            charCount.textContent = length;
+            
+            if (length > 450) {
+                charCount.style.color = '#e53e3e';
+            } else if (length > 400) {
+                charCount.style.color = '#dd6b20';
+            } else {
+                charCount.style.color = '#a0aec0';
+            }
+        }
+        
+        // Initial update
+        updateCharCount();
+        
+        // Update on input
+        descriptionTextarea.addEventListener('input', updateCharCount);
+        
+        // Add focus effects
+        descriptionTextarea.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        
+        descriptionTextarea.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    }
+    
+    // Add focus effect for select
+    const reasonSelect = document.getElementById('id_reason');
+    if (reasonSelect) {
+        reasonSelect.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        
+        reasonSelect.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    }
+});
+</script>
 {% endblock %}
