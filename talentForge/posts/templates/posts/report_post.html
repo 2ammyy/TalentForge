@@ -1,45 +1,93 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card post-card">
-            <div class="card-header bg-warning text-dark">
-                <h4 class="mb-0"><i class="fas fa-flag"></i> Report Post</h4>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    You are reporting a post by <strong>{{ post.user.username }}</strong>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Report Post</h4>
                 </div>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label">Reason for Reporting</label>
-                        <select name="reason" class="form-select" required>
-                            <option value="">Select a reason</option>
-                            <option value="spam">Spam</option>
-                            <option value="inappropriate">Inappropriate Content</option>
-                            <option value="harassment">Harassment</option>
-                            <option value="fake">Fake Information</option>
-                            <option value="other">Other</option>
-                        </select>
+                <div class="card-body">
+                    {% if existing_report %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        You have already reported this post. You can update your report below.
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Post Preview -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6>Post you're reporting:</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                {% if post.author.profile.profile_picture %}
+                                    <img src="{{ post.author.profile.profile_picture.url }}" 
+                                         alt="{{ post.author.username }}" 
+                                         class="rounded-circle me-2" 
+                                         width="32" height="32">
+                                {% endif %}
+                                <div>
+                                    <strong>{{ post.author.username }}</strong>
+                                    <small class="text-muted">• {{ post.created_at|timesince }} ago</small>
+                                </div>
+                            </div>
+                            <p class="mb-1">{{ post.content|truncatewords:30 }}</p>
+                            {% if post.image %}
+                                <small class="text-muted">[Contains image]</small>
+                            {% endif %}
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Additional Details</label>
-                        <textarea name="description" class="form-control" rows="4" 
-                                  placeholder="Please provide more details about why you are reporting this post..." required></textarea>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-paper-plane"></i> Submit Report
-                        </button>
-                        <a href="{% url 'post_detail' post.pk %}" class="btn btn-secondary">Cancel</a>
-                    </div>
-                </form>
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.reason.id_for_label }}" class="form-label">
+                                {{ form.reason.label }} *
+                            </label>
+                            {{ form.reason }}
+                            {% if form.reason.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.reason.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                {{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Please provide specific details about why you believe this post violates our community guidelines.
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Important:</strong> False reporting may result in account restrictions. 
+                            Please only report content that genuinely violates our community guidelines.
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-flag"></i>
+                                {% if existing_report %}Update Report{% else %}Submit Report{% endif %}
+                            </button>
+                            <a href="{% url 'posts:post_detail' post.id %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

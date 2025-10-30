@@ -1,12 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.conf import settings
 
 class Post(models.Model):
     POST_TYPES = [
         ('text', 'Text'),
         ('image', 'Image'),
         ('video', 'Video'),
-        ('poll', 'Poll'),
         ('job', 'Job Offer'),
     ]
 
@@ -23,21 +24,19 @@ class Post(models.Model):
 
     def average_rating(self):
         return self.ratings.aggregate(models.Avg('score'))['score__avg'] or 0
+        # Champ pour le post original si c'est un partage
+    shared_post = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='shares')
 
-    # AJOUTEZ CES PROPRIÉTÉS APRÈS LES MÉTHODES EXISTANTES
+    def __str__(self):
+        return f"{self.author.username} - {self.type}"
+
+    def average_rating(self):
+        return self.ratings.aggregate(models.Avg('score'))['score__avg'] or 0
+
     @property
-    def total_votes(self):
-        """Retourne le total des votes pour un poll"""
-        if self.type == 'poll':
-            return self.poll_options.aggregate(total=models.Sum('votes'))['total'] or 0
-        return 0
-
-    def user_can_vote(self, user):
-        """Vérifie si un utilisateur peut voter"""
-        if self.type != 'poll':
-            return False
-        # Implémentez votre logique pour vérifier si l'user a déjà voté
-        return True
+    def share_count(self):
+        """Retourne le nombre de fois que ce post a été partagé"""
+        return self.shares.count()
 
 
 class Comment(models.Model):
@@ -57,42 +56,12 @@ class Reaction(models.Model):
     ]
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    type = models.CharField(max_length=10, choices=REACTIONS)
+    reaction_type = models.CharField(max_length=10, choices=REACTIONS)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('post', 'user')  # 1 reaction per user/post
 
-
-class Notification(models.Model):
-    NOTIF_TYPES = [
-        ('comment', 'Comment'),
-        ('reaction', 'Reaction'),
-    ]
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    sender = models.ForeignKey(User, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    notif_type = models.CharField(max_length=10, choices=NOTIF_TYPES)
-    message = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"To {self.recipient} - {self.message}"
-
-
-# AJOUTEZ CES CLASSES APRÈS LES AUTRES MODÈLES
-class PollOption(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='poll_options')
-    text = models.CharField(max_length=200)
-    votes = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.text} ({self.votes} votes)"
-
-    class Meta:
-        ordering = ['created_at']
 
 
 class JobPost(models.Model):
@@ -141,5 +110,92 @@ class JobPost(models.Model):
             return [skill.strip() for skill in self.skills_required.split('\n') if skill.strip()]
         return []
 
+    class Meta:
+        ordering = ['-created_at']
+
+class Share(models.Model):
+    """Modèle spécifique pour gérer les partages avec caption"""
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_shares')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shares')
+    caption = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('post', 'user')  # 1 partage par user/post
+
+    def __str__(self):
+        return f"{self.user.username} shared {self.post.id}"
+
+
+
+class Report(models.Model):
+    REPORT_CHOICES = [
+        ('spam', 'Spam'),
+        ('harassment', 'Harassment'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('violence', 'Violence'),
+        ('hate_speech', 'Hate Speech'),
+        ('other', 'Other'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('under_review', 'Under Review'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+    
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='reports')
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
+    reason = models.CharField(max_length=20, choices=REPORT_CHOICES)
+    description = models.TextField(blank=True, null=True, help_text="Additional details about the report")
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Send email only for new reports
+        if is_new:
+            self.send_confirmation_email()
+    
+    def send_confirmation_email(self):
+        subject = "Report Confirmation - TalentForge"
+        message = f"""
+        Dear {self.reporter.username},
+        
+        Thank you for reporting content on TalentForge. We have received your report and will review it shortly.
+        
+        Report Details:
+        - Post ID: {self.post.id}
+        - Reason: {self.get_reason_display()}
+        - Date: {self.created_at.strftime('%Y-%m-%d %H:%M')}
+        - Status: {self.get_status_display()}
+        
+        We take all reports seriously and will investigate this matter. You will be notified once we've taken action.
+        
+        Thank you for helping us keep TalentForge a safe and professional community.
+        
+        Best regards,
+        TalentForge Team
+        """
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                'talentforge.app@gmail.com',  # From email
+                [self.reporter.email],        # To email
+                fail_silently=False,
+            )
+        except Exception as e:
+            # Log the error but don't break the report creation
+            print(f"Failed to send email: {e}")
+    
+    def __str__(self):
+        return f"Report #{self.id} - {self.post} by {self.reporter}"
+    
     class Meta:
         ordering = ['-created_at']
