@@ -278,3 +278,53 @@ def test_email_view(request):
         return HttpResponse(f"✅ Test email sent to {request.user.email}! Check your inbox.")
     except Exception as e:
         return HttpResponse(f"❌ Failed to send test email: {str(e)}")
+
+@login_required
+def post_edit(request, pk):
+    """View for editing an existing post"""
+    post = get_object_or_404(Post, pk=pk)
+    
+    # Check if user is authorized to edit
+    if post.author != request.user and not request.user.is_staff:
+        messages.error(request, "You don't have permission to edit this post.")
+        return redirect('posts:post_detail', pk=post.pk)
+    
+    if request.method == 'POST':
+        form = PostForm(request.POST, request.FILES, instance=post)
+        if form.is_valid():
+            updated_post = form.save()
+            messages.success(request, 'Post updated successfully!')
+            return redirect('posts:post_detail', pk=updated_post.pk)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PostForm(instance=post)
+    
+    return render(request, 'posts/post_edit.html', {
+        'form': form,
+        'post': post
+    })
+
+@login_required
+def post_delete(request, pk):
+    """View for deleting a post"""
+    post = get_object_or_404(Post, pk=pk)
+    
+    # Check if user is authorized to delete
+    if post.author != request.user and not request.user.is_staff:
+        messages.error(request, "You don't have permission to delete this post.")
+        return redirect('posts:post_detail', pk=post.pk)
+    
+    if request.method == 'POST':
+        post.delete()
+        messages.success(request, 'Post deleted successfully!')
+        return redirect('posts:post_list')
+    
+    return render(request, 'posts/post_confirm_delete.html', {
+        'post': post
+    })
+
+@login_required
+def post_update(request, pk):
+    """Alternative name for post edit - same functionality"""
+    return post_edit(request, pk)

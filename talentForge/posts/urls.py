@@ -15,4 +15,8 @@ urlpatterns = [
     path('report/<int:post_id>/', views.report_post, name='report_post'),
     path('my-reports/', views.my_reports, name='my_reports'),
     path('test-email/', views.test_email_view, name='test_email'),
+    path('<int:pk>/edit/', views.post_edit, name='post_edit'),
+    path('<int:pk>/update/', views.post_update, name='post_update'),  # alias
+    path('<int:pk>/delete/', views.post_delete, name='post_delete'),
+
 ]

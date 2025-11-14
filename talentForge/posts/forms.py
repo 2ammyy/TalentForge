@@ -233,3 +233,4 @@ class ReportForm(forms.ModelForm):
             'reason': 'Reason for Reporting',
             'description': 'Additional Details (Optional)',
         }
+

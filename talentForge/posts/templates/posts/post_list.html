@@ -7,34 +7,113 @@
 <div class="posts-container">
     <div class="posts-header">
         <h2>📝 All Posts</h2>
+        <a href="{% url 'posts:post_create' %}" class="create-post-btn">
+            <i class="fas fa-plus"></i> Create New Post
+        </a>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All Posts</button>
+            <button class="filter-btn" data-filter="text">Text</button>
+            <button class="filter-btn" data-filter="image">Images</button>
+            <button class="filter-btn" data-filter="video">Videos</button>
+            <button class="filter-btn" data-filter="job">Job Offers</button>
+        </div>
     </div>
 
     {% for post in posts %}
-    <div class="post-card">
+    <div class="post-card" data-post-type="{{ post.type }}">
         <div class="post-header">
-            <div class="post-author">
-                <strong>{{ post.author.username }}</strong>
-                <span class="post-date">— {{ post.created_at|date:"d M Y H:i" }}</span>
+            <div class="post-author-info">
+                <div class="author-avatar">
+                    {% if post.author.profile.avatar %}
+                        <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
+                    {% else %}
+                        <div class="default-avatar">{{ post.author.username|first|upper }}</div>
+                    {% endif %}
+                </div>
+                <div class="post-author">
+                    <strong>{{ post.author.username }}</strong>
+                    <span class="post-date">— {{ post.created_at|date:"M d, Y · H:i" }}</span>
+                    {% if post.updated_at != post.created_at %}
+                    <span class="post-edited">(edited)</span>
+                    {% endif %}
+                </div>
             </div>
             
-            <!-- BOUTON DE SIGNALEMENT AJOUTÉ ICI -->
+            <!-- MENU DROPDOWN CORRIGÉ - CACHÉ PAR DÉFAUT -->
             <div class="post-actions-dropdown">
                 <div class="dropdown">
                     <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-ellipsis-h"></i>
+                        <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <ul class="dropdown-menu">
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <!-- Share Option -->
                         <li>
-                            <a class="dropdown-item text-danger" href="{% url 'posts:report_post' post.id %}">
-                                <i class="fas fa-flag"></i> Report Post
+                            <a class="dropdown-item share-option" href="{% url 'posts:share_post' post.id %}">
+                                <div class="dropdown-item-content">
+                                    <i class="fas fa-share"></i>
+                                    <div class="dropdown-text">
+                                        <span class="dropdown-title">Share Post</span>
+                                        <small class="dropdown-desc">Share this post with others</small>
+                                    </div>
+                                </div>
                             </a>
                         </li>
+                        
+                        <!-- Edit Option (Author only) -->
+                        {% if user.is_authenticated and user == post.author %}
+                        <li>
+                            <a class="dropdown-item edit-option" href="{% url 'posts:post_edit' post.id %}">
+                                <div class="dropdown-item-content">
+                                    <i class="fas fa-edit"></i>
+                                    <div class="dropdown-text">
+                                        <span class="dropdown-title">Edit Post</span>
+                                        <small class="dropdown-desc">Modify your post content</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Report Option (Not for author) -->
+                        {% if user.is_authenticated and user != post.author %}
+                        <li>
+                            <a class="dropdown-item report-option" href="{% url 'posts:report_post' post.id %}">
+                                <div class="dropdown-item-content">
+                                    <i class="fas fa-flag"></i>
+                                    <div class="dropdown-text">
+                                        <span class="dropdown-title">Report Post</span>
+                                        <small class="dropdown-desc">Report inappropriate content</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <!-- Delete Option (Author only) -->
+                        {% if user.is_authenticated and user == post.author %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item delete-option" href="{% url 'posts:post_delete' post.id %}">
+                                <div class="dropdown-item-content">
+                                    <i class="fas fa-trash"></i>
+                                    <div class="dropdown-text">
+                                        <span class="dropdown-title">Delete Post</span>
+                                        <small class="dropdown-desc">Permanently remove this post</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
         </div>
         
-        <!-- Le reste de votre code existant... -->
+        <!-- Le reste de votre code reste inchangé -->
         <div class="post-type-badge">
             <span class="badge {{ post.type }}">{{ post.get_type_display }}</span>
         </div>
@@ -44,59 +123,164 @@
         {% endif %}
         
         <div class="post-content">
-            <p>{{ post.content }}</p>
+            <p>{{ post.content|linebreaksbr }}</p>
         </div>
 
-        <!-- JOB OFFERS -->
+        <!-- JOB OFFERS SECTION -->
         {% if post.type == 'job' %}
         <div class="job-section">
-            <!-- DEBUG INFO - Visible for troubleshooting -->
-            <div style="background: {% if post.job_details %}#e8f5e8{% else %}#ffeaa7{% endif %}; padding: 0.5rem; border-radius: 5px; margin-bottom: 1rem;">
-                <small style="color: {% if post.job_details %}#2d5016{% else %}#856404{% endif %};">
-                    {% if post.job_details %}✅ JobDetails FOUND - {{ post.job_details.company }}{% else %}❌ NO JobDetails - Post ID: {{ post.id }}{% endif %}
-                </small>
+            {% if post.job_details %}
+            <div class="job-details-content">
+                <div class="job-header">
+                    <div class="job-title-section">
+                        <h3 class="job-title">{{ post.job_details.job_title }}</h3>
+                        <p class="company-name">{{ post.job_details.company }}</p>
+                    </div>
+                    <div class="job-meta">
+                        <span class="job-location">
+                            <i class="fas fa-map-marker-alt"></i> {{ post.job_details.location }}
+                        </span>
+                        <span class="job-work-mode">
+                            <i class="fas fa-briefcase"></i> {{ post.job_details.get_work_mode_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="job-details-grid">
+                    <div class="job-detail-card">
+                        <div class="detail-icon">💰</div>
+                        <div class="detail-content">
+                            <strong>Salary</strong>
+                            <span>{{ post.job_details.salary_range }}</span>
+                        </div>
+                    </div>
+                    <div class="job-detail-card">
+                        <div class="detail-icon">🏢</div>
+                        <div class="detail-content">
+                            <strong>Job Type</strong>
+                            <span>{{ post.job_details.get_job_type_display }}</span>
+                        </div>
+                    </div>
+                    <div class="job-detail-card">
+                        <div class="detail-icon">🎓</div>
+                        <div class="detail-content">
+                            <strong>Experience</strong>
+                            <span>{{ post.job_details.get_experience_level_display }}</span>
+                        </div>
+                    </div>
+                    <div class="job-detail-card">
+                        <div class="detail-icon">📅</div>
+                        <div class="detail-content">
+                            <strong>Deadline</strong>
+                            <span>{{ post.job_details.application_deadline|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if post.job_details.description %}
+                <div class="job-description">
+                    <h6>Job Description</h6>
+                    <p>{{ post.job_details.description|linebreaksbr }}</p>
+                </div>
+                {% endif %}
+
+                {% if post.job_details.required_skills %}
+                <div class="job-skills">
+                    <h6>Required Skills</h6>
+                    <div class="skills-list">
+                        {% for skill in post.job_details.get_skills_list %}
+                        <span class="skill-tag">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if post.job_details.benefits %}
+                <div class="job-benefits">
+                    <h6>Benefits</h6>
+                    <p>{{ post.job_details.benefits|linebreaksbr }}</p>
+                </div>
+                {% endif %}
+
+<div class="job-apply">
+    {% if post.job_details.application_email %}
+    <div class="email-application-section">
+        <a href="mailto:{{ post.job_details.application_email }}?subject=Application for {{ post.job_details.job_title|urlencode }} at {{ post.job_details.company|urlencode }}&body=Dear Hiring Manager,%0D%0A%0D%0AI am writing to express my interest in the {{ post.job_details.job_title }} position at {{ post.job_details.company }} that I discovered on TalentForge.%0D%0A%0D%0APlease find my resume and cover letter attached for your consideration.%0D%0A%0D%0AI look forward to the opportunity to discuss how my skills and experience align with your requirements.%0D%0A%0D%0ABest regards,%0D%0A[Your Full Name]%0D%0A[Your Phone Number]%0D%0A[Your LinkedIn Profile (optional)]" 
+           class="apply-btn email-apply-btn" target="_blank">
+            <i class="fas fa-envelope"></i> Apply via Email
+        </a>
+        <div class="email-info">
+            <small><i class="fas fa-info-circle"></i> Will open your email client (Gmail/Outlook)</small>
+            <small class="email-address">{{ post.job_details.application_email }}</small>
+        </div>
+    </div>
+    {% elif post.job_details.application_link %}
+    <a href="{{ post.job_details.application_link }}" class="apply-btn" target="_blank">
+        <i class="fas fa-external-link-alt"></i> Apply on Website
+    </a>
+    {% else %}
+    <div class="no-application-method">
+        <a href="{% url 'posts:post_detail' post.id %}" class="apply-btn secondary">
+            <i class="fas fa-info-circle"></i> View Details
+        </a>
+        <small class="text-muted">Contact information not provided</small>
+    </div>
+    {% endif %}
+    
+    <span class="applicants-count">
+        <i class="fas fa-users"></i> {{ post.job_applications.count }} applicants
+    </span>
+</div>
             </div>
-            
-            <!-- ... Le reste de votre code job existant ... -->
+            {% else %}
+            <div class="no-job-details">
+                <p style="color: #856404; text-align: center; padding: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Job details are not available for this post.
+                </p>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 
         {% if post.image %}
         <div class="post-media">
-            <img src="{{ post.image.url }}" class="post-image">
+            <img src="{{ post.image.url }}" class="post-image" alt="Post image">
         </div>
         {% endif %}
         
         {% if post.video %}
         <div class="post-media">
-            <video controls src="{{ post.video.url }}" class="post-video"></video>
+            <video controls class="post-video">
+                <source src="{{ post.video.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
         </div>
         {% endif %}
 
         <div class="post-actions">
             <a href="{% url 'posts:post_detail' post.pk %}" class="action-link">
-                💬 Comments ({{ post.comments.count }})
+                <i class="fas fa-comment"></i> Comments ({{ post.comments.count }})
             </a>
             <span class="action-separator">|</span>
             
             <div class="reaction-section">
                 <button class="reaction-btn like-btn" data-post-id="{{ post.id }}" data-reaction-type="like">
-                    ❤️ Like
+                    <i class="fas fa-heart"></i> Like
                 </button>
                 <span class="reaction-count" id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
             </div>
             
             <span class="action-separator">|</span>
             <a href="{% url 'posts:share_post' post.id %}" class="action-link">
-                🔄 Share ({{ post.post_shares.count }})
+                <i class="fas fa-share"></i> Share ({{ post.post_shares.count }})
             </a>
         </div>
         
-        <!-- SECTION DES PARTAGES -->
         {% if post.post_shares.exists %}
-        <div class="shares-section" style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 8px;">
+        <div class="shares-section">
             <small style="color: #666;">
-                🔄 Shared by: 
+                <i class="fas fa-share"></i> Shared by: 
                 {% for share in post.post_shares.all|slice:":3" %}
                     <strong>{{ share.user.username }}</strong>{% if share.caption %} - "{{ share.caption }}"{% endif %}{% if not forloop.last %}, {% endif %}
                 {% endfor %}
@@ -108,152 +292,888 @@
     </div>
     {% empty %}
     <div class="no-posts">
-        <p>No posts yet. Be the first to create one!</p>
-        <a href="{% url 'posts:post_create' %}" class="create-first-post">Create First Post</a>
+        <div class="no-posts-icon">
+            <i class="fas fa-newspaper"></i>
+        </div>
+        <h3>No posts yet</h3>
+        <p>Be the first to create a post and start the conversation!</p>
+        <a href="{% url 'posts:post_create' %}" class="create-first-post">
+            <i class="fas fa-plus"></i> Create First Post
+        </a>
     </div>
     {% endfor %}
+
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <nav aria-label="Posts pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        <div class="pagination-info">
+            <small>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</small>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <style>
-.posts-container { max-width: 800px; margin: 0 auto; padding: 2rem; }
-.posts-header { margin-bottom: 2rem; text-align: center; }
-.posts-header h2 { color: #333; margin: 0; }
-.post-card { 
-    background: white; 
-    border-radius: 12px; 
-    padding: 1.5rem; 
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
-    margin-bottom: 2rem; 
-    border: 1px solid #e9ecef; 
-    transition: transform 0.2s ease, box-shadow 0.2s ease; 
+.posts-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.posts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.posts-header h2 {
+    color: #2c3e50;
+    margin: 0;
+    font-weight: 700;
+}
+
+.create-post-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.create-post-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+/* Filter Section */
+.filter-section {
+    margin-bottom: 2rem;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
+
+/* Post Card */
+.post-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     position: relative;
 }
-.post-card:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); }
 
-/* STYLES POUR LE BOUTON DE SIGNALEMENT */
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Post Header */
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.post-author-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.post-author strong {
+    color: #2c3e50;
+    font-size: 1rem;
+    display: block;
+}
+
+.post-date {
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+.post-edited {
+    color: #6c757d;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* CORRECTION CRITIQUE DU MENU DROPDOWN */
 .post-actions-dropdown {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.dropdown {
+    position: relative;
 }
 
 .dropdown-toggle {
     background: none;
     border: 1px solid #e9ecef;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    color: #666;
+    transition: all 0.3s ease;
+    color: #6c757d;
+    font-size: 0.9rem;
 }
 
 .dropdown-toggle:hover {
     background: #f8f9fa;
     border-color: #007bff;
     color: #007bff;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
 }
 
+/* LE MENU EST CACHÉ PAR DÉFAUT */
 .dropdown-menu {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e9ecef;
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1000;
+    min-width: 240px;
+    padding: 0.5rem;
+    margin: 0.125rem 0 0;
+    font-size: 0.875rem;
+    color: #212529;
+    text-align: left;
+    list-style: none;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(10px);
+}
+
+/* LE MENU S'AFFICHE QUAND IL A LA CLASSE .show */
+.dropdown-menu.show {
+    display: block;
+    animation: dropdownSlideIn 0.2s ease-out;
+}
+
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .dropdown-item {
-    padding: 0.5rem 1rem;
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    clear: both;
+    font-weight: 400;
+    color: #212529;
+    text-align: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    border-radius: 8px;
+    margin: 0.15rem 0;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.dropdown-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.dropdown-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.dropdown-title {
+    font-weight: 600;
     font-size: 0.9rem;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+.dropdown-desc {
+    font-size: 0.75rem;
+    color: #6c757d;
+    line-height: 1.2;
+    margin-top: 0.1rem;
+}
+
+/* Share Option */
+.share-option:hover {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%);
+    border-left: 3px solid #007bff;
+}
+
+.share-option:hover i {
+    color: #007bff;
+    transform: scale(1.1);
+}
+
+.share-option:hover .dropdown-title {
+    color: #007bff;
+}
+
+/* Edit Option */
+.edit-option:hover {
+    background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+    border-left: 3px solid #28a745;
+}
+
+.edit-option:hover i {
+    color: #28a745;
+    transform: scale(1.1);
+}
+
+.edit-option:hover .dropdown-title {
+    color: #28a745;
+}
+
+/* Report Option */
+.report-option:hover {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+    border-left: 3px solid #dc3545;
+}
+
+.report-option:hover i {
+    color: #dc3545;
+    transform: scale(1.1);
+}
+
+.report-option:hover .dropdown-title {
+    color: #dc3545;
+}
+
+/* Delete Option */
+.delete-option:hover {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+    border-left: 3px solid #dc3545;
+}
+
+.delete-option:hover i {
+    color: #dc3545;
+    transform: scale(1.1);
+}
+
+.delete-option:hover .dropdown-title {
+    color: #dc3545;
+}
+
+/* Dropdown Divider */
+.dropdown-divider {
+    height: 0;
+    margin: 0.4rem 0;
+    overflow: hidden;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Le reste de votre CSS existant reste inchangé */
+.post-type-badge {
+    margin-bottom: 1rem;
+}
+
+.badge {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge.job {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.badge.text {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.badge.image {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.badge.video {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.post-title {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.post-content {
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+    color: #495057;
+    font-size: 1rem;
+}
+
+.job-section {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin: 1.5rem 0;
+    border: 1px solid #fed7d7;
+}
+
+.job-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #fed7d7;
+}
+
+.job-title-section {
+    margin-bottom: 0.5rem;
+}
+
+.job-title {
+    margin: 0 0 0.25rem 0;
+    color: #2d3748;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.company-name {
+    color: #718096;
+    font-size: 1.1rem;
+    font-style: italic;
+    margin: 0;
+}
+
+.job-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.job-location, .job-work-mode {
+    background: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.job-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.job-detail-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease;
+}
+
+.job-detail-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.detail-icon {
+    font-size: 1.5rem;
+}
+
+.detail-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-content strong {
+    color: #4a5568;
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.detail-content span {
+    color: #2d3748;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.job-description, .job-skills, .job-benefits {
+    margin-bottom: 1.5rem;
+}
+
+.job-description h6, .job-skills h6, .job-benefits h6 {
+    margin: 0 0 0.75rem 0;
+    color: #2d3748;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.job-description p, .job-benefits p {
+    margin: 0;
+    line-height: 1.5;
+    color: #4a5568;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #f56565;
+}
+
+.skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.skill-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.job-apply {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #fed7d7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.apply-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 0.75rem 2rem;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.apply-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.applicants-count {
+    color: #718096;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.post-media {
+    margin: 1.5rem 0;
+}
+
+.post-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.post-video {
+    width: 100%;
+    max-height: 500px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.post-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.action-link {
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.action-link:hover {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.action-separator {
+    color: #dee2e6;
+}
+
+.reaction-section {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.dropdown-item.text-danger:hover {
-    background-color: #fff5f5;
+.reaction-btn {
+    background: none;
+    border: 1px solid #e9ecef;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #6c757d;
+}
+
+.reaction-btn:hover {
+    background: #f8f9fa;
+    border-color: #dc3545;
+    color: #dc3545;
+    transform: scale(1.05);
+}
+
+.reaction-btn.liked {
+    background: #fff5f5;
+    border-color: #dc3545;
     color: #dc3545;
 }
 
-/* Le reste de vos styles existants... */
-.post-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: flex-start; 
-    margin-bottom: 1rem; 
-    position: relative;
+.reaction-count {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #6c757d;
+    min-width: 20px;
+    text-align: center;
 }
-.post-author strong { color: #333; font-size: 1.1rem; }
-.post-date { color: #666; font-size: 0.9rem; }
-.post-type-badge { margin-bottom: 1rem; }
-.badge { padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-.badge.job { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-.badge.text { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
-.badge.image { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
-.badge.video { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
-.post-title { color: #2c3e50; margin-bottom: 1rem; font-size: 1.3rem; font-weight: 600; }
-.post-content { margin-bottom: 1.5rem; line-height: 1.6; color: #555; }
-.job-section { background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0; border: 1px solid #fed7d7; }
-.job-header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #fed7d7; }
-.job-title-section { margin-bottom: 0.5rem; }
-.job-title { margin: 0 0 0.25rem 0; color: #2d3748; font-size: 1.3rem; font-weight: 700; }
-.company-name { color: #718096; font-size: 1rem; font-style: italic; }
-.job-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
-.job-location, .job-work-mode { background: white; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500; color: #4a5568; border: 1px solid #e2e8f0; }
-.job-details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.job-detail-card { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: white; border-radius: 10px; border: 1px solid #e2e8f0; transition: transform 0.2s ease; }
-.job-detail-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-.detail-icon { font-size: 1.5rem; }
-.detail-content { display: flex; flex-direction: column; }
-.detail-content strong { color: #4a5568; font-size: 0.85rem; margin-bottom: 0.25rem; }
-.detail-content span { color: #2d3748; font-weight: 600; font-size: 0.95rem; }
-.job-skills, .job-benefits { margin-bottom: 1.5rem; }
-.job-skills h6, .job-benefits h6 { margin: 0 0 0.75rem 0; color: #2d3748; font-size: 1rem; font-weight: 600; }
-.skills-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.skill-tag { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 0.8rem; border-radius: 15px; font-size: 0.8rem; font-weight: 500; }
-.job-benefits p { margin: 0; line-height: 1.5; color: #4a5568; background: white; padding: 1rem; border-radius: 8px; border-left: 4px solid #f56565; }
-.job-apply { text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #fed7d7; }
-.apply-btn { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 0.75rem 2rem; text-decoration: none; border-radius: 25px; font-weight: bold; transition: all 0.3s ease; display: inline-block; }
-.apply-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4); color: white; text-decoration: none; }
-.post-media { margin: 1.5rem 0; }
-.post-image { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-.post-video { width: 100%; max-height: 500px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-.post-actions { display: flex; align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef; margin-top: 1rem; flex-wrap: wrap; }
-.action-link { color: #007bff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s ease; }
-.action-link:hover { color: #0056b3; text-decoration: underline; }
-.action-separator { color: #ddd; }
-.reaction-section { display: flex; align-items: center; gap: 0.5rem; }
-.reaction-btn { background: none; border: 1px solid #e9ecef; padding: 0.4rem 0.8rem; border-radius: 20px; cursor: pointer; transition: all 0.2s ease; font-size: 0.9rem; }
-.reaction-btn:hover { background: #f8f9fa; border-color: #007bff; transform: scale(1.05); }
-.reaction-btn.liked { background: #fff5f5; border-color: #dc3545; color: #dc3545; }
-.reaction-count { font-size: 0.9rem; font-weight: 500; color: #666; }
-.no-posts { text-align: center; padding: 4rem 2rem; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-.no-posts p { color: #666; font-size: 1.1rem; margin-bottom: 1.5rem; }
-.create-first-post { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 2rem; text-decoration: none; border-radius: 25px; font-weight: bold; transition: all 0.3s ease; }
-.create-first-post:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); color: white; text-decoration: none; }
 
-@media (max-width: 768px) { 
-    .posts-container { padding: 1rem; } 
-    .post-card { padding: 1rem; } 
-    .job-details-grid { grid-template-columns: 1fr; } 
-    .job-meta { flex-direction: column; gap: 0.5rem; } 
-    .post-actions { flex-direction: column; align-items: flex-start; gap: 0.5rem; } 
-    .action-separator { display: none; } 
+.shares-section {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.no-posts {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.no-posts-icon {
+    font-size: 4rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.no-posts h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.no-posts p {
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+.create-first-post {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 2rem;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.create-first-post:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.pagination-container {
+    margin-top: 3rem;
+    text-align: center;
+}
+
+.pagination {
+    margin-bottom: 1rem;
+}
+
+.page-link {
+    color: #667eea;
+    border: 1px solid #e9ecef;
+    padding: 0.5rem 0.75rem;
+}
+
+.page-link:hover {
+    color: #764ba2;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+}
+
+.pagination-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .posts-container {
+        padding: 1rem;
+    }
+    
+    .posts-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .post-card {
+        padding: 1rem;
+    }
+    
+    .job-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .job-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .post-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .action-separator {
+        display: none;
+    }
+    
     .post-actions-dropdown {
         top: 0.5rem;
         right: 0.5rem;
     }
+    
+    .filter-buttons {
+        justify-content: center;
+    }
+    
+    .filter-btn {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    .dropdown-menu {
+        min-width: 220px;
+        right: -10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .posts-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .create-post-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .post-author-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .author-avatar {
+        width: 32px;
+        height: 32px;
+    }
 }
 </style>
 
-<!-- Ajouter Bootstrap Icons si pas déjà inclus -->
+<!-- Bootstrap Icons -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+<!-- Bootstrap JS (NÉCESSAIRE POUR LES DROPDOWNS) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 Post reactions script loaded');
+    console.log('🎯 Posts page loaded successfully');
     
+    // Reaction functionality
     document.querySelectorAll('.reaction-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const postId = this.dataset.postId;
@@ -264,9 +1184,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function addReaction(postId, reactionType, buttonElement) {
         console.log('❤️ Adding reaction for post:', postId);
+        
+        // Optimistic UI update
         buttonElement.classList.add('liked');
-        buttonElement.textContent = '❤️ Liked!';
+        buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked!';
         buttonElement.disabled = true;
+        
+        const originalHTML = buttonElement.innerHTML;
         
         fetch(`/posts/reaction/${postId}/`, {
             method: 'POST',
@@ -295,20 +1219,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 300);
                 }
             } else {
-                resetReactionButton(buttonElement);
-                alert('Error adding reaction: ' + (data.error || 'Unknown error'));
+                resetReactionButton(buttonElement, originalHTML);
+                showToast('Error adding reaction: ' + (data.error || 'Unknown error'), 'error');
             }
         })
         .catch(error => {
             console.error('💥 Reaction error:', error);
-            resetReactionButton(buttonElement);
-            alert('Error adding reaction. Please try again.');
+            resetReactionButton(buttonElement, originalHTML);
+            showToast('Error adding reaction. Please try again.', 'error');
         });
     }
 
-    function resetReactionButton(buttonElement) {
+    function resetReactionButton(buttonElement, originalHTML) {
         buttonElement.classList.remove('liked');
-        buttonElement.textContent = '❤️ Like';
+        buttonElement.innerHTML = originalHTML;
         buttonElement.disabled = false;
     }
 
@@ -316,6 +1240,64 @@ document.addEventListener('DOMContentLoaded', function() {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
         return csrfToken ? csrfToken.value : '';
     }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: ${type === 'error' ? '#dc3545' : '#28a745'};
+            color: white;
+            border-radius: 8px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    // Filter functionality
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const postCards = document.querySelectorAll('.post-card');
+    
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            postCards.forEach(card => {
+                if (filter === 'all' || card.dataset.postType === filter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 });
 </script>
 
