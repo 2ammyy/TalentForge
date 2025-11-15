@@ -113,15 +113,17 @@
             </div>
         </div>
         
-        <!-- Le reste de votre code reste inchangé -->
+        <!-- Post Type Badge -->
         <div class="post-type-badge">
             <span class="badge {{ post.type }}">{{ post.get_type_display }}</span>
         </div>
 
+        <!-- Post Title -->
         {% if post.title %}
         <h4 class="post-title">{{ post.title }}</h4>
         {% endif %}
         
+        <!-- Post Content -->
         <div class="post-content">
             <p>{{ post.content|linebreaksbr }}</p>
         </div>
@@ -202,35 +204,50 @@
                 </div>
                 {% endif %}
 
-<div class="job-apply">
-    {% if post.job_details.application_email %}
-    <div class="email-application-section">
-        <a href="mailto:{{ post.job_details.application_email }}?subject=Application for {{ post.job_details.job_title|urlencode }} at {{ post.job_details.company|urlencode }}&body=Dear Hiring Manager,%0D%0A%0D%0AI am writing to express my interest in the {{ post.job_details.job_title }} position at {{ post.job_details.company }} that I discovered on TalentForge.%0D%0A%0D%0APlease find my resume and cover letter attached for your consideration.%0D%0A%0D%0AI look forward to the opportunity to discuss how my skills and experience align with your requirements.%0D%0A%0D%0ABest regards,%0D%0A[Your Full Name]%0D%0A[Your Phone Number]%0D%0A[Your LinkedIn Profile (optional)]" 
-           class="apply-btn email-apply-btn" target="_blank">
-            <i class="fas fa-envelope"></i> Apply via Email
-        </a>
-        <div class="email-info">
-            <small><i class="fas fa-info-circle"></i> Will open your email client (Gmail/Outlook)</small>
-            <small class="email-address">{{ post.job_details.application_email }}</small>
-        </div>
-    </div>
-    {% elif post.job_details.application_link %}
-    <a href="{{ post.job_details.application_link }}" class="apply-btn" target="_blank">
-        <i class="fas fa-external-link-alt"></i> Apply on Website
-    </a>
-    {% else %}
-    <div class="no-application-method">
-        <a href="{% url 'posts:post_detail' post.id %}" class="apply-btn secondary">
-            <i class="fas fa-info-circle"></i> View Details
-        </a>
-        <small class="text-muted">Contact information not provided</small>
-    </div>
-    {% endif %}
-    
-    <span class="applicants-count">
-        <i class="fas fa-users"></i> {{ post.job_applications.count }} applicants
-    </span>
-</div>
+                <!-- SECTION APPLICATION CORRIGÉE -->
+                <div class="job-apply">
+                    {% if post.job_details.application_email %}
+                    <div class="email-application-section">
+                        <!-- Option Gmail -->
+                        <a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ post.job_details.application_email|urlencode }}&su=Application for {{ post.job_details.job_title|urlencode }} at {{ post.job_details.company|urlencode }}&body=Dear Hiring Manager,%0A%0AI am writing to express my interest in the {{ post.job_details.job_title|urlencode }} position at {{ post.job_details.company|urlencode }} that I discovered on TalentForge.%0A%0APlease find my resume and cover letter attached for your consideration.%0A%0AI look forward to the opportunity to discuss how my skills and experience align with your requirements.%0A%0ABest regards,%0A[Your Full Name]%0A[Your Phone Number]%0A[Your LinkedIn Profile (optional)]" 
+                           class="apply-btn gmail-btn" target="_blank">
+                            <i class="fab fa-google"></i> Apply via Gmail
+                        </a>
+                        
+                        <!-- Option Outlook -->
+                        <a href="https://outlook.live.com/owa/?path=/mail/action/compose&to={{ post.job_details.application_email|urlencode }}&subject=Application for {{ post.job_details.job_title|urlencode }} at {{ post.job_details.company|urlencode }}&body=Dear Hiring Manager,%0A%0AI am writing to express my interest in the {{ post.job_details.job_title|urlencode }} position at {{ post.job_details.company|urlencode }} that I discovered on TalentForge.%0A%0APlease find my resume and cover letter attached for your consideration.%0A%0AI look forward to the opportunity to discuss how my skills and experience align with your requirements.%0A%0ABest regards,%0A[Your Full Name]%0A[Your Phone Number]%0A[Your LinkedIn Profile (optional)]" 
+                           class="apply-btn outlook-btn" target="_blank">
+                            <i class="fas fa-envelope"></i> Apply via Outlook
+                        </a>
+                        
+                        <!-- Option Email Client par défaut -->
+                        <a href="mailto:{{ post.job_details.application_email }}?subject=Application for {{ post.job_details.job_title|urlencode }} at {{ post.job_details.company|urlencode }}&body=Dear Hiring Manager,%0A%0AI am writing to express my interest in the {{ post.job_details.job_title|urlencode }} position at {{ post.job_details.company|urlencode }} that I discovered on TalentForge.%0A%0APlease find my resume and cover letter attached for your consideration.%0A%0AI look forward to the opportunity to discuss how my skills and experience align with your requirements.%0A%0ABest regards,%0A[Your Full Name]%0A[Your Phone Number]%0A[Your LinkedIn Profile (optional)]" 
+                           class="apply-btn default-email-btn" target="_blank">
+                            <i class="fas fa-paper-plane"></i> Apply via Default Email
+                        </a>
+                        
+                        <div class="email-info">
+                            <small class="email-address">{{ post.job_details.application_email }}</small>
+                            <small><i class="fas fa-info-circle"></i> Choose your preferred email service</small>
+                        </div>
+                    </div>
+                    {% elif post.job_details.application_link %}
+                    <a href="{{ post.job_details.application_link }}" class="apply-btn website-btn" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Apply on Website
+                    </a>
+                    {% else %}
+                    <div class="no-application-method">
+                        <a href="{% url 'posts:post_detail' post.id %}" class="apply-btn secondary">
+                            <i class="fas fa-info-circle"></i> View Details
+                        </a>
+                        <small class="text-muted">Contact information not provided</small>
+                    </div>
+                    {% endif %}
+                    
+                    <span class="applicants-count">
+                        <i class="fas fa-users"></i> {{ post.job_applications.count }} applicants
+                    </span>
+                </div>
             </div>
             {% else %}
             <div class="no-job-details">
@@ -243,6 +260,7 @@
         </div>
         {% endif %}
 
+        <!-- Post Media -->
         {% if post.image %}
         <div class="post-media">
             <img src="{{ post.image.url }}" class="post-image" alt="Post image">
@@ -258,6 +276,7 @@
         </div>
         {% endif %}
 
+        <!-- Post Actions -->
         <div class="post-actions">
             <a href="{% url 'posts:post_detail' post.pk %}" class="action-link">
                 <i class="fas fa-comment"></i> Comments ({{ post.comments.count }})
@@ -277,6 +296,7 @@
             </a>
         </div>
         
+        <!-- Shares Section -->
         {% if post.post_shares.exists %}
         <div class="shares-section">
             <small style="color: #666;">
@@ -303,6 +323,7 @@
     </div>
     {% endfor %}
 
+    <!-- Pagination -->
     {% if is_paginated %}
     <div class="pagination-container">
         <nav aria-label="Posts pagination">
@@ -691,7 +712,6 @@
     border-top: 1px solid #e9ecef;
 }
 
-/* Le reste de votre CSS existant reste inchangé */
 .post-type-badge {
     margin-bottom: 1rem;
 }
@@ -872,6 +892,7 @@
     font-weight: 500;
 }
 
+/* SECTION APPLICATION CORRIGÉE */
 .job-apply {
     text-align: center;
     margin-top: 1.5rem;
@@ -880,13 +901,20 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0.75rem;
+}
+
+.email-application-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 0.5rem;
+    width: 100%;
 }
 
 .apply-btn {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
-    padding: 0.75rem 2rem;
+    padding: 0.75rem 1.5rem;
     text-decoration: none;
     border-radius: 25px;
     font-weight: bold;
@@ -894,13 +922,106 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    width: 100%;
+    max-width: 250px;
+    justify-content: center;
 }
 
-.apply-btn:hover {
+/* Bouton Gmail - Rouge */
+.gmail-btn {
+    background: linear-gradient(135deg, #EA4335 0%, #D14836 100%);
+}
+
+.gmail-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(234, 67, 53, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+/* Bouton Outlook - Bleu */
+.outlook-btn {
+    background: linear-gradient(135deg, #0078D4 0%, #106EBE 100%);
+}
+
+.outlook-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+/* Bouton Email par défaut - Violet */
+.default-email-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.default-email-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+/* Bouton site web */
+.website-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.website-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
     color: white;
     text-decoration: none;
+}
+
+.apply-btn.secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.apply-btn.secondary:hover {
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.email-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.email-info small {
+    color: #6c757d;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.email-address {
+    background: #f8f9fa;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    border: 1px solid #e9ecef;
+    font-family: monospace;
+    font-weight: 600;
+    color: #495057 !important;
+}
+
+.no-application-method {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.no-application-method .text-muted {
+    font-size: 0.8rem;
+    font-style: italic;
 }
 
 .applicants-count {
@@ -909,8 +1030,61 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
+    margin-top: 0.5rem;
 }
 
+/* Animation pour les boutons */
+.apply-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.apply-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.apply-btn:hover::before {
+    left: 100%;
+}
+
+/* Responsive Design pour les boutons d'application */
+@media (max-width: 768px) {
+    .email-application-section {
+        width: 100%;
+    }
+    
+    .apply-btn {
+        width: 100%;
+        max-width: none;
+        padding: 0.75rem 1rem;
+    }
+    
+    .email-info {
+        text-align: center;
+    }
+}
+
+@media (min-width: 769px) {
+    .email-application-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.75rem;
+        width: 100%;
+    }
+    
+    .email-info {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Le reste des styles existants */
 .post-media {
     margin: 1.5rem 0;
 }
@@ -1281,6 +1455,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     card.style.display = 'none';
                 }
             });
+        });
+    });
+
+    // Email application tracking
+    document.querySelectorAll('.gmail-btn, .outlook-btn, .default-email-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const jobTitle = this.closest('.job-details-content').querySelector('.job-title').textContent;
+            const company = this.closest('.job-details-content').querySelector('.company-name').textContent;
+            const emailService = this.classList.contains('gmail-btn') ? 'Gmail' : 
+                               this.classList.contains('outlook-btn') ? 'Outlook' : 'Default Email';
+            
+            console.log(`📧 Application started for: ${jobTitle} at ${company} via ${emailService}`);
         });
     });
 

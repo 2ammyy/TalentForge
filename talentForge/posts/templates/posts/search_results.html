@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block subtitle %}Search Results{% endblock %}
+
+{% block content %}
+<div class="search-results">
+    <h2>Search Results for "{{ query }}"</h2>
+    
+    <form method="get" action="{% url 'posts:search' %}" class="search-form">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search posts or users..." class="search-input">
+        <button type="submit" class="nav-button">🔍 Search</button>
+    </form>
+    
+    {% if user_results %}
+    <div class="search-section">
+        <h3>Users</h3>
+        <div class="user-results">
+            {% for user in user_results %}
+            <div class="user-card">
+                <div class="user-info">
+                    <h4>
+                        <a href="{% url 'posts:user_profile' user.username %}">
+                            {{ user.get_full_name|default:user.username }}
+                        </a>
+                    </h4>
+                    <p class="username">@{{ user.username }}</p>
+                </div>
+                <a href="{% url 'posts:user_profile' user.username %}" class="nav-button">
+                    View Profile
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if post_results %}
+    <div class="search-section">
+        <h3>Posts</h3>
+        <div class="post-results">
+            {% for post in post_results %}
+            <div class="post-card">
+                <h4>
+                    <a href="{% url 'posts:post_detail' post.pk %}">{{ post.title }}</a>
+                </h4>
+                <p class="post-content-preview">{{ post.content|truncatewords:30 }}</p>
+                <div class="post-meta">
+                    <span>By 
+                        <a href="{% url 'posts:user_profile' post.author.username %}">
+                            {{ post.author.username }}
+                        </a>
+                    </span>
+                    <span>{{ post.created_at|timesince }} ago</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if not user_results and not post_results and query %}
+        <p>No results found for "{{ query }}"</p>
+    {% endif %}
+</div>
+
+<style>
+.search-section {
+    margin-bottom: 2rem;
+}
+
+.user-card, .post-card {
+    background: #f8f9fa;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-info h4, .post-card h4 {
+    margin: 0 0 0.5rem 0;
+}
+
+.username {
+    color: #6c757d;
+    font-size: 0.9em;
+    margin: 0;
+}
+
+.post-content-preview {
+    margin: 0.5rem 0;
+    color: #495057;
+}
+</style>
+{% endblock %}

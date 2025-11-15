@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -66,6 +65,61 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        
+        /* Search Bar Styles */
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 25px;
+            padding: 5px 15px;
+            border: 2px solid #007bff;
+            min-width: 300px;
+        }
+        .search-input {
+            border: none;
+            outline: none;
+            padding: 8px;
+            font-size: 14px;
+            flex: 1;
+            background: transparent;
+        }
+        .search-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+        }
+        .search-button:hover {
+            color: #0056b3;
+        }
+        
+        /* Messages badge */
+        .messages-button {
+            position: relative;
+        }
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: bold;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        /* User actions section */
+        .user-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-left: auto;
+        }
     </style>
 </head>
 <body>
@@ -81,31 +135,37 @@
             <a href="{% url 'posts:post_create' %}" class="nav-button {% if request.resolver_match.url_name == 'post_create' %}active{% endif %}">
                 ➕ Create Post
             </a>
-            <!-- Ceci est remplacé temprairement par un lien inactif -->
+            
+            <!-- Search Bar -->
+            <form action="{% url 'posts:search' %}" method="get" class="search-container">
+                <input type="text" name="q" placeholder="Search posts or profiles..." 
+                       value="{{ request.GET.q }}" class="search-input">
+                <button type="submit" class="search-button">🔍</button>
+            </form>
+            
+            <!-- Messages Button -->
+            <a href="{% url 'posts:messages' %}" class="nav-button messages-button {% if request.resolver_match.url_name == 'messages' %}active{% endif %}">
+                💬 Messages
+                {% if unread_messages_count and unread_messages_count > 0 %}
+                    <span class="badge">{{ unread_messages_count }}</span>
+                {% endif %}
+            </a>
+            
+            <!-- Notifications -->
             <a href="{% url 'posts:notifications' %}" class="nav-button {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
                 🔔 Notifications
             </a>
-            <a href="#" class="nav-button" onclick="alert('Notifications feature coming soon!')">
-                🔔 Notifications
-            </a>
             
-            
+            <!-- User Actions - Only show logout for authenticated users -->
             {% if user.is_authenticated %}
-                <form method="post" action="{% url 'base:logout' %}" style="margin-left: auto;">
+            <div class="user-actions">
+                <form method="post" action="{% url 'base:logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="nav-button" style="background: #dc3545;">
                         🚪 Logout
                     </button>
                 </form>
-            {% else %}
-                <div style="margin-left: auto; display: flex; gap: 1rem;">
-                    <a href="{% url 'base:login' %}" class="nav-button" style="background: #28a745;">
-                        🔑 Login
-                    </a>
-                    <a href="{% url 'base:signup' %}" class="nav-button" style="background: #ffc107; color: black;">
-                        📝 Sign Up
-                    </a>
-                </div>
+            </div>
             {% endif %}
         </div>
     </nav>
