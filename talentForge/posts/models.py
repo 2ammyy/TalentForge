@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 class Post(models.Model):
     POST_TYPES = [
@@ -18,13 +20,8 @@ class Post(models.Model):
     image = models.ImageField(upload_to='posts/images/', blank=True, null=True)
     video = models.FileField(upload_to='posts/videos/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.author.username} - {self.type}"
-
-    def average_rating(self):
-        return self.ratings.aggregate(models.Avg('score'))['score__avg'] or 0
-        # Champ pour le post original si c'est un partage
+    
+    # Champ pour le post original si c'est un partage (corrigé - un seul champ)
     shared_post = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='shares')
 
     def __str__(self):
@@ -38,12 +35,20 @@ class Post(models.Model):
         """Retourne le nombre de fois que ce post a été partagé"""
         return self.shares.count()
 
+    @property
+    def like_count(self):
+        """Retourne le nombre de likes"""
+        return self.reactions.count()
+
 
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comment by {self.author.username} on {self.post}"
 
 
 class Reaction(models.Model):
@@ -62,6 +67,8 @@ class Reaction(models.Model):
     class Meta:
         unique_together = ('post', 'user')  # 1 reaction per user/post
 
+    def __str__(self):
+        return f"{self.user.username} - {self.reaction_type} on {self.post.id}"
 
 
 class JobPost(models.Model):
@@ -113,6 +120,7 @@ class JobPost(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+
 class Share(models.Model):
     """Modèle spécifique pour gérer les partages avec caption"""
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_shares')
@@ -125,7 +133,6 @@ class Share(models.Model):
 
     def __str__(self):
         return f"{self.user.username} shared {self.post.id}"
-
 
 
 class Report(models.Model):
@@ -202,3 +209,122 @@ class Report(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='posts_profile')
+    bio = models.TextField(max_length=500, blank=True)
+    location = models.CharField(max_length=30, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True)
+    website = models.URLField(blank=True)
+    github = models.URLField(blank=True)
+    linkedin = models.URLField(blank=True)
+    followers = models.ManyToManyField(User, related_name='following', blank=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+    
+    def followers_count(self):
+        return self.followers.count()
+    
+    def following_count(self):
+        return self.user.following.count()
+
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['timestamp']
+    
+    def __str__(self):
+        return f"From {self.sender} to {self.receiver}"
+
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('like', 'Like'),
+        ('comment', 'Comment'),
+        ('share', 'Share'),
+        ('follow', 'Follow'),
+        ('view', 'Profile View'),
+        ('report', 'Report'),
+    )
+    
+    user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    from_user = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE)
+    notification_type = models.CharField(max_length=10, choices=NOTIFICATION_TYPES)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        return f"{self.from_user.username} {self.get_notification_type_display()}"
+
+
+# Signals pour les notifications automatiques
+@receiver(post_save, sender=Comment)
+def create_comment_notification(sender, instance, created, **kwargs):
+    if created and instance.author != instance.post.author:
+        Notification.objects.create(
+            user=instance.post.author,
+            from_user=instance.author,
+            notification_type='comment',
+            post=instance.post
+        )
+
+
+@receiver(post_save, sender=Reaction)
+def create_reaction_notification(sender, instance, created, **kwargs):
+    if created and instance.user != instance.post.author:
+        Notification.objects.create(
+            user=instance.post.author,
+            from_user=instance.user,
+            notification_type='like',
+            post=instance.post
+        )
+
+
+@receiver(post_save, sender=Share)
+def create_share_notification(sender, instance, created, **kwargs):
+    if created and instance.user != instance.post.author:
+        Notification.objects.create(
+            user=instance.post.author,
+            from_user=instance.user,
+            notification_type='share',
+            post=instance.post
+        )
+
+
+@receiver(post_save, sender=Report)
+def create_report_notification(sender, instance, created, **kwargs):
+    if created:
+        # Notification pour l'admin (vous pouvez ajuster selon vos besoins)
+        admin_users = User.objects.filter(is_staff=True)
+        for admin in admin_users:
+            Notification.objects.create(
+                user=admin,
+                from_user=instance.reporter,
+                notification_type='report',
+                post=instance.post
+            )
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'userprofile'):
+        instance.userprofile.save()
