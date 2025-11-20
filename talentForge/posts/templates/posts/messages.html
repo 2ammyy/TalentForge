@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block subtitle %}Messages{% endblock %}
+
+{% block content %}
+<div class="messages-container">
+    <h2>💬 Messages</h2>
+    
+    <div class="conversations-list">
+        {% for conversation in conversations %}
+            <a href="{% url 'posts:conversation' conversation.user.username %}" 
+               class="conversation-item {% if conversation.unread_count > 0 %}unread{% endif %}">
+                <div class="conversation-info">
+                    <h4>{{ conversation.user.username }}</h4>
+                    {% if conversation.last_message %}
+                        <p class="message-preview">{{ conversation.last_message.content|truncatewords:10 }}</p>
+                        <span class="timestamp">{{ conversation.last_message.timestamp|timesince }} ago</span>
+                    {% else %}
+                        <p class="message-preview">No messages yet</p>
+                    {% endif %}
+                </div>
+                {% if conversation.unread_count > 0 %}
+                    <span class="unread-badge">{{ conversation.unread_count }}</span>
+                {% endif %}
+            </a>
+        {% empty %}
+            <p>No conversations yet. Start a conversation by visiting someone's profile!</p>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.conversations-list {
+    margin-top: 1rem;
+}
+
+.conversation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.conversation-item:hover {
+    background-color: #f8f9fa;
+    text-decoration: none;
+    color: inherit;
+}
+
+.conversation-item.unread {
+    background-color: #e7f3ff;
+    border-color: #007bff;
+}
+
+.conversation-info h4 {
+    margin: 0 0 0.5rem 0;
+}
+
+.message-preview {
+    margin: 0;
+    color: #6c757d;
+}
+
+.timestamp {
+    font-size: 0.8em;
+    color: #adb5bd;
+}
+
+.unread-badge {
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8em;
+    min-width: 20px;
+    text-align: center;
+}
+</style>
+{% endblock %}

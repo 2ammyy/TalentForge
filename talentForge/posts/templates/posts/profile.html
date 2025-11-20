@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block subtitle %}{{ profile_user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-info">
+            <div class="profile-avatar">
+                {{ profile_user.username|first|upper }}
+            </div>
+            <div class="profile-details">
+                <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                <p class="username">@{{ profile_user.username }}</p>
+                <p class="user-stats">
+                    <span>{{ user_posts.count }} posts</span>
+                </p>
+                {% if profile_user != request.user %}
+                    <a href="{% url 'posts:conversation' profile_user.username %}" class="nav-button">
+                        💬 Send Message
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="user-posts">
+        <h3>Posts</h3>
+        {% for post in user_posts %}
+            <div class="post-card">
+                <h4><a href="{% url 'posts:post_detail' post.pk %}">{{ post.title }}</a></h4>
+                <p class="post-content">{{ post.content|truncatewords:50 }}</p>
+                <div class="post-meta">
+                    <span>{{ post.created_at|timesince }} ago</span>
+                    <span>💬 {{ post.comments.count }} comments</span>
+                    <span>❤️ {{ post.likes.count }} likes</span>
+                </div>
+            </div>
+        {% empty %}
+            <p>No posts yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.profile-details h1 {
+    margin: 0 0 0.5rem 0;
+}
+
+.username {
+    color: #6c757d;
+    margin: 0 0 1rem 0;
+}
+
+.user-stats {
+    margin: 1rem 0;
+}
+
+.user-stats span {
+    margin-right: 1rem;
+}
+
+.post-card {
+    background: #f8f9fa;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+}
+
+.post-card h4 {
+    margin: 0 0 0.5rem 0;
+}
+
+.post-content {
+    margin: 0.5rem 0;
+    color: #495057;
+}
+
+.post-meta {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.post-meta span {
+    margin-right: 1rem;
+}
+</style>
+{% endblock %}

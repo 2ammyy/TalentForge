@@ -1,5 +1,5 @@
 from django import forms
-from .models import Post, Comment, JobPost , Share,Report
+from .models import Post, Comment, JobPost , Share, Report , UserProfile , Message
 
 class PostForm(forms.ModelForm):
     
@@ -233,3 +233,31 @@ class ReportForm(forms.ModelForm):
             'reason': 'Reason for Reporting',
             'description': 'Additional Details (Optional)',
         }
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['bio', 'location', 'birth_date', 'profile_picture', 'website', 'github', 'linkedin']
+
+class MessageForm(forms.ModelForm):
+    class Meta:
+        model = Message
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'rows': 3, 
+                'placeholder': 'Type your message here...',
+                'class': 'form-control'
+            })
+        }
+
+class SearchForm(forms.Form):
+    q = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Search profiles...',
+            'class': 'search-input'
+        })
+    )
