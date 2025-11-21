@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %} 
 {% block title %}Delete Account - TalentForge{% endblock %}
 
 {% block content %}
@@ -56,13 +56,5 @@
     </div>
 </div>
 
-<script>
-// Auto-submit when user types the correct confirmation text
-document.getElementById('confirmation_text').addEventListener('input', function(e) {
-    if (this.value.toUpperCase() === 'DELETE MY ACCOUNT') {
-        // You can optionally auto-submit here, but it's better to let user click
-        document.querySelector('button[type="submit"]').focus();
-    }
-});
-</script>
+
 {% endblock %}

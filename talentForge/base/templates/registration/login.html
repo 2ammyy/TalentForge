@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %} 
 
 {% block title %}Login - TalentForge{% endblock %}
 
@@ -98,51 +99,5 @@
     </div>
 </div>
 
-<style>
-    /* Additional custom styles */
-    .card {
-        border: none;
-        border-radius: 10px;
-    }
-    
-    .form-control {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-    }
-    
-    .btn-primary {
-        padding: 10px;
-        font-weight: bold;
-    }
-    
-    .is-invalid {
-        border-color: #dc3545 !important;
-    }
-</style>
 
-<script>
-    function togglePassword(inputId, button) {
-        const passwordInput = document.getElementById(inputId);
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            button.textContent = '🙈';
-        } else {
-            passwordInput.type = 'password';
-            button.textContent = '👁️';
-        }
-    }
-    
-    // Clear error styling when user starts typing
-    document.addEventListener('DOMContentLoaded', function() {
-        const inputs = document.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.addEventListener('input', function() {
-                if (this.classList.contains('is-invalid')) {
-                    this.classList.remove('is-invalid');
-                }
-            });
-        });
-    });
-</script>
 {% endblock %}

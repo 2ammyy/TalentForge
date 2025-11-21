@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %} 
 {% block title %}Confirm Account Deletion - TalentForge{% endblock %}
 
 {% block content %}
@@ -65,25 +65,4 @@
     </div>
 </div>
 
-<script>
-// Auto-advance to next input (for better UX)
-document.getElementById('verification_code').addEventListener('input', function(e) {
-    if (this.value.length === 6) {
-        document.getElementById('confirmation_text').focus();
-    }
-});
-
-// Auto-submit when both fields are correctly filled
-function checkAutoSubmit() {
-    const code = document.getElementById('verification_code').value;
-    const confirmation = document.getElementById('confirmation_text').value;
-    
-    if (code.length === 6 && confirmation.toUpperCase() === 'DELETE MY ACCOUNT') {
-        document.querySelector('button[type="submit"]').focus();
-    }
-}
-
-document.getElementById('verification_code').addEventListener('input', checkAutoSubmit);
-document.getElementById('confirmation_text').addEventListener('input', checkAutoSubmit);
-</script>
 {% endblock %}

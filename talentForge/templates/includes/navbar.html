@@ -1,0 +1,220 @@
+<!-- CHEMIN: talentForge/templates/includes/navbar.html -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <!-- Logo et Nom -->
+        <a class="navbar-brand" href="{% url 'base:home' %}">
+            <i class="fas fa-rocket"></i> TalentForge
+        </a>
+        
+        <!-- Bouton responsive -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Menu principal -->
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'base:home' %}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                <!-- Create Post -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'posts:post_create' %}">
+                        <i class="fas fa-plus-circle"></i> Create Post
+                    </a>
+                </li>
+                
+                <!-- Posts List -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'posts:post_list' %}">
+                        <i class="fas fa-newspaper"></i> Posts
+                    </a>
+                </li>
+                
+                <!-- Messages -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'posts:messages' %}">
+                        <i class="fas fa-comments"></i> Messages
+                    </a>
+                </li>
+                
+                <!-- Notifications -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'posts:notifications' %}">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <!-- BARRE DE RECHERCHE -->
+            <form class="d-flex me-3" method="GET" action="{% url 'posts:search' %}">
+                <div class="input-group">
+                    <input type="text" 
+                           name="q" 
+                           class="form-control" 
+                           placeholder="Search posts or users..." 
+                           aria-label="Search"
+                           value="{{ request.GET.q|default:'' }}"
+                           style="min-width: 250px;">
+                    <button class="btn btn-outline-light" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Menu utilisateur -->
+            <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                            <!-- Photo de profil -->
+                            {% if user.userprofile.get_profile_picture %}
+                                <img src="{{ user.userprofile.get_profile_picture }}" 
+                                     alt="Profile" 
+                                     class="rounded-circle me-2"
+                                     style="width: 32px; height: 32px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center bg-primary text-white"
+                                     style="width: 32px; height: 32px; font-size: 14px;">
+                                    {{ user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                            <!-- Nom d'utilisateur -->
+                            {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <!-- Profile -->
+                            <li>
+                                <a class="dropdown-item" href="{% url 'base:view_profile' %}">
+                                    <i class="fas fa-user me-2"></i> Profile
+                                </a>
+                            </li>
+                            
+                            <!-- Edit Profile -->
+                            <li>
+                                <a class="dropdown-item" href="{% url 'base:edit_profile' %}">
+                                    <i class="fas fa-edit me-2"></i> Edit Profile
+                                </a>
+                            </li>
+                            
+                            <!-- Settings -->
+                            <li>
+                                <a class="dropdown-item" href="{% url 'base:profile_settings' %}">
+                                    <i class="fas fa-cog me-2"></i> Settings
+                                </a>
+                            </li>
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            
+                            <!-- Logout -->
+                            <li>
+                                <form method="post" action="{% url 'base:logout' %}" class="d-inline w-100">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger w-100 text-start">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <!-- Login -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'base:login' %}">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    </li>
+                    
+                    <!-- Sign Up -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'base:signup' %}">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<style>
+/* Styles spécifiques pour la navbar */
+.navbar .input-group {
+    min-width: 250px;
+}
+
+.navbar .form-control {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.navbar .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.navbar .form-control:focus {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: white;
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
+}
+
+.navbar .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.navbar .btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .navbar .input-group {
+        min-width: 200px;
+        margin: 10px 0;
+    }
+    
+    .navbar-nav {
+        margin: 10px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar .input-group {
+        min-width: 100%;
+        margin: 10px 0;
+    }
+    
+    .navbar .d-flex {
+        order: 2;
+        width: 100%;
+    }
+    
+    .navbar-nav .nav-item {
+        margin: 5px 0;
+    }
+}
+
+/* Animation dropdown */
+.dropdown-menu {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>

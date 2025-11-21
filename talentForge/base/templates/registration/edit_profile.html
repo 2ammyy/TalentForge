@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %} 
 {% block title %}Edit Profile - TalentForge{% endblock %}
 
 {% block content %}
@@ -151,71 +151,5 @@
     </div>
 </div>
 
-<script>
-    // Preview profile picture from URL
-    document.getElementById('id_profile_picture_url').addEventListener('input', function(e) {
-        const url = e.target.value;
-        if (url) {
-            document.getElementById('profile-preview').src = url;
-            // Clear file input when URL is used
-            document.getElementById('id_profile_picture').value = '';
-        }
-    });
 
-    // Preview uploaded file
-    document.getElementById('id_profile_picture').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('profile-preview').src = e.target.result;
-                // Clear URL input when file is uploaded
-                document.getElementById('id_profile_picture_url').value = '';
-            }
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // Handle tab switching - clear the other input
-    document.getElementById('upload-tab').addEventListener('click', function() {
-        document.getElementById('id_profile_picture_url').value = '';
-    });
-
-    document.getElementById('url-tab').addEventListener('click', function() {
-        document.getElementById('id_profile_picture').value = '';
-    });
-
-    // Handle delete checkbox - show confirmation
-    const deleteCheckbox = document.getElementById('id_remove_profile_picture');
-    if (deleteCheckbox) {
-        deleteCheckbox.addEventListener('change', function(e) {
-            if (this.checked) {
-                if (!confirm('Are you sure you want to delete your profile picture? This action cannot be undone.')) {
-                    this.checked = false;
-                } else {
-                    // Clear file and URL inputs when delete is checked
-                    document.getElementById('id_profile_picture').value = '';
-                    document.getElementById('id_profile_picture_url').value = '';
-                    // Update preview to show default avatar
-                    document.getElementById('profile-preview').src = 'https://ui-avatars.com/api/?name={{ request.user.username }}&background=007bff&color=fff&size=150&bold=true';
-                }
-            }
-        });
-    }
-
-    // Clear delete checkbox when new photo is selected
-    document.getElementById('id_profile_picture').addEventListener('change', function() {
-        const deleteCheckbox = document.getElementById('id_remove_profile_picture');
-        if (deleteCheckbox) {
-            deleteCheckbox.checked = false;
-        }
-    });
-
-    document.getElementById('id_profile_picture_url').addEventListener('input', function() {
-        const deleteCheckbox = document.getElementById('id_remove_profile_picture');
-        if (deleteCheckbox && this.value) {
-            deleteCheckbox.checked = false;
-        }
-    });
-</script>
 {% endblock %}

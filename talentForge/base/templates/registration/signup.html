@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load static %} 
 {% block title %}Sign Up - TalentForge{% endblock %}
 
 {% block content %}
@@ -107,16 +107,5 @@
     </div>
 </div>
 
-<script>
-    function togglePassword(inputId, button) {
-        const passwordInput = document.getElementById(inputId);
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            button.textContent = '🙈';
-        } else {
-            passwordInput.type = 'password';
-            button.textContent = '👁️';
-        }
-    }
-</script>
+
 {% endblock %}
