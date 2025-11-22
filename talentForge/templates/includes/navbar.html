@@ -14,19 +14,10 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <!-- Menu principal -->
             <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'base:home' %}">
-                        <i class="fas fa-home"></i> Home
-                    </a>
-                </li>
+                
                 
                 {% if user.is_authenticated %}
-                <!-- Create Post -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'posts:post_create' %}">
-                        <i class="fas fa-plus-circle"></i> Create Post
-                    </a>
-                </li>
+                
                 
                 <!-- Posts List -->
                 <li class="nav-item">
@@ -34,6 +25,29 @@
                         <i class="fas fa-newspaper"></i> Posts
                     </a>
                 </li>
+
+                <!-- Create Post -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'posts:post_create' %}">
+                        <i class="fas fa-plus-circle"></i> Create Post
+                    </a>
+                </li>
+
+                <!-- Search navbar -->
+            <form class="d-flex me-3" method="GET" action="{% url 'posts:search' %}">
+                <div class="input-group">
+                    <input type="text" 
+                           name="q" 
+                           class="form-control" 
+                           placeholder="Search posts or users..." 
+                           aria-label="Search"
+                           value="{{ request.GET.q|default:'' }}"
+                           style="min-width: 250px;">
+                    <button class="btn btn-outline-light" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
                 
                 <!-- Messages -->
                 <li class="nav-item">
@@ -51,23 +65,9 @@
                 {% endif %}
             </ul>
             
-            <!-- BARRE DE RECHERCHE -->
-            <form class="d-flex me-3" method="GET" action="{% url 'posts:search' %}">
-                <div class="input-group">
-                    <input type="text" 
-                           name="q" 
-                           class="form-control" 
-                           placeholder="Search posts or users..." 
-                           aria-label="Search"
-                           value="{{ request.GET.q|default:'' }}"
-                           style="min-width: 250px;">
-                    <button class="btn btn-outline-light" type="submit">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </form>
             
-            <!-- Menu utilisateur -->
+            
+            <!-- User menu -->
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
