@@ -1,142 +1,127 @@
-<!-- CHEMIN: talentForge/templates/includes/navbar.html -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-2 fixed-top">
     <div class="container">
-        <!-- Logo et Nom -->
-        <a class="navbar-brand" href="{% url 'base:home' %}">
-            <i class="fas fa-rocket"></i> TalentForge
+
+        <!-- Logo -->
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'base:home' %}">
+            <i class="fas fa-rocket me-2 text-primary"></i> TalentForge
         </a>
-        
-        <!-- Bouton responsive -->
+
+        <!-- Mobile toggle -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-        
+
+        <!-- Navbar content -->
         <div class="collapse navbar-collapse" id="navbarNav">
-            <!-- Menu principal -->
-            <ul class="navbar-nav me-auto">
-                
-                
+            
+            <!-- Left Menu -->
+            <ul class="navbar-nav me-auto mt-2 mt-lg-0 gap-lg-4 gap-2">
+
                 {% if user.is_authenticated %}
-                
-                
-                <!-- Posts List -->
+
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:post_list' %}">
-                        <i class="fas fa-newspaper"></i> Posts
+                        <i class="fas fa-newspaper me-1"></i> Posts
                     </a>
                 </li>
 
-                <!-- Create Post -->
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:post_create' %}">
-                        <i class="fas fa-plus-circle"></i> Create Post
+                        <i class="fas fa-plus-circle me-1"></i> Create
                     </a>
                 </li>
 
-                <!-- Search navbar -->
-            <form class="d-flex me-3" method="GET" action="{% url 'posts:search' %}">
-                <div class="input-group">
-                    <input type="text" 
-                           name="q" 
-                           class="form-control" 
-                           placeholder="Search posts or users..." 
-                           aria-label="Search"
-                           value="{{ request.GET.q|default:'' }}"
-                           style="min-width: 250px;">
-                    <button class="btn btn-outline-light" type="submit">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </form>
-                
-                <!-- Messages -->
+                <!-- Search bar -->
+                <li class="nav-item d-flex align-items-center">
+                    <form class="d-flex ms-lg-3 my-2 my-lg-0 search-navbar" method="GET"
+                          action="{% url 'posts:search' %}">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control"
+                                   placeholder="Search…" value="{{ request.GET.q|default:'' }}">
+                            <button class="btn btn-outline-light" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </li>
+
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:messages' %}">
-                        <i class="fas fa-comments"></i> Messages
+                        <i class="fas fa-comments me-1"></i> Messages
                     </a>
                 </li>
-                
-                <!-- Notifications -->
+
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:notifications' %}">
-                        <i class="fas fa-bell"></i> Notifications
+                        <i class="fas fa-bell me-1"></i> Notifications
+                    </a>
+                </li>
+
+                {% endif %}
+            </ul>
+
+            <!-- Right Menu -->
+            <ul class="navbar-nav gap-lg-3 gap-2">
+
+                {% if user.is_authenticated %}
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+
+                        {% if user.userprofile.get_profile_picture %}
+                            <img src="{{ user.userprofile.get_profile_picture }}"
+                                 class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
+                        {% else %}
+                            <div class="rounded-circle bg-primary text-white me-2 d-flex justify-content-center align-items-center"
+                                 style="width:32px;height:32px;">
+                                {{ user.username|first|upper }}
+                            </div>
+                        {% endif %}
+                        
+                        {{ user.username }}
+                    </a>
+
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><a class="dropdown-item" href="{% url 'base:view_profile' %}">
+                            <i class="fas fa-user me-2"></i> Profile
+                        </a></li>
+
+                        <li><a class="dropdown-item" href="{% url 'base:edit_profile' %}">
+                            <i class="fas fa-edit me-2"></i> Edit Profile
+                        </a></li>
+
+                        <li><a class="dropdown-item" href="{% url 'base:profile_settings' %}">
+                            <i class="fas fa-cog me-2"></i> Settings
+                        </a></li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <form method="post" action="{% url 'base:logout' %}">
+                                {% csrf_token %}
+                                <button class="dropdown-item text-danger" type="submit">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'base:login' %}">
+                        <i class="fas fa-sign-in-alt me-1"></i> Login
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'base:signup' %}">
+                        <i class="fas fa-user-plus me-1"></i> Sign Up
                     </a>
                 </li>
                 {% endif %}
-            </ul>
-            
-            
-            
-            <!-- User menu -->
-            <ul class="navbar-nav">
-                {% if user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                            <!-- Photo de profil -->
-                            {% if user.userprofile.get_profile_picture %}
-                                <img src="{{ user.userprofile.get_profile_picture }}" 
-                                     alt="Profile" 
-                                     class="rounded-circle me-2"
-                                     style="width: 32px; height: 32px; object-fit: cover;">
-                            {% else %}
-                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center bg-primary text-white"
-                                     style="width: 32px; height: 32px; font-size: 14px;">
-                                    {{ user.username|first|upper }}
-                                </div>
-                            {% endif %}
-                            <!-- Nom d'utilisateur -->
-                            {{ user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <!-- Profile -->
-                            <li>
-                                <a class="dropdown-item" href="{% url 'base:view_profile' %}">
-                                    <i class="fas fa-user me-2"></i> Profile
-                                </a>
-                            </li>
-                            
-                            <!-- Edit Profile -->
-                            <li>
-                                <a class="dropdown-item" href="{% url 'base:edit_profile' %}">
-                                    <i class="fas fa-edit me-2"></i> Edit Profile
-                                </a>
-                            </li>
-                            
-                            <!-- Settings -->
-                            <li>
-                                <a class="dropdown-item" href="{% url 'base:profile_settings' %}">
-                                    <i class="fas fa-cog me-2"></i> Settings
-                                </a>
-                            </li>
-                            
-                            <li><hr class="dropdown-divider"></li>
-                            
-                            <!-- Logout -->
-                            <li>
-                                <form method="post" action="{% url 'base:logout' %}" class="d-inline w-100">
-                                    {% csrf_token %}
-                                    <button type="submit" class="dropdown-item text-danger w-100 text-start">
-                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                {% else %}
-                    <!-- Login -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'base:login' %}">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </a>
-                    </li>
-                    
-                    <!-- Sign Up -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'base:signup' %}">
-                            <i class="fas fa-user-plus"></i> Sign Up
-                        </a>
-                    </li>
-                {% endif %}
+
             </ul>
         </div>
     </div>
@@ -144,6 +129,34 @@
 
 <style>
 /* Styles spécifiques pour la navbar */
+.navbar {
+    z-index: 1030; /* Assure que la navbar reste au-dessus du contenu */
+}
+
+.navbar-nav .nav-item .nav-link {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-item .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.navbar-nav.gap-lg-4 {
+    gap: 1.5rem !important;
+}
+
+.navbar-nav.gap-lg-3 {
+    gap: 1rem !important;
+}
+
+.navbar-nav.gap-2 {
+    gap: 0.5rem !important;
+}
+
 .navbar .input-group {
     min-width: 250px;
 }
@@ -174,6 +187,22 @@
     border-color: rgba(255, 255, 255, 0.5);
 }
 
+/* Animation dropdown */
+.dropdown-menu {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Responsive */
 @media (max-width: 992px) {
     .navbar .input-group {
@@ -199,22 +228,6 @@
     
     .navbar-nav .nav-item {
         margin: 5px 0;
-    }
-}
-
-/* Animation dropdown */
-.dropdown-menu {
-    animation: fadeIn 0.2s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
     }
 }
 </style>
