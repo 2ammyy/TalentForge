@@ -11,8 +11,86 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialisation de la messagerie si sur les pages de messages
     initMessagingFeatures();
+
+    initPostFilters();
+    
+    //  fonction pour l'animation du drapeau Palestine
+    initPalestineFlag();
 });
 
+// palestine flag animation
+// Fonction pour initialiser l'animation du drapeau Palestine
+function initPalestineFlag() {
+    const flag = document.querySelector('.palestine-flag');
+    if (flag) {
+        // Animation au survol
+        flag.addEventListener('mouseenter', () => {
+            flag.style.animation = 'wave 0.8s ease-in-out infinite';
+        });
+        
+        flag.addEventListener('mouseleave', () => {
+            flag.style.animation = 'wave 3s ease-in-out infinite';
+        });
+
+        // Effet de clic
+        flag.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Créer un effet de particules
+            createFlagParticles();
+            
+            // // Afficher un toast/message
+            // showToast('🇵🇸 Free Palestine!', 'info');
+        });
+    }
+}
+
+// Fonction pour créer des particules d'animation
+function createFlagParticles() {
+    const flag = document.querySelector('.palestine-flag');
+    if (!flag) return;
+
+    const flagRect = flag.getBoundingClientRect();
+    const colors = ['#000000', '#FFFFFF', '#009736', '#E4312B'];
+    
+    for (let i = 0; i < 15; i++) {
+        const particle = document.createElement('div');
+        particle.style.cssText = `
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background-color: ${colors[Math.floor(Math.random() * colors.length)]};
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            left: ${flagRect.left + flagRect.width / 2}px;
+            top: ${flagRect.top + flagRect.height / 2}px;
+        `;
+        
+        document.body.appendChild(particle);
+        
+        // Animation de la particule
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 2 + Math.random() * 3;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+        
+        let opacity = 1;
+        const animateParticle = () => {
+            opacity -= 0.02;
+            particle.style.opacity = opacity;
+            particle.style.transform = `translate(${vx * (1 - opacity) * 50}px, ${vy * (1 - opacity) * 50}px)`;
+            
+            if (opacity > 0) {
+                requestAnimationFrame(animateParticle);
+            } else {
+                particle.remove();
+            }
+        };
+        
+        animateParticle();
+    }
+}
 // Auto-dismiss des alertes après 5 secondes
 function autoDismissAlerts() {
     const alerts = document.querySelectorAll('.alert');

@@ -1,3 +1,108 @@
+/* talentForge\static\css\main.css */
+
+/* Variables CSS pour les thèmes avec support du drapeau */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --card-bg: #ffffff;
+    --border-color: #dee2e6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --footer-bg: #343a40;
+    --footer-text: #ffffff;
+}
+
+[data-bs-theme="dark"] {
+    --bg-color: #1a1d20;
+    --text-color: #e9ecef;
+    --card-bg: #2d3034;
+    --border-color: #495057;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --footer-bg: #212529;
+    --footer-text: #f8f9fa;
+}
+
+/* Application des variables */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Drapeau Palestine - Styles spécifiques */
+.palestine-flag {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+    animation: wave 3s ease-in-out infinite;
+    will-change: transform;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+    transition: all 0.3s ease;
+}
+
+.palestine-flag:hover {
+    transform: scale(1.1);
+}
+
+.palestine-flag::after {
+    content: "Viva Palestina";
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.palestine-flag:hover::after {
+    opacity: 1;
+}
+
+@keyframes wave {
+    0%, 100% { 
+        transform: translateY(0) rotate(0deg); 
+    }
+    25% { 
+        transform: translateY(-2px) rotate(1deg); 
+    }
+    75% { 
+        transform: translateY(2px) rotate(-1deg); 
+    }
+}
+
+/* Animation des particules */
+@keyframes particleFloat {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0);
+    }
+}
+
+
+/* Responsive pour le drapeau */
+@media (max-width: 768px) {
+    .palestine-flag::after {
+        display: none;
+    }
+    
+    .palestine-flag {
+        animation: wave 4s ease-in-out infinite;
+    }
+}
+
 /* Styles globaux */
 body {
     background-color: #f8f9fa;

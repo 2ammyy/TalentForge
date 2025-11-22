@@ -1,11 +1,22 @@
-
+<!-- talentForge\templates\includes\navbar.html -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-2 fixed-top">
     <div class="container">
 
-        <!-- Logo -->
-        <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'base:home' %}">
-            <i class="fas fa-rocket me-2 text-primary"></i> TalentForge
-        </a>
+        <!-- Logo et Drapeau Palestine -->
+        <div class="d-flex align-items-center">
+            <!-- Drapeau Palestine -->
+            <div class="palestine-flag me-3" aria-label="Drapeau de la Palestine">
+                <svg viewBox="0 0 36 24" width="30" height="20" aria-hidden="true">
+                    <rect y="0" width="36" height="8" fill="#000"/>
+                    <rect y="8" width="36" height="8" fill="#fff"/>
+                    <rect y="16" width="36" height="8" fill="#009736"/>
+                    <polygon points="0,0 13,12 0,24" fill="#e4312b"/>
+                </svg>
+            </div>
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'base:home' %}">
+                <i class="fas fa-rocket me-2 text-primary"></i> TalentForge
+            </a>
+        </div>
 
         <!-- Mobile toggle -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -63,6 +74,8 @@
 
             <!-- Right Menu -->
             <ul class="navbar-nav gap-lg-3 gap-2">
+
+                
 
                 {% if user.is_authenticated %}
 
@@ -203,6 +216,45 @@
     }
 }
 
+/* Drapeau Palestine */
+.palestine-flag {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+    animation: wave 3s ease-in-out infinite;
+    will-change: transform;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+}
+
+.palestine-flag::after {
+    content: "Viva Palestina";
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.palestine-flag:hover::after {
+    opacity: 1;
+}
+
+@keyframes wave {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-2px) rotate(1deg); }
+    75% { transform: translateY(2px) rotate(-1deg); }
+}
+
 /* Responsive */
 @media (max-width: 992px) {
     .navbar .input-group {
@@ -212,6 +264,10 @@
     
     .navbar-nav {
         margin: 10px 0;
+    }
+    
+    .palestine-flag {
+        margin-right: 15px;
     }
 }
 
@@ -228,6 +284,10 @@
     
     .navbar-nav .nav-item {
         margin: 5px 0;
+    }
+    
+    .palestine-flag::after {
+        display: none;
     }
 }
 </style>
