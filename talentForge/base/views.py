@@ -217,7 +217,7 @@ def custom_login(request):
                 if user.is_active:
                     login(request, user)
                     messages.success(request, f'Welcome back, {user.first_name or user.username}!')
-                    return redirect('base:home')
+                    return redirect('posts:post_list') # Rediriger vers la page principale après la connexion')
                 else:
                     messages.error(request, 'Your account is not active. Please verify your email.')
             else:

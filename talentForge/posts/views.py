@@ -82,7 +82,29 @@ def post_create(request):
 
 def post_list(request):
     posts = Post.objects.all().order_by('-created_at')
-    return render(request, 'posts/post_list.html')
+    
+    # Ajoutez le préchargement des relations pour optimiser les performances
+    posts = posts.select_related(
+        'author', 
+        'author__userprofile',  # Si vous avez un profil utilisateur
+        'job_details'  # Si vous avez des détails de job
+    ).prefetch_related(
+        'comments',
+        'reactions', 
+        'post_shares'
+    )
+    
+    # Pagination (optionnel mais recommandé)
+    from django.core.paginator import Paginator
+    paginator = Paginator(posts, 10)  # 10 posts par page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'posts/post_list.html', {
+        'posts': page_obj,  # ICI : vous devez passer les posts au contexte !
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+    })
 
 
 def post_detail(request, pk):

@@ -1,103 +1,40 @@
+// talentForge\static\js\main.js
+
+// ========== FONCTIONS GLOBALES ==========
+
 // Fonctions globales
 document.addEventListener('DOMContentLoaded', function() {
-    // Gestion des messages flash
+    console.log('🚀 Initializing TalentForge...');
+    
+    // Fonctions existantes
     autoDismissAlerts();
-    
-    // Initialisation des tooltips Bootstrap
     initTooltips();
-    
-    // Initialisation des fonctionnalités de posts si sur la page de création
     initPostCreation();
-    
-    // Initialisation de la messagerie si sur les pages de messages
     initMessagingFeatures();
-
     initPostFilters();
-    
-    //  fonction pour l'animation du drapeau Palestine
     initPalestineFlag();
+    
+    // Nouvelles fonctions pour les posts
+    initPostDropdowns();
+    initPostReactions();
+    
+    // Debug: Vérifier l'état des posts et dropdowns
+    setTimeout(() => {
+        debugPostPage();
+    }, 1000);
 });
 
-// palestine flag animation
-// Fonction pour initialiser l'animation du drapeau Palestine
-function initPalestineFlag() {
-    const flag = document.querySelector('.palestine-flag');
-    if (flag) {
-        // Animation au survol
-        flag.addEventListener('mouseenter', () => {
-            flag.style.animation = 'wave 0.8s ease-in-out infinite';
-        });
-        
-        flag.addEventListener('mouseleave', () => {
-            flag.style.animation = 'wave 3s ease-in-out infinite';
-        });
-
-        // Effet de clic
-        flag.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Créer un effet de particules
-            createFlagParticles();
-            
-            // // Afficher un toast/message
-            // showToast('🇵🇸 Free Palestine!', 'info');
-        });
-    }
-}
-
-// Fonction pour créer des particules d'animation
-function createFlagParticles() {
-    const flag = document.querySelector('.palestine-flag');
-    if (!flag) return;
-
-    const flagRect = flag.getBoundingClientRect();
-    const colors = ['#000000', '#FFFFFF', '#009736', '#E4312B'];
-    
-    for (let i = 0; i < 15; i++) {
-        const particle = document.createElement('div');
-        particle.style.cssText = `
-            position: fixed;
-            width: 4px;
-            height: 4px;
-            background-color: ${colors[Math.floor(Math.random() * colors.length)]};
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            left: ${flagRect.left + flagRect.width / 2}px;
-            top: ${flagRect.top + flagRect.height / 2}px;
-        `;
-        
-        document.body.appendChild(particle);
-        
-        // Animation de la particule
-        const angle = Math.random() * Math.PI * 2;
-        const velocity = 2 + Math.random() * 3;
-        const vx = Math.cos(angle) * velocity;
-        const vy = Math.sin(angle) * velocity;
-        
-        let opacity = 1;
-        const animateParticle = () => {
-            opacity -= 0.02;
-            particle.style.opacity = opacity;
-            particle.style.transform = `translate(${vx * (1 - opacity) * 50}px, ${vy * (1 - opacity) * 50}px)`;
-            
-            if (opacity > 0) {
-                requestAnimationFrame(animateParticle);
-            } else {
-                particle.remove();
-            }
-        };
-        
-        animateParticle();
-    }
-}
 // Auto-dismiss des alertes après 5 secondes
 function autoDismissAlerts() {
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
+            try {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            } catch (error) {
+                console.log('Alert auto-dismissed');
+            }
         }, 5000);
     });
 }
@@ -327,7 +264,100 @@ function markMessagesAsRead() {
     }
 }
 
-// ========== FONCTIONS DE RÉACTIONS AUX POSTS ==========
+// ========== FONCTIONS POUR LES DROPDOWNS DES POSTS ==========
+
+function initPostDropdowns() {
+    console.log('🎯 Initializing post dropdowns...');
+    
+    // Vérifier si Bootstrap est disponible
+    if (typeof bootstrap !== 'undefined') {
+        console.log('✅ Bootstrap loaded, initializing dropdowns with Bootstrap');
+        
+        // Initialiser tous les dropdowns avec Bootstrap
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+        console.log(`🔍 Found ${dropdownToggles.length} dropdown toggles`);
+        
+        dropdownToggles.forEach((toggle, index) => {
+            try {
+                const dropdown = new bootstrap.Dropdown(toggle);
+                
+                // Debug events
+                toggle.addEventListener('show.bs.dropdown', function() {
+                    console.log('📂 Dropdown opening:', this);
+                });
+                
+                toggle.addEventListener('shown.bs.dropdown', function() {
+                    console.log('✅ Dropdown opened successfully');
+                });
+                
+            } catch (error) {
+                console.error('❌ Error initializing dropdown:', error);
+            }
+        });
+        
+    } else {
+        console.log('⚠️ Bootstrap not available, using vanilla JS for dropdowns');
+        initVanillaDropdowns();
+    }
+}
+
+// Solution de secours vanilla JS
+function initVanillaDropdowns() {
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+    
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dropdownMenu = this.nextElementSibling;
+            const isVisible = dropdownMenu.style.display === 'block';
+            
+            // Fermer tous les autres dropdowns
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+            
+            // Ouvrir/fermer le dropdown actuel
+            if (!isVisible) {
+                dropdownMenu.style.display = 'block';
+                console.log('📂 Vanilla dropdown opened');
+            }
+        });
+    });
+    
+    // Fermer les dropdowns en cliquant ailleurs
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
+    });
+    
+    // Empêcher la fermeture quand on clique dans le dropdown
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+}
+
+// ========== FONCTIONS POUR LES RÉACTIONS ==========
+
+function initPostReactions() {
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const reactionType = this.dataset.reactionType;
+            
+            if (postId) {
+                addReaction(postId, reactionType, this);
+            } else {
+                console.error('❌ No post ID found for reaction');
+            }
+        });
+    });
+}
 
 function addReaction(postId, reactionType, buttonElement) {
     console.log('❤️ Adding reaction for post:', postId);
@@ -415,10 +445,124 @@ function trackJobApplication(jobTitle, company, emailService) {
     // Ici vous pouvez ajouter du tracking analytics
 }
 
-// Initialisation des filtres si sur la page des posts
-document.addEventListener('DOMContentLoaded', function() {
-    initPostFilters();
-});
+// ========== FONCTION POUR L'ANIMATION DU DRAPEAU PALESTINE ==========
+
+function initPalestineFlag() {
+    const flag = document.querySelector('.palestine-flag');
+    if (flag) {
+        // Animation au survol
+        flag.addEventListener('mouseenter', () => {
+            flag.style.animation = 'wave 0.8s ease-in-out infinite';
+        });
+        
+        flag.addEventListener('mouseleave', () => {
+            flag.style.animation = 'wave 3s ease-in-out infinite';
+        });
+
+        // Effet de clic
+        flag.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Créer un effet de particules
+            createFlagParticles();
+        });
+    }
+}
+
+// Fonction pour créer des particules d'animation
+function createFlagParticles() {
+    const flag = document.querySelector('.palestine-flag');
+    if (!flag) return;
+
+    const flagRect = flag.getBoundingClientRect();
+    const colors = ['#000000', '#FFFFFF', '#009736', '#E4312B'];
+    
+    for (let i = 0; i < 15; i++) {
+        const particle = document.createElement('div');
+        particle.style.cssText = `
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background-color: ${colors[Math.floor(Math.random() * colors.length)]};
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            left: ${flagRect.left + flagRect.width / 2}px;
+            top: ${flagRect.top + flagRect.height / 2}px;
+        `;
+        
+        document.body.appendChild(particle);
+        
+        // Animation de la particule
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 2 + Math.random() * 3;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+        
+        let opacity = 1;
+        const animateParticle = () => {
+            opacity -= 0.02;
+            particle.style.opacity = opacity;
+            particle.style.transform = `translate(${vx * (1 - opacity) * 50}px, ${vy * (1 - opacity) * 50}px)`;
+            
+            if (opacity > 0) {
+                requestAnimationFrame(animateParticle);
+            } else {
+                particle.remove();
+            }
+        };
+        
+        animateParticle();
+    }
+}
+
+// ========== FONCTIONS DE DÉBOGAGE ==========
+
+// Fonction de débogage pour vérifier l'état de la page
+function debugPostPage() {
+    console.log('🐛 DEBUG Post Page:');
+    
+    // Vérifier les posts
+    const posts = document.querySelectorAll('.post-card');
+    console.log(`📝 Found ${posts.length} posts`);
+    
+    // Vérifier les dropdowns
+    const dropdowns = document.querySelectorAll('.dropdown');
+    console.log(`🎯 Found ${dropdowns.length} dropdowns`);
+    
+    // Vérifier les boutons de like
+    const likeButtons = document.querySelectorAll('.like-btn');
+    console.log(`❤️ Found ${likeButtons.length} like buttons`);
+    
+    // Vérifier Bootstrap
+    if (typeof bootstrap !== 'undefined') {
+        console.log('✅ Bootstrap is available');
+    } else {
+        console.error('❌ Bootstrap is NOT available');
+    }
+    
+    // Vérifier l'utilisateur connecté
+    const userElements = document.querySelectorAll('[data-user]');
+    console.log(`👤 User elements: ${userElements.length}`);
+    
+    // Vérifier les IDs des posts
+    posts.forEach((post, index) => {
+        const postId = post.dataset.postId;
+        const postType = post.dataset.postType;
+        console.log(`📄 Post ${index + 1}: ID=${postId}, Type=${postType}`);
+        
+        // Vérifier que tous les liens ont le bon ID
+        const links = post.querySelectorAll('a[href*="/posts/"]');
+        links.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && postId && !href.includes(postId)) {
+                console.warn(`⚠️ Link mismatch: ${href} doesn't match post ID ${postId}`);
+            }
+        });
+    });
+}
+
+// ========== GESTIONNAIRES D'ÉVÉNEMENTS GLOBAUX ==========
 
 // Gestion des réactions
 document.addEventListener('click', function(e) {
@@ -426,7 +570,12 @@ document.addEventListener('click', function(e) {
         const btn = e.target.closest('.reaction-btn');
         const postId = btn.dataset.postId;
         const reactionType = btn.dataset.reactionType;
-        addReaction(postId, reactionType, btn);
+        
+        if (postId && reactionType) {
+            addReaction(postId, reactionType, btn);
+        } else {
+            console.error('❌ Missing post ID or reaction type');
+        }
     }
 });
 
@@ -445,3 +594,40 @@ document.addEventListener('click', function(e) {
         }
     }
 });
+
+// Gestion des filtres de posts
+document.addEventListener('DOMContentLoaded', function() {
+    initPostFilters();
+});
+
+// ========== FONCTIONS UTILITAIRES ==========
+
+// Fonction pour valider les emails
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Fonction pour formater les dates
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// Fonction pour copier le texte dans le presse-papier
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!', 'success');
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        showToast('Failed to copy to clipboard', 'error');
+    });
+}
+
+// Export des fonctions pour une utilisation globale (si nécessaire)
+window.TalentForge = {
+    showToast,
+    copyToClipboard,
+    formatDate,
+    isValidEmail
+};

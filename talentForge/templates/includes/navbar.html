@@ -59,13 +59,13 @@
 
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:messages' %}">
-                        <i class="fas fa-comments me-1"></i> Messages
+                        <i class="fas fa-comments me-1"></i> 
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:notifications' %}">
-                        <i class="fas fa-bell me-1"></i> Notifications
+                        <i class="fas fa-bell me-1"></i> 
                     </a>
                 </li>
 
@@ -75,46 +75,90 @@
             <!-- Right Menu -->
             <ul class="navbar-nav gap-lg-3 gap-2">
 
-                
-
                 {% if user.is_authenticated %}
 
+                <!-- User Profile Section -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
-
-                        {% if user.userprofile.get_profile_picture %}
-                            <img src="{{ user.userprofile.get_profile_picture }}"
-                                 class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
-                        {% else %}
-                            <div class="rounded-circle bg-primary text-white me-2 d-flex justify-content-center align-items-center"
-                                 style="width:32px;height:32px;">
-                                {{ user.username|first|upper }}
-                            </div>
-                        {% endif %}
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 py-1" 
+                       href="#" 
+                       data-bs-toggle="dropdown" 
+                       aria-expanded="false">
+                       
+                        <!-- Avatar Container -->
+                        <div class="user-avatar-container position-relative">
+                            {% if user.userprofile.get_profile_picture %}
+                                <img src="{{ user.userprofile.get_profile_picture }}" 
+                                     alt="{{ user.username }}"
+                                     class="user-avatar rounded-circle">
+                            {% else %}
+                                <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center">
+                                    {{ user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
                         
-                        {{ user.username }}
+                        <!-- Username -->
+                        <span class="username-text">{{ user.username }}</span>
+                        
+                        
                     </a>
 
-                    <ul class="dropdown-menu dropdown-menu-end shadow">
-                        <li><a class="dropdown-item" href="{% url 'base:view_profile' %}">
-                            <i class="fas fa-user me-2"></i> Profile
-                        </a></li>
+                    <!-- Dropdown Menu -->
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <!-- Header with user info -->
+                        <li class="dropdown-header">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if user.userprofile.get_profile_picture %}
+                                        <img src="{{ user.userprofile.get_profile_picture }}" 
+                                             alt="{{ user.username }}"
+                                             class="dropdown-avatar rounded-circle">
+                                    {% else %}
+                                        <div class="dropdown-avatar-placeholder rounded-circle d-flex align-items-center justify-content-center">
+                                            {{ user.username|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ user.username }}</div>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                            </div>
+                        </li>
+                        
+                        <li><hr class="dropdown-divider my-2"></li>
 
-                        <li><a class="dropdown-item" href="{% url 'base:edit_profile' %}">
-                            <i class="fas fa-edit me-2"></i> Edit Profile
-                        </a></li>
-
-                        <li><a class="dropdown-item" href="{% url 'base:profile_settings' %}">
-                            <i class="fas fa-cog me-2"></i> Settings
-                        </a></li>
-
-                        <li><hr class="dropdown-divider"></li>
+                        <!-- Menu Items -->
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'base:view_profile' %}">
+                                <i class="fas fa-user me-3 text-primary"></i>
+                                <span>Profile</span>
+                            </a>
+                        </li>
 
                         <li>
-                            <form method="post" action="{% url 'base:logout' %}">
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'base:edit_profile' %}">
+                                <i class="fas fa-edit me-3 text-success"></i>
+                                <span>Edit Profile</span>
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'base:profile_settings' %}">
+                                <i class="fas fa-cog me-3 text-secondary"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+
+                        <li><hr class="dropdown-divider my-2"></li>
+
+                        <!-- Logout -->
+                        <li>
+                            <form method="post" action="{% url 'base:logout' %}" class="mb-0">
                                 {% csrf_token %}
-                                <button class="dropdown-item text-danger" type="submit">
-                                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                <button class="dropdown-item d-flex align-items-center py-2 text-danger" type="submit">
+                                    <i class="fas fa-sign-out-alt me-3"></i>
+                                    <span>Logout</span>
                                 </button>
                             </form>
                         </li>
@@ -122,6 +166,7 @@
                 </li>
 
                 {% else %}
+                <!-- Login/Signup for non-authenticated users -->
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'base:login' %}">
                         <i class="fas fa-sign-in-alt me-1"></i> Login
@@ -143,7 +188,7 @@
 <style>
 /* Styles spécifiques pour la navbar */
 .navbar {
-    z-index: 1030; /* Assure que la navbar reste au-dessus du contenu */
+    z-index: 1030;
 }
 
 .navbar-nav .nav-item .nav-link {
@@ -170,6 +215,92 @@
     gap: 0.5rem !important;
 }
 
+/* User Avatar Styles */
+.user-avatar-container {
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.avatar-placeholder {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.username-text {
+    font-weight: 500;
+    color: white;
+}
+
+.dropdown-arrow {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: transform 0.3s ease;
+}
+
+.nav-link[aria-expanded="true"] .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* Dropdown Styles */
+.dropdown-menu {
+    min-width: 280px;
+    border: none;
+    animation: dropdownFadeIn 0.2s ease-out;
+}
+
+.dropdown-header {
+    padding: 1rem 1rem 0.5rem 1rem;
+    background: transparent;
+}
+
+.dropdown-avatar {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border: 2px solid #e9ecef;
+}
+
+.dropdown-avatar-placeholder {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    border: 2px solid #e9ecef;
+}
+
+.dropdown-item {
+    border-radius: 6px;
+    margin: 0 0.5rem;
+    width: auto;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.dropdown-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Search bar styles */
 .navbar .input-group {
     min-width: 250px;
 }
@@ -200,19 +331,15 @@
     border-color: rgba(255, 255, 255, 0.5);
 }
 
-/* Animation dropdown */
-.dropdown-menu {
-    animation: fadeIn 0.2s ease-in-out;
-}
-
-@keyframes fadeIn {
+/* Animations */
+@keyframes dropdownFadeIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-10px) scale(0.95);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -269,6 +396,10 @@
     .palestine-flag {
         margin-right: 15px;
     }
+    
+    .username-text {
+        display: none;
+    }
 }
 
 @media (max-width: 768px) {
@@ -288,6 +419,19 @@
     
     .palestine-flag::after {
         display: none;
+    }
+    
+    .dropdown-menu {
+        min-width: 250px;
+    }
+}
+
+@media (max-width: 576px) {
+    .user-avatar,
+    .avatar-placeholder {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
     }
 }
 </style>
