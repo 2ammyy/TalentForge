@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
+# ============ MODÈLES EXISTANTS ============
+
 class Post(models.Model):
     POST_TYPES = [
         ('text', 'Text'),
@@ -220,16 +222,20 @@ class UserProfile(models.Model):
     website = models.URLField(blank=True)
     github = models.URLField(blank=True)
     linkedin = models.URLField(blank=True)
-    followers = models.ManyToManyField(User, related_name='following', blank=True)
+    
+    # SUPPRIMEZ cette ligne car nous utilisons maintenant le modèle Follow
+    # followers = models.ManyToManyField(User, related_name='following', blank=True)
     
     def __str__(self):
         return f"{self.user.username}'s Profile"
     
     def followers_count(self):
-        return self.followers.count()
-    
+        """Utilise le modèle Follow pour compter les followers"""
+        return self.user.user_followers.count()  # user_followers au lieu de followers
+
     def following_count(self):
-        return self.user.following.count()
+        """Utilise le modèle Follow pour compter les suivis"""
+        return self.user.user_following.count()  # user_following au lieu de following
 
 
 class Message(models.Model):
@@ -270,7 +276,56 @@ class Notification(models.Model):
         return f"{self.from_user.username} {self.get_notification_type_display()}"
 
 
-# Signals pour les notifications automatiques
+# ============ MODÈLES DE RELATIONS SOCIALES ============
+
+class Follow(models.Model):
+    """Modèle pour gérer les relations de suivi entre utilisateurs"""
+    follower = models.ForeignKey(
+        User, 
+        related_name='user_following',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    following = models.ForeignKey(
+        User, 
+        related_name='user_followers',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('follower', 'following')
+        verbose_name = 'Follow'
+        verbose_name_plural = 'Follows'
+    
+    def __str__(self):
+        return f"{self.follower.username} follows {self.following.username}"
+
+
+class Block(models.Model):
+    """Modèle pour gérer les blocages entre utilisateurs"""
+    blocker = models.ForeignKey(
+        User, 
+        related_name='user_blocking',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    blocked = models.ForeignKey(
+        User, 
+        related_name='user_blocked_by',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('blocker', 'blocked')
+        verbose_name = 'Block'
+        verbose_name_plural = 'Blocks'
+    
+    def __str__(self):
+        return f"{self.blocker.username} blocks {self.blocked.username}"
+
+
+# ============ SIGNALS ============
+
 @receiver(post_save, sender=Comment)
 def create_comment_notification(sender, instance, created, **kwargs):
     if created and instance.author != instance.post.author:
@@ -318,6 +373,33 @@ def create_report_notification(sender, instance, created, **kwargs):
             )
 
 
+@receiver(post_save, sender=Follow)
+def create_follow_notification(sender, instance, created, **kwargs):
+    """Créer une notification lorsqu'un utilisateur en suit un autre"""
+    if created:
+        Notification.objects.create(
+            user=instance.following,
+            from_user=instance.follower,
+            notification_type='follow',
+            post=None  # Pas de post associé pour les follows
+        )
+
+
+@receiver(post_save, sender=Block)
+def handle_block_actions(sender, instance, created, **kwargs):
+    """Gérer les actions lors du blocage d'un utilisateur"""
+    if created:
+        # Supprimer les relations de suivi réciproques
+        Follow.objects.filter(
+            follower=instance.blocker, 
+            following=instance.blocked
+        ).delete()
+        Follow.objects.filter(
+            follower=instance.blocked, 
+            following=instance.blocker
+        ).delete()
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -326,5 +408,5 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'userprofile'):
-        instance.userprofile.save()
+    if hasattr(instance, 'posts_profile'):
+        instance.posts_profile.save()

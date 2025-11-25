@@ -22,10 +22,16 @@ urlpatterns = [
     path('my-reports/', views.my_reports, name='my_reports'),
     
     # ============ PROFILES ============
-    path('profile/', views.profile_view, name='profile'),  # Own profile
-    path('profile/<str:username>/', views.profile_view, name='user_profile'),  # Other users
+    path('profile/', views.my_profile, name='my_profile'),  # Own profile
+    path('profile/<str:username>/', views.user_profile, name='user_profile'),  # Other users
     path('profile/edit/', views.edit_profile, name='edit_profile'),
+    
+    # ============ SOCIAL ACTIONS ============
     path('follow/<str:username>/', views.follow_user, name='follow_user'),
+    path('unfollow/<str:username>/', views.unfollow_user, name='unfollow_user'),
+    path('block/<str:username>/', views.block_user, name='block_user'),
+    path('unblock/<str:username>/', views.unblock_user, name='unblock_user'),
+    path('report-user/<str:username>/', views.report_user, name='report_user'),
     
     # ============ SEARCH ============
     path('search/', views.search_view, name='search'),
