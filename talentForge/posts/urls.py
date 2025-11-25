@@ -24,7 +24,7 @@ urlpatterns = [
     # ============ PROFILES ============
     path('profile/', views.my_profile, name='my_profile'),  # Own profile
     path('profile/<str:username>/', views.user_profile, name='user_profile'),  # Other users
-    path('profile/edit/', views.edit_profile, name='edit_profile'),
+    path('profile/edit/', views.edit_profile, name='edit_profile'),  # AJOUTÉ: Edit profile
     
     # ============ SOCIAL ACTIONS ============
     path('follow/<str:username>/', views.follow_user, name='follow_user'),

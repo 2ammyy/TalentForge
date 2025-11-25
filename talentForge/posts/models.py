@@ -154,10 +154,18 @@ class Report(models.Model):
         ('dismissed', 'Dismissed'),
     ]
     
-    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='reports')
+    # Champ pour les rapports de posts
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='reports', null=True, blank=True)
+    
+    # NOUVEAUX CHAMPS pour les rapports d'utilisateurs
+    reported_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_against', null=True, blank=True)
+    
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
     reason = models.CharField(max_length=20, choices=REPORT_CHOICES)
+    
+    # Renommez 'description' en 'details' ou gardez 'description'
     description = models.TextField(blank=True, null=True, help_text="Additional details about the report")
+    
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -175,13 +183,21 @@ class Report(models.Model):
 
     def send_confirmation_email(self):
         subject = "Report Confirmation - TalentForge"
+        
+        if self.post:
+            report_type = "content"
+            target = f"Post ID: {self.post.id}"
+        else:
+            report_type = "user"
+            target = f"User: {self.reported_user.username}"
+            
         message = f"""
         Dear {self.reporter.username},
         
-        Thank you for reporting content on TalentForge. We have received your report and will review it shortly.
+        Thank you for reporting {report_type} on TalentForge. We have received your report and will review it shortly.
         
         Report Details:
-        - Post ID: {self.post.id}
+        - {target}
         - Reason: {self.get_reason_display()}
         - Date: {self.created_at.strftime('%Y-%m-%d %H:%M')}
         - Status: {self.get_status_display()}
@@ -198,20 +214,21 @@ class Report(models.Model):
             send_mail(
                 subject,
                 message,
-                'talentforge.app@gmail.com',  # From email
-                [self.reporter.email],        # To email
+                'talentforge.app@gmail.com',
+                [self.reporter.email],
                 fail_silently=False,
             )
         except Exception as e:
-            # Log the error but don't break the report creation
             print(f"Failed to send email: {e}")
     
     def __str__(self):
-        return f"Report #{self.id} - {self.post} by {self.reporter}"
+        if self.post:
+            return f"Report #{self.id} - {self.post} by {self.reporter}"
+        else:
+            return f"Report #{self.id} - {self.reported_user} by {self.reporter}"
     
     class Meta:
         ordering = ['-created_at']
-
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='posts_profile')

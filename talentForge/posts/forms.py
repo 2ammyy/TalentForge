@@ -240,6 +240,7 @@ class UserProfileForm(forms.ModelForm):
         model = UserProfile
         fields = ['bio', 'location', 'birth_date', 'profile_picture', 'website', 'github', 'linkedin']
 
+
 class MessageForm(forms.ModelForm):
     class Meta:
         model = Message

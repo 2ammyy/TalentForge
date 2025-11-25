@@ -445,21 +445,34 @@ def user_profile(request, username):
     
     return render(request, 'posts/profile.html', context)
 
+# @login_required
+# def edit_profile(request):
+#     """Vue pour éditer le profil utilisateur"""
+#     try:
+#         profile = request.user.posts_profile
+#     except UserProfile.DoesNotExist:
+#         # Créer le profil s'il n'existe pas
+#         profile = UserProfile.objects.create(user=request.user)
+    
+#     if request.method == 'POST':
+#         form = UserProfileForm(request.POST, request.FILES, instance=profile)
+#         if form.is_valid():
+#             form.save()
+#             messages.success(request, 'Your profile has been updated successfully!')
+#             return redirect('posts:my_profile')
+#         else:
+#             messages.error(request, 'Please correct the errors below.')
+#     else:
+#         form = UserProfileForm(instance=profile)
+    
+#     return render(request, 'posts/edit_profile.html', {
+#         'form': form,
+#         'profile': profile
+#     })
 @login_required
 def edit_profile(request):
-    profile, created = UserProfile.objects.get_or_create(user=request.user)
-    
-    if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES, instance=profile)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Profile updated successfully!')
-            return redirect('posts:my_profile')
-    else:
-        form = UserProfileForm(instance=profile)
-    
-    return render(request, 'posts/edit_profile.html', {'form': form})
-
+    """Redirige vers la page d'édition de profil dans l'app base"""
+    return redirect('base:edit_profile')  # Redirection vers l'app base
 # ============ SOCIAL ACTIONS ============
 
 @login_required
@@ -578,12 +591,13 @@ def report_user(request, username):
         reason = request.POST.get('reason')
         details = request.POST.get('details', '')
         
-        # Créer le rapport
+        # Créer le rapport avec les bons noms de champs
         Report.objects.create(
             reporter=request.user,
-            reported_user=user_to_report,
+            reported_user=user_to_report,  # Utilise reported_user au lieu de reported_user
             reason=reason,
-            details=details
+            description=details,  # Utilise description au lieu de details
+            post=None  # Pas de post associé pour les rapports d'utilisateurs
         )
         
         messages.success(request, f"Thank you for reporting {username}. We will review your report.")

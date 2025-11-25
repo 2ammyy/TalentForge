@@ -72,7 +72,7 @@
                             </a>
                         </div>
                     {% else %}
-                        <a href="{% url 'posts:edit_profile' %}" class="btn btn-outline">Edit Profile</a>
+                        <a href="{% url 'base:edit_profile' %}" class="btn btn-outline">Edit Profile</a>
                     {% endif %}
                 </div>
             </div>
@@ -83,12 +83,11 @@
             <div class="user-posts-header">
                 <h2>Posts</h2>
                 {% if profile_user == request.user %}
-                    <a href="{% url 'posts:create_post' %}" class="create-post-btn">
+                    <a href="{% url 'posts:post_create' %}" class="create-post-btn">
                         ➕ Create Post
                     </a>
                 {% endif %}
             </div>
-
             <div class="posts-container">
                 {% for post in user_posts %}
                     <div class="post-card">
@@ -200,7 +199,7 @@
                         <h3>No Posts Yet</h3>
                         <p>{% if profile_user == request.user %}You haven't{% else %}{{ profile_user.username }} hasn't{% endif %} created any posts yet.</p>
                         {% if profile_user == request.user %}
-                            <a href="{% url 'posts:create_post' %}" class="create-first-post">
+                            <a href="{% url 'posts:post_create' %}" class="create-first-post">
                                 ➕ Create Your First Post
                             </a>
                         {% endif %}
