@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initPalestineFlag();
     
     // Nouvelles fonctions pour les posts
-    initPostDropdowns();
+    //initPostDropdowns();
     initPostReactions();
     
     // Debug: Vérifier l'état des posts et dropdowns

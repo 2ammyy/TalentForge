@@ -473,30 +473,6 @@ body {
     box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
 }
 
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 1000;
-    min-width: 240px;
-    padding: 0.5rem;
-    margin: 0.125rem 0 0;
-    font-size: 0.875rem;
-    color: #212529;
-    text-align: left;
-    list-style: none;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-}
-
-.dropdown-menu.show {
-    display: block;
-    animation: dropdownFadeIn 0.2s ease;
-}
 
 .dropdown-item {
     display: block;
@@ -676,43 +652,6 @@ body {
     }
 }
 
-/* ========== DRAPEAU PALESTINE ========== */
-.palestine-flag {
-    cursor: pointer;
-    position: relative;
-    display: inline-block;
-    animation: wave 3s ease-in-out infinite;
-    will-change: transform;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
-    transition: all 0.3s ease;
-}
-
-.palestine-flag:hover {
-    transform: scale(1.1);
-}
-
-.palestine-flag::after {
-    content: "Viva Palestina";
-    position: absolute;
-    bottom: -35px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    z-index: 9999;
-}
-
-.palestine-flag:hover::after {
-    opacity: 1;
-}
 
 /* ========== RESPONSIVE DESIGN ========== */
 @media (max-width: 768px) {
@@ -762,18 +701,9 @@ body {
         text-align: center;
     }
     
-    .dropdown-menu {
-        min-width: 220px;
-        right: -10px;
-    }
+  
 
-    .palestine-flag::after {
-        display: none;
-    }
-    
-    .palestine-flag {
-        animation: wave 4s ease-in-out infinite;
-    }
+
 }
 
 @media (max-width: 480px) {
@@ -806,31 +736,8 @@ body {
     }
 }
 
-/* ========== STYLES EXISTANTS (conservés pour compatibilité) ========== */
 
-/* Navbar */
-.navbar-brand {
-    font-weight: bold;
-    color: #007bff !important;
-}
 
-.navbar .input-group {
-    min-width: 250px;
-}
-
-.navbar .form-control {
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-}
-
-.navbar .form-control::placeholder {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.navbar .btn-outline-light {
-    border-color: rgba(255, 255, 255, 0.3);
-}
 
 /* Footer */
 .footer {

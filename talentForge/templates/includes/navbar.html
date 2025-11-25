@@ -27,10 +27,8 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             
             <!-- Left Menu -->
-            <ul class="navbar-nav me-auto mt-2 mt-lg-0 gap-lg-4 gap-2">
-
+            <ul class="navbar-nav me-auto mt-2 mt-lg-0">
                 {% if user.is_authenticated %}
-
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:post_list' %}">
                         <i class="fas fa-newspaper me-1"></i> Posts
@@ -68,40 +66,38 @@
                         <i class="fas fa-bell me-1"></i> 
                     </a>
                 </li>
-
                 {% endif %}
             </ul>
 
             <!-- Right Menu -->
-            <ul class="navbar-nav gap-lg-3 gap-2">
-
+            <ul class="navbar-nav">
                 {% if user.is_authenticated %}
-
-                <!-- User Profile Section -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 py-1" 
-                       href="#" 
-                       data-bs-toggle="dropdown" 
-                       aria-expanded="false">
-                       
-                        <!-- Avatar Container -->
-                        <div class="user-avatar-container position-relative">
-                            {% if user.userprofile.get_profile_picture %}
-                                <img src="{{ user.userprofile.get_profile_picture }}" 
-                                     alt="{{ user.username }}"
-                                     class="user-avatar rounded-circle">
-                            {% else %}
-                                <div class="avatar-placeholder rounded-circle d-flex align-items-center justify-content-center">
-                                    {{ user.username|first|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Username -->
-                        <span class="username-text">{{ user.username }}</span>
-                        
-                        
-                    </a>
+               <!-- User Profile Section -->
+<li class="nav-item dropdown">
+    <a 
+       href="#" 
+       data-bs-toggle="dropdown" 
+       aria-expanded="false"
+       style="display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; color: white;">
+       
+        <!-- Avatar Container -->
+        <div class="user-avatar-container">
+            {% if user.userprofile.get_profile_picture %}
+                <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.3);">
+                    <img src="{{ user.userprofile.get_profile_picture }}" 
+                         alt="{{ user.username }}"
+                         style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                </div>
+            {% else %}
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); font-size: 16px;">
+                    {{ user.username|first|upper }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Username -->
+        <span class="username-text">{{ user.username }}</span>
+    </a>
 
                     <!-- Dropdown Menu -->
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">
@@ -110,11 +106,13 @@
                             <div class="d-flex align-items-center">
                                 <div class="me-3">
                                     {% if user.userprofile.get_profile_picture %}
-                                        <img src="{{ user.userprofile.get_profile_picture }}" 
-                                             alt="{{ user.username }}"
-                                             class="dropdown-avatar rounded-circle">
+                                        <div style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; border: 2px solid #e9ecef;">
+                                            <img src="{{ user.userprofile.get_profile_picture }}" 
+                                                 alt="{{ user.username }}"
+                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                        </div>
                                     {% else %}
-                                        <div class="dropdown-avatar-placeholder rounded-circle d-flex align-items-center justify-content-center">
+                                        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid #e9ecef; font-size: 18px;">
                                             {{ user.username|first|upper }}
                                         </div>
                                     {% endif %}
@@ -179,16 +177,16 @@
                     </a>
                 </li>
                 {% endif %}
-
             </ul>
         </div>
     </div>
 </nav>
 
 <style>
-/* Styles spécifiques pour la navbar */
+/* ========== NAVBAR STYLES ========== */
 .navbar {
     z-index: 1030;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
 }
 
 .navbar-nav .nav-item .nav-link {
@@ -196,23 +194,12 @@
     padding-right: 0.6rem;
     font-size: 16px;
     transition: all 0.3s ease;
+    border-radius: 6px;
 }
 
 .navbar-nav .nav-item .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-
-.navbar-nav.gap-lg-4 {
-    gap: 1.5rem !important;
-}
-
-.navbar-nav.gap-lg-3 {
-    gap: 1rem !important;
-}
-
-.navbar-nav.gap-2 {
-    gap: 0.5rem !important;
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 /* User Avatar Styles */
@@ -221,43 +208,17 @@
     align-items: center;
 }
 
-.user-avatar {
-    width: 36px;
-    height: 36px;
-    object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    transition: all 0.3s ease;
-}
-
-.avatar-placeholder {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    font-weight: bold;
-    font-size: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
 .username-text {
     font-weight: 500;
     color: white;
-}
-
-.dropdown-arrow {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
-    transition: transform 0.3s ease;
-}
-
-.nav-link[aria-expanded="true"] .dropdown-arrow {
-    transform: rotate(180deg);
 }
 
 /* Dropdown Styles */
 .dropdown-menu {
     min-width: 280px;
     border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     animation: dropdownFadeIn 0.2s ease-out;
 }
 
@@ -266,38 +227,15 @@
     background: transparent;
 }
 
-.dropdown-avatar {
-    width: 48px;
-    height: 48px;
-    object-fit: cover;
-    border: 2px solid #e9ecef;
-}
-
-.dropdown-avatar-placeholder {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
-    border: 2px solid #e9ecef;
-}
-
 .dropdown-item {
-    border-radius: 6px;
-    margin: 0 0.5rem;
-    width: auto;
+    border-radius: 8px;
+    margin: 0.15rem 0.5rem;
     transition: all 0.2s ease;
 }
 
 .dropdown-item:hover {
     background-color: #f8f9fa;
     transform: translateX(5px);
-}
-
-.dropdown-item i {
-    width: 20px;
-    text-align: center;
 }
 
 /* Search bar styles */
@@ -309,38 +247,16 @@
     background-color: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
+    border-radius: 8px;
 }
 
 .navbar .form-control::placeholder {
     color: rgba(255, 255, 255, 0.7);
 }
 
-.navbar .form-control:focus {
-    background-color: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: white;
-    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
-}
-
 .navbar .btn-outline-light {
     border-color: rgba(255, 255, 255, 0.3);
-}
-
-.navbar .btn-outline-light:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.5);
-}
-
-/* Animations */
-@keyframes dropdownFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    border-radius: 8px;
 }
 
 /* Drapeau Palestine */
@@ -376,6 +292,18 @@
     opacity: 1;
 }
 
+/* Animations */
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 @keyframes wave {
     0%, 100% { transform: translateY(0) rotate(0deg); }
     25% { transform: translateY(-2px) rotate(1deg); }
@@ -389,16 +317,12 @@
         margin: 10px 0;
     }
     
-    .navbar-nav {
-        margin: 10px 0;
-    }
-    
-    .palestine-flag {
-        margin-right: 15px;
-    }
-    
     .username-text {
         display: none;
+    }
+    
+    .navbar-nav {
+        gap: 0.5rem;
     }
 }
 
@@ -408,30 +332,73 @@
         margin: 10px 0;
     }
     
-    .navbar .d-flex {
-        order: 2;
-        width: 100%;
-    }
-    
-    .navbar-nav .nav-item {
-        margin: 5px 0;
-    }
-    
     .palestine-flag::after {
         display: none;
-    }
-    
-    .dropdown-menu {
-        min-width: 250px;
     }
 }
 
 @media (max-width: 576px) {
-    .user-avatar,
-    .avatar-placeholder {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
+    .user-avatar-container > div {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 14px !important;
     }
 }
 </style>
+
+<script>
+// Navbar specific JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Palestine flag interactions
+    const flag = document.querySelector('.palestine-flag');
+    if (flag) {
+        flag.addEventListener('click', function(e) {
+            e.preventDefault();
+            createFlagParticles();
+        });
+    }
+
+    // Flag particles animation
+    function createFlagParticles() {
+        const flagRect = flag.getBoundingClientRect();
+        const colors = ['#000000', '#FFFFFF', '#009736', '#E4312B'];
+        
+        for (let i = 0; i < 12; i++) {
+            const particle = document.createElement('div');
+            particle.style.cssText = `
+                position: fixed;
+                width: 4px;
+                height: 4px;
+                background-color: ${colors[Math.floor(Math.random() * colors.length)]};
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                left: ${flagRect.left + flagRect.width / 2}px;
+                top: ${flagRect.top + flagRect.height / 2}px;
+            `;
+            
+            document.body.appendChild(particle);
+            
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = 2 + Math.random() * 3;
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+            
+            let opacity = 1;
+            const animateParticle = () => {
+                opacity -= 0.02;
+                particle.style.opacity = opacity;
+                particle.style.transform = `translate(${vx * (1 - opacity) * 50}px, ${vy * (1 - opacity) * 50}px)`;
+                
+                if (opacity > 0) {
+                    requestAnimationFrame(animateParticle);
+                } else {
+                    particle.remove();
+                }
+            };
+            
+            animateParticle();
+        }
+    }
+});
+</script>
