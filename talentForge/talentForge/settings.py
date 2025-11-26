@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     
     'base',
     'posts',
-    
+
     # Allauth apps
     'allauth',
     'allauth.account',
@@ -225,3 +225,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # REMOVE these lines - we don't need custom adapters anymore
 # SOCIALACCOUNT_ADAPTER = 'base.adapters.CustomSocialAccountAdapter'
 # ACCOUNT_ADAPTER = 'base.adapters.CustomAccountAdapter'
+
+## ADMIN AI SETTINGS
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', 'your-openai-api-key-here')
