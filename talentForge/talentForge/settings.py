@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     
     'base',
     'posts',
+    'creator',
 
     # Allauth apps
     'allauth',
