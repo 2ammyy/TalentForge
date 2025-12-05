@@ -13,6 +13,7 @@ from .models import UserProfile
 import random
 import string
 from datetime import timedelta
+from posts.models import Follow
 
 # Stockage temporaire pour les codes de vérification
 verification_codes = {}
@@ -121,7 +122,15 @@ The TalentForge Team
 
 @login_required
 def home(request):
-    return render(request, 'base/home.html')
+    context = {}
+    if request.user.is_authenticated:
+        # Obtenir le nombre de followers depuis le modèle Follow
+        try:
+            follower_count = Follow.objects.filter(following=request.user).count()
+        except:
+            follower_count = 0
+        context['follower_count'] = follower_count
+    return render(request, 'base/home.html', context)
 
 def authView(request):
     if request.method == 'POST':
