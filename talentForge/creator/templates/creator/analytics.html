@@ -1,0 +1,86 @@
+<!-- creator/templates/creator/analytics.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics - TalentForge{% endblock %}
+
+{% block content %}
+<div class="creator-dashboard">
+    <div class="dashboard-grid">
+        <!-- Sidebar -->
+        <aside class="creator-sidebar">
+            <div class="creator-profile-card">
+                <div class="creator-avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
+                <h3>{{ request.user.username }}</h3>
+                {% if creator_profile.is_verified %}
+                <div class="verified-badge">
+                    <i class="fas fa-check"></i> Créateur Vérifié
+                </div>
+                {% endif %}
+                <div class="creator-stats">
+                    <div class="stat-mini">
+                        <span class="number">{{ real_time_stats.followers_count }}</span>
+                        <span class="label">Followers</span>
+                    </div>
+                    <div class="stat-mini">
+                        <span class="number">{{ real_time_stats.total_posts }}</span>
+                        <span class="label">Posts</span>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="creator-nav">
+                <a href="{% url 'creator:dashboard' %}" class="nav-link">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <a href="#" class="nav-link active">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <div style="text-align: center; padding: 4rem 2rem;">
+                <h2>📊 Analytics</h2>
+                <p style="color: #6c757d; font-size: 1.1rem;">
+                    La page analytics sera bientôt disponible avec des graphiques détaillés !
+                </p>
+                <div style="margin-top: 2rem;">
+                    <div style="display: inline-grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; text-align: center;">
+                        <div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #667eea;">
+                                {{ real_time_stats.followers_count }}
+                            </div>
+                            <div>Followers</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #43e97b;">
+                                {{ real_time_stats.total_posts }}
+                            </div>
+                            <div>Posts</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #fa709a;">
+                                {{ real_time_stats.total_likes }}
+                            </div>
+                            <div>Likes</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #f093fb;">
+                                {{ real_time_stats.engagement_rate }}%
+                            </div>
+                            <div>Engagement</div>
+                        </div>
+                    </div>
+                </div>
+                <a href="{% url 'creator:dashboard' %}" class="btn btn-primary" style="margin-top: 2rem;">
+                    <i class="fas fa-arrow-left"></i> Retour au Dashboard
+                </a>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

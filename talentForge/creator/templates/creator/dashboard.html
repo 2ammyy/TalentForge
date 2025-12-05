@@ -1,0 +1,456 @@
+<!-- creator/templates/creator/dashboard.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Créateur - TalentForge{% endblock %}
+
+{% block content %}
+<div class="creator-dashboard">
+    <div class="dashboard-grid">
+        <!-- Sidebar -->
+        <aside class="creator-sidebar">
+            <div class="creator-profile-card">
+                <div class="creator-avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
+                <h3>{{ request.user.username }}</h3>
+                
+                {% if creator_profile.is_verified %}
+                <div class="verified-badge">
+                    <i class="fas fa-check"></i> Créateur Vérifié
+                </div>
+                {% else %}
+                <div class="upgrade-prompt" style="text-align: center; margin-top: 1rem;">
+                    <small style="display: block; margin-bottom: 0.5rem; color: #6c757d;">
+                        {{ real_time_stats.followers_count }}/1 follower(s)
+                    </small>
+                    {% if real_time_stats.followers_count >= 1 %}
+                    <button class="btn btn-sm btn-primary upgrade-btn" style="width: 100%;">
+                        Devenir Créateur ✓
+                    </button>
+                    {% else %}
+                    <small style="color: #dc3545;">1 follower requis</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="creator-stats">
+                    <div class="stat-mini">
+                        <span class="number" id="real-followers">{{ real_time_stats.followers_count }}</span>
+                        <span class="label">Followers</span>
+                    </div>
+                    <div class="stat-mini">
+                        <span class="number" id="real-posts">{{ real_time_stats.total_posts }}</span>
+                        <span class="label">Posts</span>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="creator-nav">
+                <a href="{% url 'creator:dashboard' %}" class="nav-link active">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <!-- Commenter temporairement analytics jusqu'à ce que la vue soit prête -->
+                <a href="#" class="nav-link" style="color: #6c757d;">
+                    <i class="fas fa-chart-bar"></i> Analytics (bientôt)
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Welcome Banner -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+                <h2>Bonjour {{ request.user.username }} ! 🎉</h2>
+                <p>
+                    {% if creator_profile.is_verified %}
+                    Vous êtes un créateur vérifié avec <strong>{{ real_time_stats.followers_count }} follower(s)</strong>
+                    {% else %}
+                    Vous avez <strong>{{ real_time_stats.followers_count }}/1 follower(s)</strong> pour devenir créateur
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                    <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #333;" id="live-followers">
+                        {{ real_time_stats.followers_count }}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Followers Totaux</div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #28a745;">
+                        <i class="fas fa-sync-alt"></i> <span id="update-time">Temps réel</span>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                    <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #333;" id="live-engagement">
+                        {{ real_time_stats.engagement_rate }}%
+                    </div>
+                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Taux d'Engagement</div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #28a745;">
+                        <i class="fas fa-chart-line"></i> Actif
+                    </div>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;" id="live-posts">
+                        {{ real_time_stats.total_posts }}
+                    </div>
+                    <div style="font-size: 0.9rem; margin-bottom: 0.5rem; opacity: 0.9;">Posts Totaux</div>
+                    <div style="font-size: 0.8rem; font-weight: 600; opacity: 0.9;">
+                        <i class="fas fa-pen-fancy"></i> Votre contenu
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                    <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #333;" id="live-likes">
+                        {{ real_time_stats.total_likes }}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Likes Totaux</div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #28a745;">
+                        <i class="fas fa-heart"></i> Engagement
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🤖 AI Assistant Section -->
+<div class="ai-assistant-section" style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e9ecef; margin-bottom: 2rem;">
+    
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #f8f9fa;">
+        <div>
+            <h3 style="margin: 0; color: #333; display: flex; align-items: center; gap: 10px;">
+                <span style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    🤖
+                </span>
+                AI Creator Assistant
+            </h3>
+            <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 0.9rem;">
+                Smart predictions & personalized recommendations
+            </p>
+        </div>
+        <div style="text-align: right;">
+            <span style="background: #f8f9fa; color: #6c757d; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                <i class="fas fa-clock"></i> Updated: {{ ai_predictions.calculated_at }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Growth Predictions Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        
+        <!-- 7-Day Prediction -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; font-size: 4rem; opacity: 0.1;">📈</div>
+            <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">
+                {{ ai_predictions.next_7_days }}
+            </div>
+            <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 0.5rem;">Next 7 Days</div>
+            <div style="font-size: 0.85rem; background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 6px; display: inline-block;">
+                <i class="fas fa-bolt"></i> Quick Growth
+            </div>
+        </div>
+        
+        <!-- 30-Day Prediction -->
+        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 1.5rem; border-radius: 12px; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; font-size: 4rem; opacity: 0.1;">🚀</div>
+            <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">
+                {{ ai_predictions.next_30_days }}
+            </div>
+            <div style="font-size: 1rem; opacity: 0.9; margin-bottom: 0.5rem;">Next 30 Days</div>
+            <div style="font-size: 0.85rem; background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 6px; display: inline-block;">
+                <i class="fas fa-chart-line"></i> Monthly Projection
+            </div>
+        </div>
+        
+        <!-- Engagement Score -->
+        <div style="background: white; border: 2px solid {{ engagement_insights.color }}; padding: 1.5rem; border-radius: 12px; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; font-size: 4rem; opacity: 0.1;">{{ engagement_insights.emoji }}</div>
+            <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; color: {{ engagement_insights.color }};">
+                {{ engagement_insights.emoji }} {{ engagement_insights.score }}
+            </div>
+            <div style="font-size: 1rem; color: #6c757d; margin-bottom: 0.5rem;">Engagement Score</div>
+            <div style="font-size: 0.85rem; color: {{ engagement_insights.color }}; font-weight: 600;">
+                {{ engagement_insights.level }} • {{ real_time_stats.engagement_rate }}%
+            </div>
+        </div>
+    </div>
+
+    <!-- Content & Strategy Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        
+        <!-- Content Recommendations -->
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #007bff;">
+            <h4 style="margin-top: 0; color: #333; display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+                <i class="fas fa-lightbulb" style="color: #007bff;"></i>
+                Content Recommendations
+            </h4>
+            <ul style="margin: 0; padding-left: 1.2rem;">
+                {% for rec in ai_predictions.content_recommendations %}
+                <li style="margin-bottom: 0.8rem; padding-left: 0.5rem; color: #495057;">
+                    <i class="fas fa-check-circle" style="color: #28a745; margin-right: 8px;"></i>
+                    {{ rec }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Growth Strategy -->
+        <div style="background: #e8f4fd; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #17a2b8;">
+            <h4 style="margin-top: 0; color: #333; display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+                <i class="fas fa-bullseye" style="color: #17a2b8;"></i>
+                Your Growth Strategy
+            </h4>
+            <ol style="margin: 0; padding-left: 1.2rem;">
+                {% for step in ai_predictions.growth_strategy %}
+                <li style="margin-bottom: 0.8rem; padding-left: 0.5rem; color: #495057;">
+                    <strong style="color: #17a2b8;">Step {{ forloop.counter }}:</strong> {{ step }}
+                </li>
+                {% endfor %}
+            </ol>
+            <div style="margin-top: 1rem; padding: 0.8rem; background: white; border-radius: 8px; border: 1px dashed #17a2b8;">
+                <small style="color: #17a2b8; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-info-circle"></i>
+                    Next milestone: {{ performance_summary.next_milestone }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Best Times & Performance -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        
+        <!-- Best Posting Times -->
+        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 12px; border: 2px solid #ffeaa7;">
+            <h5 style="margin-top: 0; color: #856404; display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+                <i class="fas fa-clock" style="color: #856404;"></i>
+                Optimal Posting Times
+            </h5>
+            <div style="margin-bottom: 1rem;">
+                <div style="font-weight: 600; color: #856404; margin-bottom: 0.5rem;">
+                    <i class="fas fa-calendar-day"></i> Today's Best:
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    {% for time in ai_predictions.best_posting_times.today %}
+                    <span style="background: white; color: #333; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <i class="fas fa-clock"></i> {{ time }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div style="font-size: 0.85rem; color: #856404;">
+                <i class="fas fa-chart-bar"></i> Based on engagement patterns & platform research
+            </div>
+        </div>
+        
+        <!-- Performance Summary -->
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; border: 2px solid #e9ecef; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <h5 style="margin-top: 0; color: #333; display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+                <i class="fas fa-chart-pie" style="color: #6f42c1;"></i>
+                Performance Summary
+            </h5>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <div>
+                    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.2rem;">Status</div>
+                    <div style="font-weight: 600; color: #333;">{{ performance_summary.followers_status }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.2rem;">Engagement</div>
+                    <div style="font-weight: 600; color: #333;">{{ performance_summary.engagement_status }}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.2rem;">Content Score</div>
+                    <div style="font-weight: 600; color: #333;">{{ performance_summary.content_score }}/100</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.2rem;">Growth Potential</div>
+                    <div style="font-weight: 600; color: #28a745;">{{ performance_summary.growth_potential }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Tips -->
+        <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 1.5rem; border-radius: 12px;">
+            <h5 style="margin-top: 0; display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
+                <i class="fas fa-rocket"></i>
+                Quick Win
+            </h5>
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                {{ engagement_insights.advice }}
+            </div>
+            <div style="font-size: 0.9rem; opacity: 0.9; background: rgba(255,255,255,0.2); padding: 0.8rem; border-radius: 8px;">
+                <i class="fas fa-target"></i> Target: {{ engagement_insights.target }} engagement rate
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Footer -->
+    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #f8f9fa; text-align: center;">
+        <small style="color: #6c757d; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fas fa-brain"></i>
+            AI analyzes your data every time you visit • All predictions are estimates
+        </small>
+    </div>
+</div>
+            <!-- Recent Activity -->
+            <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0; color: #333;">Activité Récente</h3>
+                    <button class="btn btn-sm btn-outline-primary" id="refresh-activity">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                </div>
+                <div class="activity-list" id="activity-list">
+                    {% if real_time_stats.total_posts > 0 %}
+                        <div style="padding: 1rem; border-bottom: 1px solid #e9ecef;">
+                            <i class="fas fa-pen-fancy" style="color: #667eea; margin-right: 0.5rem;"></i>
+                            <span>Vous avez {{ real_time_stats.total_posts }} post(s) publié(s)</span>
+                        </div>
+                    {% endif %}
+                    
+                    {% if real_time_stats.total_likes > 0 %}
+                        <div style="padding: 1rem; border-bottom: 1px solid #e9ecef;">
+                            <i class="fas fa-heart" style="color: #dc3545; margin-right: 0.5rem;"></i>
+                            <span>Vos posts ont reçu {{ real_time_stats.total_likes }} like(s)</span>
+                        </div>
+                    {% endif %}
+                    
+                    {% if real_time_stats.followers_count > 0 %}
+                        <div style="padding: 1rem; border-bottom: 1px solid #e9ecef;">
+                            <i class="fas fa-user-plus" style="color: #28a745; margin-right: 0.5rem;"></i>
+                            <span>Vous avez {{ real_time_stats.followers_count }} follower(s)</span>
+                        </div>
+                    {% endif %}
+                    
+                    {% if real_time_stats.total_posts == 0 and real_time_stats.total_likes == 0 %}
+                        <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                            <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>Aucune activité récente</p>
+                            <small>Commencez à publier du contenu !</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mise à jour en temps réel des stats
+function updateRealTimeStats() {
+    fetch('{% url "creator:api_stats" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Mettre à jour les éléments avec les nouvelles données
+            document.getElementById('live-followers').textContent = data.followers_count;
+            document.getElementById('live-engagement').textContent = data.engagement_rate + '%';
+            document.getElementById('live-posts').textContent = data.total_posts;
+            document.getElementById('live-likes').textContent = data.total_likes;
+            
+            // Mettre à jour le timestamp
+            document.getElementById('update-time').textContent = 'Mis à jour: ' + new Date().toLocaleTimeString();
+            
+            // Mettre à jour le statut de vérification
+            if (data.is_verified && !document.querySelector('.verified-badge')) {
+                location.reload(); // Recharger si devenu vérifié
+            }
+        })
+        .catch(error => {
+            console.error('Erreur mise à jour temps réel:', error);
+        });
+}
+
+// Actualiser les prédictions
+function refreshPredictions() {
+    const predictBtn = document.querySelector('.predict-btn');
+    const originalText = predictBtn.innerHTML;
+    
+    predictBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calcul...';
+    predictBtn.disabled = true;
+
+    fetch('{% url "creator:generate_prediction" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'prediction_type': 'follower_growth'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('pred-followers').textContent = data.prediction.value;
+            document.getElementById('pred-confidence').textContent = data.prediction.confidence + '% confidence';
+            
+            // Show success message
+            showToast('Prédictions actualisées avec les dernières données!', 'success');
+        }
+    })
+    .finally(() => {
+        predictBtn.innerHTML = originalText;
+        predictBtn.disabled = false;
+    });
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Mise à jour automatique toutes les 30 secondes
+    setInterval(updateRealTimeStats, 30000);
+    
+    // Premier chargement
+    updateRealTimeStats();
+    
+    // Bouton de prédiction
+    const predictBtn = document.querySelector('.predict-btn');
+    if (predictBtn) {
+        predictBtn.addEventListener('click', refreshPredictions);
+    }
+    
+    // Bouton d'actualisation d'activité
+    const refreshBtn = document.getElementById('refresh-activity');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            setTimeout(() => {
+                updateRealTimeStats();
+                this.innerHTML = '<i class="fas fa-sync-alt"></i> Actualiser';
+                showToast('Activité actualisée', 'success');
+            }, 1000);
+        });
+    }
+    
+    // Bouton de mise à niveau
+    const upgradeBtn = document.querySelector('.upgrade-btn');
+    if (upgradeBtn) {
+        upgradeBtn.addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            fetch('{% url "creator:upgrade" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Félicitations! Vous êtes maintenant créateur vérifié!', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showToast('Erreur: ' + data.error, 'error');
+                    this.innerHTML = 'Devenir Créateur ✓';
+                }
+            })
+            .catch(() => {
+                this.innerHTML = 'Devenir Créateur ✓';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
