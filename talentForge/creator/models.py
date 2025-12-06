@@ -15,6 +15,8 @@ class CreatorProfile(models.Model):
     engagement_rate = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    username = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(blank=True)
         
     def sync_with_user_profile(self):
         """Sync follower count with Follow model"""
@@ -60,12 +62,50 @@ class CreatorProfile(models.Model):
         return f"CreatorProfile for {self.user.username}"
 
 
+# @receiver(post_save, sender=User)
+# def create_or_update_creator_profile(sender, instance, created, **kwargs):
+#     if created:
+#         CreatorProfile.objects.create(user=instance)
+#     else:
+#         instance.creatorprofile.save()  
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+from .models import CreatorProfile
+
 @receiver(post_save, sender=User)
 def create_or_update_creator_profile(sender, instance, created, **kwargs):
+    """
+    Crée ou met à jour un profil créateur seulement si l'utilisateur est marqué comme créateur.
+    """
     if created:
-        CreatorProfile.objects.create(user=instance)
+        # Si l'utilisateur est créé avec le flag is_creator=True, créez un profil
+        if instance.is_creator:
+            CreatorProfile.objects.create(
+                user=instance,
+                username=instance.username,
+                email=instance.email
+            )
     else:
-        instance.creatorprofile.save()  
+        # Pour les mises à jour, gérez seulement si le profil existe
+        try:
+            if hasattr(instance, 'creatorprofile'):
+                creator_profile = instance.creatorprofile
+                # Met à jour les informations si elles ont changé
+                if creator_profile.username != instance.username:
+                    creator_profile.username = instance.username
+                if creator_profile.email != instance.email:
+                    creator_profile.email = instance.email
+                creator_profile.save()
+        except CreatorProfile.DoesNotExist:
+            # Si l'utilisateur devient un créateur plus tard
+            if instance.is_creator:
+                CreatorProfile.objects.create(
+                    user=instance,
+                    username=instance.username,
+                    email=instance.email
+                )
 
 class CreatorStat(models.Model):
     creator = models.ForeignKey(CreatorProfile, on_delete=models.CASCADE, related_name='stats')
