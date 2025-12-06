@@ -43,12 +43,14 @@ INSTALLED_APPS = [
     'base',
     'posts',
     'creator',
+    'admin_app.apps.AdminAppConfig',
 
     # Allauth apps
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',  # Google provider
+
 ]
 
 MIDDLEWARE = [

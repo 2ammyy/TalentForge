@@ -1,0 +1,129 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}{{ user.username }} - User Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:users' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Users
+    </a>
+    {% if user.is_active %}
+    <a href="{% url 'admin_app:toggle_user_active' user.id %}" 
+       class="btn btn-outline-warning"
+       onclick="return confirm('Deactivate this user?')">
+        <i class="fas fa-ban"></i> Deactivate
+    </a>
+    {% else %}
+    <a href="{% url 'admin_app:toggle_user_active' user.id %}" 
+       class="btn btn-outline-success"
+       onclick="return confirm('Activate this user?')">
+        <i class="fas fa-check"></i> Activate
+    </a>
+    {% endif %}
+    {% if not user.is_staff %}
+    <a href="{% url 'admin_app:make_user_staff' user.id %}" 
+       class="btn btn-outline-primary"
+       onclick="return confirm('Make this user a staff member?')">
+        <i class="fas fa-user-shield"></i> Make Staff
+    </a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- User Info -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto;">
+                        {{ user.username|first|upper }}
+                    </div>
+                </div>
+                <h4>{{ user.username }}</h4>
+                <p class="text-muted">{{ user.email }}</p>
+                
+                <div class="mt-4 text-start">
+                    <p><strong>Full Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+                    <p><strong>Date Joined:</strong> {{ user.date_joined|date:"F j, Y, g:i a" }}</p>
+                    <p><strong>Last Login:</strong> 
+                        {% if user.last_login %}
+                        {{ user.last_login|date:"F j, Y, g:i a" }}
+                        {% else %}
+                        Never
+                        {% endif %}
+                    </p>
+                    
+                    <div class="mt-3">
+                        <strong>Status:</strong><br>
+                        {% if user.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                        
+                        {% if user.is_staff %}
+                        <span class="badge bg-primary">Staff</span>
+                        {% endif %}
+                        
+                        {% if user.is_superuser %}
+                        <span class="badge bg-warning">Superuser</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if creator_profile %}
+                    <div class="mt-3">
+                        <strong>Creator Profile:</strong><br>
+                        {% if creator_profile.is_verified %}
+                        <span class="badge bg-success">Verified Creator</span>
+                        {% else %}
+                        <span class="badge bg-warning">Not Verified</span>
+                        {% endif %}
+                        <div class="mt-1">
+                            <small>Followers: {{ creator_profile.followers_count }}</small><br>
+                            <small>Posts: {{ creator_profile.total_posts }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Activity -->
+    <div class="col-md-8">
+        {% if user_posts %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Posts ({{ user_posts|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for post in user_posts %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ post.title|truncatechars:50 }}</h6>
+                            <small>{{ post.created_at|timesince }} ago</small>
+                        </div>
+                        <p class="mb-1">{{ post.content|truncatechars:100 }}</p>
+                        <small class="text-muted">
+                            Created: {{ post.created_at|date:"M d, Y" }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5>No Posts Yet</h5>
+                <p class="text-muted">This user hasn't created any posts.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
