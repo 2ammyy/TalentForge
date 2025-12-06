@@ -163,7 +163,7 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 # Google OAuth Configuration
 SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_LOGIN_ON_GET = False  # IMPORTANT: Must be False for our custom redirect to work
+SOCIALACCOUNT_LOGIN_ON_GET = True  # IMPORTANT: Must be False for our custom redirect to work
 SOCIALACCOUNT_STORE_TOKENS = True
 
 # Disable email verification for social accounts
