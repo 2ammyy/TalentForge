@@ -1,3 +1,4 @@
+{# Django template #}
 {% extends 'admin_app/base_admin.html' %}
 
 {% block page_heading %}Dashboard{% endblock %}
@@ -155,4 +156,122 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden data for JavaScript -->
+<div id="chart-data" 
+     data-labels="{% for day in daily_signups %}{{ day.day }}{% if not forloop.last %},{% endif %}{% endfor %}"
+     data-values="{% for day in daily_signups %}{{ day.count }}{% if not forloop.last %},{% endif %}{% endfor %}">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize the growth chart using existing data
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    
+    // Get data from hidden div attributes
+    const chartData = document.getElementById('chart-data');
+    const labels = chartData.dataset.labels.split(',');
+    const dataValues = chartData.dataset.values.split(',').map(Number);
+    
+    console.log('Chart labels:', labels);
+    console.log('Chart data:', dataValues);
+    
+    // Check if we have valid data
+    if (dataValues.length === 0 || labels.length === 0) {
+        console.error('No chart data available');
+        document.getElementById('growthChart').parentElement.innerHTML = 
+            '<div class="alert alert-warning">No chart data available. Please check if users have signed up in the last 7 days.</div>';
+        return;
+    }
+    
+    const growthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'New Users',
+                data: dataValues,
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `New Users: ${context.parsed.y}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return Number.isInteger(value) ? value : '';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+    
+    // Store the chart instance for updates
+    window.growthChart = growthChart;
+});
+
+// Function to refresh stats
+function refreshStats() {
+    fetch('{% url "admin_app:api_stats" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Update any stats displayed
+            document.querySelectorAll('[data-stat]').forEach(el => {
+                const stat = el.dataset.stat;
+                if (data[stat]) {
+                    el.textContent = data[stat];
+                    el.classList.add('text-success');
+                    setTimeout(() => el.classList.remove('text-success'), 1000);
+                }
+            });
+            
+            // Update active today stat
+            const activeTodayEl = document.querySelector('[data-stat="active_today"]');
+            if (activeTodayEl && data.active_today !== undefined) {
+                activeTodayEl.textContent = data.active_today;
+                activeTodayEl.classList.add('text-success');
+                setTimeout(() => activeTodayEl.classList.remove('text-success'), 1000);
+            }
+        });
+}
+</script>
 {% endblock %}

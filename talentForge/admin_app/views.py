@@ -47,17 +47,83 @@ def admin_dashboard(request):
     # Recent users
     recent_users = User.objects.order_by('-date_joined')[:10]
     
-    # Daily signups for chart
+    # Daily signups for chart (last 7 days including today)
     daily_signups = []
-    for i in range(7):
+    
+    # Start from 6 days ago to today
+    for i in range(6, -1, -1):
         day = today - timedelta(days=i)
         count = User.objects.filter(date_joined__date=day).count()
-        daily_signups.append({'day': day.strftime('%a'), 'count': count})
+        daily_signups.append({
+            'day': day.strftime('%a'),  # Short day name like "Mon"
+            'count': count
+        })
+    
+    print("Daily signups data:", daily_signups)  # Debug print
     
     context = {
         'stats': stats,
         'recent_users': recent_users,
-        'daily_signups': reversed(daily_signups),
+        'daily_signups': daily_signups,
+        'active_page': 'dashboard',
+    }
+    
+    return render(request, 'admin_app/dashboard.html', context)
+    """Main admin dashboard"""
+    today = timezone.now().date()
+    week_ago = today - timedelta(days=7)
+    
+    # Basic statistics
+    stats = {
+        'total_users': User.objects.count(),
+        'new_users_today': User.objects.filter(date_joined__date=today).count(),
+        'new_users_week': User.objects.filter(date_joined__gte=week_ago).count(),
+        'active_users': User.objects.filter(last_login__gte=week_ago).count(),
+    }
+    
+    # Try to get creator stats if creator app exists
+    try:
+        from creator.models import CreatorProfile
+        stats['total_creators'] = CreatorProfile.objects.filter(is_verified=True).count()
+        stats['pending_creators'] = CreatorProfile.objects.filter(is_verified=False).count()
+    except:
+        stats['total_creators'] = 0
+        stats['pending_creators'] = 0
+    
+    # Try to get post stats if posts app exists
+    try:
+        from posts.models import Post
+        stats['total_posts'] = Post.objects.count()
+        stats['posts_today'] = Post.objects.filter(created_at__date=today).count()
+    except:
+        stats['total_posts'] = 0
+        stats['posts_today'] = 0
+    
+    # Recent users
+    recent_users = User.objects.order_by('-date_joined')[:10]
+    
+    # Daily signups for chart (last 7 days including today)
+    daily_signups = []
+    labels = []
+    data = []
+    
+    for i in range(6, -1, -1):  # Last 7 days including today
+        day = today - timedelta(days=i)
+        count = User.objects.filter(date_joined__date=day).count()
+        daily_signups.append({
+            'day': day.strftime('%a'),
+            'date': day.strftime('%m/%d'),
+            'count': count
+        })
+        labels.append(day.strftime('%a'))
+        data.append(count)
+    
+    context = {
+        'stats': stats,
+        'recent_users': recent_users,
+        'daily_signups': daily_signups,
+        'chart_labels': labels,  # Add this
+        'chart_data': data,      # Add this
         'active_page': 'dashboard',
     }
     
