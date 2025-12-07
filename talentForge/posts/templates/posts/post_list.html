@@ -3,6 +3,593 @@
 
 {% block subtitle %}All Posts{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Video Player Styles */
+.video-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.post-video {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: contain;
+    display: block;
+    background: #000;
+}
+
+/* Video Overlay */
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(0, 0, 0, 0.4) 30%,
+        rgba(0, 0, 0, 0) 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    pointer-events: none;
+}
+
+.video-container:hover .video-overlay,
+.video-container:focus-within .video-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Play/Pause Button */
+.play-pause-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid white;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.play-pause-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.play-pause-btn .fa-play {
+    margin-left: 5px;
+}
+
+/* Progress Bar */
+.video-progress-container {
+    position: absolute;
+    bottom: 60px;
+    left: 20px;
+    right: 20px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.video-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: #ff4757;
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+
+.video-progress-buffer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 2px;
+}
+
+/* Bottom Controls */
+.video-controls-bottom {
+    position: absolute;
+    bottom: 10px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.video-controls-left,
+.video-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.video-control {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-control:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.video-time {
+    color: white;
+    font-size: 14px;
+    font-family: monospace;
+    min-width: 120px;
+}
+
+/* Volume Slider */
+.volume-slider-container {
+    width: 80px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.volume-btn:hover + .volume-slider-container,
+.volume-slider-container:hover {
+    opacity: 1;
+}
+
+.volume-slider {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: none;
+}
+
+/* Loading Spinner */
+.video-loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error Message */
+.video-error {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    z-index: 20;
+}
+
+.video-error i {
+    font-size: 32px;
+    margin-bottom: 10px;
+    color: #ff4757;
+}
+
+/* Fullscreen Styles */
+.video-container:fullscreen .post-video {
+    max-height: 100vh;
+    height: 100%;
+}
+
+.video-container:fullscreen .video-overlay {
+    padding: 30px;
+}
+
+/* Hide controls when not hovering (with delay) */
+.video-overlay:not(:hover):not(:focus-within) .play-pause-btn,
+.video-overlay:not(:hover):not(:focus-within) .video-controls-bottom,
+.video-overlay:not(:hover):not(:focus-within) .video-progress-container {
+    opacity: 0;
+    transition: opacity 0.5s ease 0.5s;
+}
+
+.video-overlay:hover .play-pause-btn,
+.video-overlay:hover .video-controls-bottom,
+.video-overlay:hover .video-progress-container,
+.video-overlay:focus-within .play-pause-btn,
+.video-overlay:focus-within .video-controls-bottom,
+.video-overlay:focus-within .video-progress-container {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* Video states */
+.video-paused .play-pause-btn .fa-play,
+.video-playing .play-pause-btn .fa-pause {
+    display: block;
+}
+
+.video-paused .play-pause-btn .fa-pause,
+.video-playing .play-pause-btn .fa-play {
+    display: none;
+}
+
+/* Post Card Styles */
+.posts-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.posts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.posts-header h2 {
+    margin: 0;
+    color: #333;
+}
+
+.create-post-btn {
+    background: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.3s;
+}
+
+.create-post-btn:hover {
+    background: #0056b3;
+    color: white;
+}
+
+.filter-section {
+    margin-bottom: 20px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.post-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.post-author-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.author-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.post-author {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.post-date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.post-type-badge {
+    margin-bottom: 10px;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.badge.text { background: #e3f2fd; color: #1565c0; }
+.badge.image { background: #f3e5f5; color: #7b1fa2; }
+.badge.video { background: #e8f5e8; color: #2e7d32; }
+.badge.job { background: #fff3e0; color: #ef6c00; }
+
+.post-title {
+    margin: 10px 0;
+    color: #333;
+}
+
+.post-content {
+    margin: 15px 0;
+    line-height: 1.6;
+    color: #444;
+}
+
+.post-media {
+    margin: 15px 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.post-image {
+    width: 100%;
+    max-height: 500px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.post-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    flex-wrap: wrap;
+}
+
+.action-link {
+    color: #666;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.3s;
+}
+
+.action-link:hover {
+    color: #007bff;
+}
+
+.action-separator {
+    color: #ddd;
+}
+
+.reaction-section {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.reaction-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.reaction-btn:hover {
+    background: #f5f5f5;
+}
+
+.reaction-btn.liked {
+    color: #e91e63;
+}
+
+.reaction-count {
+    min-width: 20px;
+    text-align: center;
+}
+
+.shares-section {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 5px;
+}
+
+.no-posts {
+    text-align: center;
+    padding: 50px 20px;
+    color: #666;
+}
+
+.no-posts-icon {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.create-first-post {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    max-width: 200px;
+    margin: 20px auto 0;
+}
+
+.pagination-container {
+    margin-top: 30px;
+}
+
+/* Dropdown styles */
+.post-actions-dropdown .dropdown-toggle {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.post-actions-dropdown .dropdown-toggle:hover {
+    background: #f5f5f5;
+}
+
+.dropdown-menu {
+    min-width: 250px;
+}
+
+.dropdown-item-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dropdown-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-title {
+    font-weight: 500;
+}
+
+.dropdown-desc {
+    font-size: 0.85em;
+    color: #666;
+}
+
+.delete-option .dropdown-title {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="posts-container">
     <div class="posts-header">
@@ -32,7 +619,6 @@
     </div>
 
     {% for post in posts %}
-    <!-- Debug: Post ID {{ post.id }} -->
     <div class="post-card" data-post-type="{{ post.type }}" data-post-id="{{ post.id }}">
         <div class="post-header">
             <div class="post-author-info">
@@ -158,16 +744,70 @@
         <!-- Post Media -->
         {% if post.image %}
         <div class="post-media">
-            <img src="{{ post.image.url }}" class="post-image" alt="Post image">
+            <img src="{{ post.image.url }}" class="post-image" alt="Post image" loading="lazy">
         </div>
         {% endif %}
         
         {% if post.video %}
-        <div class="post-media">
-            <video controls class="post-video">
+        <div class="post-media video-container" data-video-id="{{ post.id }}">
+            <video 
+                class="post-video" 
+                preload="metadata" 
+                playsinline
+                muted
+                poster="{% if post.thumbnail %}{{ post.thumbnail.url }}{% endif %}"
+            >
                 <source src="{{ post.video.url }}" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+            
+            <!-- Video Overlay (for hover controls) -->
+            <div class="video-overlay">
+                <!-- Play/Pause Button -->
+                <button class="video-control play-pause-btn" aria-label="Play/Pause" tabindex="0">
+                    <i class="fas fa-play"></i>
+                    <i class="fas fa-pause" style="display: none;"></i>
+                </button>
+                
+                <!-- Progress Bar -->
+                <div class="video-progress-container">
+                    <div class="video-progress-bar"></div>
+                    <div class="video-progress-buffer"></div>
+                </div>
+                
+                <!-- Bottom Controls -->
+                <div class="video-controls-bottom">
+                    <!-- Left Side Controls -->
+                    <div class="video-controls-left">
+                        <button class="video-control volume-btn" aria-label="Mute/Unmute" tabindex="0">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <div class="volume-slider-container">
+                            <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1" tabindex="0">
+                        </div>
+                        <span class="video-time">00:00 / 00:00</span>
+                    </div>
+                    
+                    <!-- Right Side Controls -->
+                    <div class="video-controls-right">
+                        <button class="video-control fullscreen-btn" aria-label="Fullscreen" tabindex="0">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Loading Spinner -->
+                <div class="video-loading-spinner" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+                
+                <!-- Error Message -->
+                <div class="video-error" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Video failed to load</p>
+                    <button class="retry-btn" style="margin-top: 10px; padding: 5px 10px;">Retry</button>
+                </div>
+            </div>
         </div>
         {% endif %}
 
@@ -179,9 +819,12 @@
             <span class="action-separator">|</span>
             
             <div class="reaction-section">
-                <button class="reaction-btn like-btn" data-post-id="{{ post.id }}" data-reaction-type="like">
+                {% with post_id=post.id|stringformat:"s" %}
+                <button class="reaction-btn like-btn {% if user.is_authenticated and post_id in liked_post_ids %}liked{% endif %}" 
+                        data-post-id="{{ post.id }}" data-reaction-type="like">
                     <i class="fas fa-heart"></i> Like
                 </button>
+                {% endwith %}
                 <span class="reaction-count" id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
             </div>
             
@@ -268,18 +911,619 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
 
-<!-- Test Bootstrap Dropdown -->
-<div style="position: fixed; top: 10px; right: 10px; z-index: 9999; display: none;">
-    <div class="dropdown">
-        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            Test Bootstrap
-        </button>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">Test Item 1</a></li>
-            <li><a class="dropdown-item" href="#">Test Item 2</a></li>
-        </ul>
-    </div>
-</div>
+{% block extra_js %}
+<script>
+// Video Player Manager
+class VideoPlayerManager {
+    constructor() {
+        this.videoPlayers = new Map();
+        this.observer = null;
+        this.init();
+    }
 
+    init() {
+        this.setupIntersectionObserver();
+        this.setupEventListeners();
+        this.initializeVideos();
+    }
+
+    setupIntersectionObserver() {
+        const options = {
+            root: null,
+            rootMargin: '100px',
+            threshold: 0.1
+        };
+
+        this.observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const videoContainer = entry.target;
+                const player = this.videoPlayers.get(videoContainer.dataset.videoId);
+                
+                if (player) {
+                    if (entry.isIntersecting) {
+                        this.handleVideoInViewport(player);
+                    } else {
+                        this.handleVideoOutOfViewport(player);
+                    }
+                }
+            });
+        }, options);
+    }
+
+    setupEventListeners() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.pauseAllVideos();
+            }
+        });
+
+        window.addEventListener('blur', () => {
+            this.pauseAllVideos();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            this.pauseAllVideos();
+        });
+    }
+
+    initializeVideos() {
+        const videoContainers = document.querySelectorAll('.video-container');
+        
+        videoContainers.forEach(container => {
+            const videoId = container.dataset.videoId;
+            const video = container.querySelector('.post-video');
+            const overlay = container.querySelector('.video-overlay');
+            
+            if (video && overlay) {
+                const player = {
+                    container,
+                    video,
+                    overlay,
+                    videoId,
+                    isPlaying: false,
+                    isMuted: video.muted,
+                    isFullscreen: false,
+                    wasPlayingBeforeViewportLeave: false,
+                    progressBar: overlay.querySelector('.video-progress-bar'),
+                    bufferBar: overlay.querySelector('.video-progress-buffer'),
+                    timeDisplay: overlay.querySelector('.video-time'),
+                    playBtn: overlay.querySelector('.play-pause-btn'),
+                    volumeBtn: overlay.querySelector('.volume-btn'),
+                    volumeSlider: overlay.querySelector('.volume-slider'),
+                    fullscreenBtn: overlay.querySelector('.fullscreen-btn'),
+                    loadingSpinner: overlay.querySelector('.video-loading-spinner'),
+                    errorDisplay: overlay.querySelector('.video-error'),
+                    retryBtn: overlay.querySelector('.retry-btn'),
+                    progressContainer: overlay.querySelector('.video-progress-container')
+                };
+
+                this.videoPlayers.set(videoId, player);
+                this.setupVideoPlayer(player);
+                this.observer.observe(container);
+            }
+        });
+    }
+
+    setupVideoPlayer(player) {
+        const { video, overlay, progressContainer } = player;
+
+        // Video events
+        video.addEventListener('loadeddata', () => this.onVideoLoaded(player));
+        video.addEventListener('timeupdate', () => this.updateProgress(player));
+        video.addEventListener('progress', () => this.updateBuffer(player));
+        video.addEventListener('waiting', () => this.showLoading(player));
+        video.addEventListener('playing', () => {
+            this.hideLoading(player);
+            player.isPlaying = true;
+            this.updatePlayButton(player);
+            this.hideControls(player);
+        });
+        video.addEventListener('pause', () => {
+            player.isPlaying = false;
+            this.updatePlayButton(player);
+        });
+        video.addEventListener('ended', () => this.onVideoEnded(player));
+        video.addEventListener('error', (e) => this.handleVideoError(player, e));
+        video.addEventListener('volumechange', () => this.updateVolumeUI(player));
+        video.addEventListener('enterpictureinpicture', () => this.onPictureInPicture(player));
+        video.addEventListener('leavepictureinpicture', () => this.onLeavePictureInPicture(player));
+
+        // Overlay events (hover logic)
+        overlay.addEventListener('mouseenter', (e) => {
+            e.stopPropagation();
+            this.showControls(player);
+        });
+
+        overlay.addEventListener('mouseleave', (e) => {
+            e.stopPropagation();
+            if (player.isPlaying) {
+                this.hideControls(player);
+            }
+        });
+
+        // Click to play/pause
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay || e.target.closest('.play-pause-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.togglePlayPause(player);
+            }
+        });
+
+        // Progress bar click
+        progressContainer.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rect = progressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            this.seekTo(player, pos);
+        });
+
+        // Volume controls
+        player.volumeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMute(player);
+        });
+
+        player.volumeSlider.addEventListener('input', (e) => {
+            e.stopPropagation();
+            this.setVolume(player, parseFloat(e.target.value));
+        });
+
+        // Fullscreen
+        player.fullscreenBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleFullscreen(player);
+        });
+
+        // Retry button for errors
+        if (player.retryBtn) {
+            player.retryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.retryVideo(player);
+            });
+        }
+
+        // Keyboard shortcuts
+        video.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                case 'k':
+                    e.preventDefault();
+                    this.togglePlayPause(player);
+                    break;
+                case 'm':
+                    e.preventDefault();
+                    this.toggleMute(player);
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    this.toggleFullscreen(player);
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    this.seekRelative(player, -5);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    this.seekRelative(player, 5);
+                    break;
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    e.preventDefault();
+                    const percent = parseInt(e.key) / 10;
+                    this.seekTo(player, percent);
+                    break;
+            }
+        });
+
+        // Initialize UI
+        this.updateVolumeUI(player);
+        this.updateTimeDisplay(player);
+        
+        // Try autoplay if in viewport
+        if (this.isElementInViewport(player.container)) {
+            this.tryAutoplay(player);
+        }
+    }
+
+    handleVideoInViewport(player) {
+        if (player.wasPlayingBeforeViewportLeave) {
+            this.playVideo(player).catch(() => {
+                player.wasPlayingBeforeViewportLeave = false;
+            });
+        } else {
+            this.tryAutoplay(player);
+        }
+    }
+
+    handleVideoOutOfViewport(player) {
+        player.wasPlayingBeforeViewportLeave = player.isPlaying;
+        this.pauseVideo(player);
+    }
+
+    tryAutoplay(player) {
+        if (player.video.muted) {
+            this.playVideo(player).catch(error => {
+                console.log('Autoplay prevented:', error);
+                this.updatePlayButton(player);
+            });
+        }
+    }
+
+    async playVideo(player) {
+        try {
+            await player.video.play();
+            player.isPlaying = true;
+            this.updatePlayButton(player);
+            this.hideControls(player);
+            return true;
+        } catch (error) {
+            player.isPlaying = false;
+            this.updatePlayButton(player);
+            
+            if (error.name === 'NotAllowedError') {
+                this.showControls(player);
+            }
+            
+            throw error;
+        }
+    }
+
+    pauseVideo(player) {
+        player.video.pause();
+        player.isPlaying = false;
+        this.updatePlayButton(player);
+    }
+
+    togglePlayPause(player) {
+        if (player.isPlaying) {
+            this.pauseVideo(player);
+            this.showControls(player);
+        } else {
+            this.playVideo(player).catch(() => {
+                if (player.video.muted) {
+                    player.video.muted = false;
+                    this.updateVolumeUI(player);
+                    this.playVideo(player).catch(console.error);
+                }
+            });
+        }
+    }
+
+    toggleMute(player) {
+        player.video.muted = !player.video.muted;
+        if (!player.video.muted && player.video.volume === 0) {
+            player.video.volume = 0.5;
+            player.volumeSlider.value = 0.5;
+        }
+        this.updateVolumeUI(player);
+    }
+
+    setVolume(player, volume) {
+        player.video.volume = volume;
+        player.video.muted = volume === 0;
+        this.updateVolumeUI(player);
+    }
+
+    updateVolumeUI(player) {
+        const { video, volumeBtn } = player;
+        const icon = volumeBtn.querySelector('i');
+        
+        if (video.muted || video.volume === 0) {
+            icon.className = 'fas fa-volume-mute';
+            player.volumeSlider.value = 0;
+        } else if (video.volume < 0.5) {
+            icon.className = 'fas fa-volume-down';
+            player.volumeSlider.value = video.volume;
+        } else {
+            icon.className = 'fas fa-volume-up';
+            player.volumeSlider.value = video.volume;
+        }
+    }
+
+    toggleFullscreen(player) {
+        if (!document.fullscreenElement) {
+            player.container.requestFullscreen().catch(err => {
+                console.log('Fullscreen error:', err);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    seekTo(player, percentage) {
+        if (player.video.duration) {
+            player.video.currentTime = percentage * player.video.duration;
+        }
+    }
+
+    seekRelative(player, seconds) {
+        if (player.video.duration) {
+            player.video.currentTime = Math.max(0, 
+                Math.min(player.video.duration, player.video.currentTime + seconds)
+            );
+        }
+    }
+
+    updateProgress(player) {
+        const { video, progressBar } = player;
+        if (video.duration && !isNaN(video.duration)) {
+            const percent = (video.currentTime / video.duration) * 100;
+            progressBar.style.width = percent + '%';
+            this.updateTimeDisplay(player);
+        }
+    }
+
+    updateBuffer(player) {
+        const { video, bufferBar } = player;
+        if (video.buffered.length > 0 && video.duration) {
+            const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+            const percent = (bufferedEnd / video.duration) * 100;
+            bufferBar.style.width = percent + '%';
+        }
+    }
+
+    updateTimeDisplay(player) {
+        const { video, timeDisplay } = player;
+        const current = this.formatTime(video.currentTime);
+        const duration = this.formatTime(video.duration);
+        timeDisplay.textContent = `${current} / ${duration}`;
+    }
+
+    formatTime(seconds) {
+        if (isNaN(seconds)) return '00:00';
+        
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    showLoading(player) {
+        if (player.loadingSpinner) {
+            player.loadingSpinner.style.display = 'block';
+        }
+    }
+
+    hideLoading(player) {
+        if (player.loadingSpinner) {
+            player.loadingSpinner.style.display = 'none';
+        }
+    }
+
+    showControls(player) {
+        player.overlay.style.opacity = '1';
+        player.overlay.style.pointerEvents = 'auto';
+    }
+
+    hideControls(player) {
+        if (player.isPlaying) {
+            player.overlay.style.opacity = '0';
+            player.overlay.style.pointerEvents = 'none';
+        }
+    }
+
+    updatePlayButton(player) {
+        const playIcon = player.playBtn.querySelector('.fa-play');
+        const pauseIcon = player.playBtn.querySelector('.fa-pause');
+        
+        if (player.isPlaying) {
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+        } else {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+        }
+    }
+
+    onVideoLoaded(player) {
+        this.updateTimeDisplay(player);
+        player.video.style.opacity = '1';
+    }
+
+    onVideoEnded(player) {
+        player.isPlaying = false;
+        this.updatePlayButton(player);
+        this.showControls(player);
+        
+        setTimeout(() => {
+            if (!player.isPlaying) {
+                player.video.currentTime = 0;
+                this.updateProgress(player);
+            }
+        }, 3000);
+    }
+
+    handleVideoError(player, error) {
+        console.error('Video error:', error);
+        if (player.errorDisplay) {
+            player.errorDisplay.style.display = 'block';
+        }
+        this.hideLoading(player);
+    }
+
+    retryVideo(player) {
+        if (player.errorDisplay) {
+            player.errorDisplay.style.display = 'none';
+        }
+        player.video.load();
+        this.playVideo(player).catch(console.error);
+    }
+
+    onPictureInPicture(player) {
+        player.isPlaying = true;
+        this.updatePlayButton(player);
+    }
+
+    onLeavePictureInPicture(player) {
+        // Handle PiP exit if needed
+    }
+
+    pauseAllVideos() {
+        this.videoPlayers.forEach(player => {
+            if (player.isPlaying) {
+                this.pauseVideo(player);
+            }
+        });
+    }
+
+    isElementInViewport(el) {
+        const rect = el.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+
+    destroy() {
+        this.pauseAllVideos();
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+        this.videoPlayers.clear();
+    }
+}
+
+// Initialize video player manager
+let videoPlayerManager = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize video players
+    videoPlayerManager = new VideoPlayerManager();
+    
+    // Filter functionality
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const postCards = document.querySelectorAll('.post-card');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            // Update active button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter posts
+            postCards.forEach(card => {
+                if (filter === 'all' || card.dataset.postType === filter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Reinitialize videos after filtering
+            setTimeout(() => {
+                if (videoPlayerManager) {
+                    videoPlayerManager.destroy();
+                    videoPlayerManager = new VideoPlayerManager();
+                }
+            }, 100);
+        });
+    });
+    
+    // Like button functionality
+    document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const reactionType = this.dataset.reactionType;
+            const isLiked = this.classList.contains('liked');
+            
+            // Toggle like state
+            if (isLiked) {
+                // Unlike
+                this.classList.remove('liked');
+                const countElement = document.getElementById(`reaction-count-${postId}`);
+                let count = parseInt(countElement.textContent);
+                countElement.textContent = Math.max(0, count - 1);
+            } else {
+                // Like
+                this.classList.add('liked');
+                const countElement = document.getElementById(`reaction-count-${postId}`);
+                let count = parseInt(countElement.textContent);
+                countElement.textContent = count + 1;
+            }
+            
+            // Send AJAX request
+            fetch(`/posts/${postId}/react/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    reaction_type: reactionType,
+                    action: isLiked ? 'remove' : 'add'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Reaction updated');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Revert UI on error
+                if (isLiked) {
+                    this.classList.add('liked');
+                } else {
+                    this.classList.remove('liked');
+                }
+            });
+        });
+    });
+    
+    // Handle window resize
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (videoPlayerManager) {
+                videoPlayerManager.destroy();
+                videoPlayerManager = new VideoPlayerManager();
+            }
+        }, 250);
+    });
+});
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Export for debugging
+if (typeof window !== 'undefined') {
+    window.VideoPlayerManager = VideoPlayerManager;
+}
+</script>
 {% endblock %}
