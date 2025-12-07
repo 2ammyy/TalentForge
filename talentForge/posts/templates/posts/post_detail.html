@@ -39,28 +39,37 @@
         </div>
         {% endif %}
         
-       {% if post.video %}
+   {% if post.video %}
 <div class="post-media" style="position: relative;">
-    <video 
-        autoplay 
-        muted 
-        playsinline 
-        loop 
-        preload="metadata"
-        src="{{ post.video.url }}" 
-        class="post-video"
-        onclick="togglePlayPause(this)"
-        style="width: 100%; max-height: 500px; border-radius: 8px; cursor: pointer;"
-    >
-        Your browser does not support the video tag.
-    </video>
-    <div class="video-controls" style="position: absolute; bottom: 20px; right: 20px; z-index: 2;">
-        <button class="btn btn-sm btn-dark video-play-btn" onclick="togglePlayPause(this.previousElementSibling)" style="opacity: 0.7;">
-            <i class="fas fa-play"></i>
-        </button>
-        <button class="btn btn-sm btn-dark video-mute-btn ms-1" onclick="toggleMute(this.previousElementSibling.previousElementSibling, this)" style="opacity: 0.7;">
-            <i class="fas fa-volume-mute"></i>
-        </button>
+    <div class="video-container" style="position: relative; padding-top: 56.25%; background: #000; border-radius: 8px; overflow: hidden;">
+        <video 
+            class="post-video"
+            playsinline 
+            loop 
+            preload="metadata"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
+        >
+            <source src="{{ post.video.url }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        
+        <!-- Hover Overlay with Controls -->
+        <div class="video-hover-overlay" 
+             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;"
+             onmouseenter="handleVideoHover(this, 'enter')"
+             onmouseleave="handleVideoHover(this, 'leave')"
+             onclick="toggleVideoPlayPause(this)">
+             
+            <!-- Video Controls -->
+            <div class="video-controls" style="position: absolute; bottom: 20px; right: 20px; z-index: 10; opacity: 0; transition: opacity 0.3s;">
+                <button class="btn btn-sm btn-dark video-play-btn" style="width: 32px; height: 32px; border-radius: 50%; padding: 0;">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="btn btn-sm btn-dark video-mute-btn ms-1" style="width: 32px; height: 32px; border-radius: 50%; padding: 0;">
+                    <i class="fas fa-volume-mute"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -462,6 +471,97 @@ video::poster {
         font-size: 12px;
     }
 }
+
+/* Video Styles */
+.video-container {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-hover-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom, 
+        rgba(0,0,0,0.2) 0%,
+        rgba(0,0,0,0) 70%,
+        rgba(0,0,0,0.4) 100%
+    );
+    transition: background 0.3s ease;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.video-hover-overlay:hover {
+    background: linear-gradient(
+        to bottom, 
+        rgba(0,0,0,0.3) 0%,
+        rgba(0,0,0,0.1) 70%,
+        rgba(0,0,0,0.5) 100%
+    );
+}
+
+.video-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 3;
+    transition: opacity 0.3s ease;
+}
+
+.video-play-btn, .video-mute-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.video-play-btn:hover, .video-mute-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+.post-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s ease;
+}
+
+/* Loading state */
+.post-video.loading {
+    opacity: 0.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .video-controls {
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .video-play-btn, .video-mute-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
 </style>
 
 <!-- Ajouter Bootstrap Icons si pas déjà inclus -->
@@ -639,6 +739,195 @@ document.addEventListener('DOMContentLoaded', function() {
         videoObserver.observe(video);
     });
 });
-</script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all videos
+    initializeAllVideos();
+    
+    // Auto-play videos when they come into view
+    setupVideoAutoplay();
+});
 
+function initializeAllVideos() {
+    document.querySelectorAll('.post-video').forEach(video => {
+        // Set initial properties for smooth autoplay
+        video.muted = true;
+        video.playsInline = true;
+        video.loop = true;
+        video.preload = "metadata";
+        
+        // Add event listeners for play state
+        video.addEventListener('play', function() {
+            updatePlayButton(this, true);
+        });
+        
+        video.addEventListener('pause', function() {
+            updatePlayButton(this, false);
+        });
+        
+        video.addEventListener('volumechange', function() {
+            updateMuteButton(this);
+        });
+        
+        // Try to autoplay
+        attemptAutoplay(video);
+    });
+}
+
+function setupVideoAutoplay() {
+    const videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                // Video is in viewport, try to play
+                if (video.paused) {
+                    attemptAutoplay(video);
+                }
+            } else {
+                // Video is out of viewport, pause it
+                if (!video.paused) {
+                    video.pause();
+                    updatePlayButton(video, false);
+                }
+            }
+        });
+    }, {
+        threshold: 0.3 // 30% of video in viewport
+    });
+    
+    // Observe all videos
+    document.querySelectorAll('.post-video').forEach(video => {
+        videoObserver.observe(video);
+    });
+}
+
+function attemptAutoplay(video) {
+    const playPromise = video.play();
+    
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.log("Autoplay prevented:", error);
+            // Show play button to indicate video needs manual start
+            const overlay = video.closest('.video-container')?.querySelector('.video-hover-overlay');
+            if (overlay) {
+                const controls = overlay.querySelector('.video-controls');
+                if (controls) {
+                    controls.style.opacity = '0.8';
+                }
+            }
+        });
+    }
+}
+
+function handleVideoHover(overlay, action) {
+    const video = overlay.previousElementSibling;
+    const controls = overlay.querySelector('.video-controls');
+    
+    if (!video || !controls) return;
+    
+    if (action === 'enter') {
+        // Show controls on hover
+        controls.style.opacity = '0.8';
+        
+        // Play video if it's paused
+        if (video.paused) {
+            attemptAutoplay(video);
+        }
+    } else if (action === 'leave') {
+        // Hide controls after delay
+        setTimeout(() => {
+            if (!overlay.matches(':hover') && !controls.matches(':hover')) {
+                controls.style.opacity = '0';
+            }
+        }, 300);
+    }
+}
+
+function toggleVideoPlayPause(overlay) {
+    const video = overlay.previousElementSibling;
+    const controls = overlay.querySelector('.video-controls');
+    
+    if (!video) return;
+    
+    if (video.paused) {
+        video.play().then(() => {
+            updatePlayButton(video, true);
+        }).catch(error => {
+            console.log("Play failed:", error);
+        });
+    } else {
+        video.pause();
+        updatePlayButton(video, false);
+    }
+    
+    // Keep controls visible after click
+    if (controls) {
+        controls.style.opacity = '0.8';
+        setTimeout(() => {
+            if (!overlay.matches(':hover') && !controls.matches(':hover')) {
+                controls.style.opacity = '0';
+            }
+        }, 2000);
+    }
+}
+
+function updatePlayButton(video, isPlaying) {
+    const overlay = video.nextElementSibling;
+    if (!overlay) return;
+    
+    const playBtn = overlay.querySelector('.video-play-btn i');
+    if (playBtn) {
+        playBtn.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+    }
+}
+
+function updateMuteButton(video) {
+    const overlay = video.nextElementSibling;
+    if (!overlay) return;
+    
+    const muteBtn = overlay.querySelector('.video-mute-btn i');
+    if (muteBtn) {
+        muteBtn.className = video.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+    }
+}
+
+function toggleVideoMute(button) {
+    const overlay = button.closest('.video-hover-overlay');
+    if (!overlay) return;
+    
+    const video = overlay.previousElementSibling;
+    if (video) {
+        video.muted = !video.muted;
+        updateMuteButton(video);
+        
+        // Keep controls visible
+        const controls = overlay.querySelector('.video-controls');
+        if (controls) {
+            controls.style.opacity = '0.8';
+            setTimeout(() => {
+                if (!overlay.matches(':hover') && !controls.matches(':hover')) {
+                    controls.style.opacity = '0';
+                }
+            }, 2000);
+        }
+    }
+}
+
+// Add event listeners to mute buttons
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.video-mute-btn')) {
+        const button = e.target.closest('.video-mute-btn');
+        toggleVideoMute(button);
+    }
+});
+
+// Also handle mute button clicks if they exist in the controls
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.video-mute-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleVideoMute(this);
+        });
+    });
+});
+</script>
 {% endblock %}
