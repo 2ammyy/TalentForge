@@ -485,6 +485,62 @@
 .like-btn.liked i {
     color: #dc3545;
 }
+/* Video styling */
+video {
+    transition: opacity 0.3s ease;
+    background: #000;
+}
+
+video::-webkit-media-controls {
+    display: none !important;
+}
+
+.video-controls {
+    transition: opacity 0.3s ease;
+}
+
+.video-controls:hover {
+    opacity: 1 !important;
+}
+
+.video-play-btn, .video-mute-btn {
+    transition: all 0.2s ease;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.video-play-btn:hover, .video-mute-btn:hover {
+    opacity: 1 !important;
+    transform: scale(1.1);
+}
+
+/* Video thumbnail/loading */
+video::poster {
+    object-fit: cover;
+}
+
+/* Mobile video adjustments */
+@media (max-width: 768px) {
+    video {
+        max-height: 300px !important;
+    }
+    
+    .video-controls {
+        bottom: 10px !important;
+        right: 10px !important;
+    }
+    
+    .video-play-btn, .video-mute-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
 </style>
 {% endblock %}
 
@@ -569,14 +625,29 @@
                         <img src="{{ post.image.url }}" alt="{{ post.title|default:'Post image' }}" class="pin-image">
                     </div>
                     {% elif post.type == 'video' and post.video %}
-                    <div class="pin-image-container">
-                        <div style="position: relative; padding-top: 56.25%; background: #000;">
-                            <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-                                <source src="{{ post.video.url }}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                        </div>
-                    </div>
+<div class="pin-image-container">
+    <div style="position: relative; padding-top: 56.25%; background: #000;">
+        <video 
+            autoplay 
+            muted 
+            playsinline 
+            loop 
+            preload="metadata"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
+            onclick="togglePlayPause(this)"
+            onmouseenter="playOnHover(this)"
+            onmouseleave="pauseOnLeave(this)"
+        >
+            <source src="{{ post.video.url }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="video-controls" style="position: absolute; bottom: 10px; right: 10px; z-index: 2;">
+            <button class="btn btn-sm btn-dark video-play-btn" onclick="togglePlayPause(this.previousElementSibling)" style="opacity: 0.7;">
+                <i class="fas fa-play"></i>
+            </button>
+        </div>
+    </div>
+</div>
                     {% elif post.type == 'text' %}
                     <div class="pin-image-container no-image-placeholder">
                         <div style="color: white; text-align: center; padding: 2rem;">
@@ -1007,6 +1078,111 @@ window.addEventListener('scroll', function() {
             }, 1000);
         }
     }
+});
+// Video controls functions
+function togglePlayPause(video) {
+    if (video.paused) {
+        video.play();
+        const playBtn = video.nextElementSibling.querySelector('.video-play-btn i');
+        if (playBtn) {
+            playBtn.className = 'fas fa-pause';
+        }
+    } else {
+        video.pause();
+        const playBtn = video.nextElementSibling.querySelector('.video-play-btn i');
+        if (playBtn) {
+            playBtn.className = 'fas fa-play';
+        }
+    }
+}
+
+function playOnHover(video) {
+    // Only play on hover if video is not already playing
+    if (video.paused) {
+        video.play();
+        const playBtn = video.nextElementSibling.querySelector('.video-play-btn i');
+        if (playBtn) {
+            playBtn.className = 'fas fa-pause';
+        }
+    }
+}
+
+function pauseOnLeave(video) {
+    // Only pause on leave if video is playing
+    if (!video.paused) {
+        video.pause();
+        const playBtn = video.nextElementSibling.querySelector('.video-play-btn i');
+        if (playBtn) {
+            playBtn.className = 'fas fa-play';
+        }
+    }
+}
+
+function toggleMute(video, button) {
+    if (video.muted) {
+        video.muted = false;
+        button.innerHTML = '<i class="fas fa-volume-up"></i>';
+    } else {
+        video.muted = true;
+        button.innerHTML = '<i class="fas fa-volume-mute"></i>';
+    }
+}
+
+// Initialize all videos on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set all videos to autoplay muted
+    document.querySelectorAll('video[autoplay]').forEach(video => {
+        // Ensure videos are muted for autoplay
+        video.muted = true;
+        video.playsInline = true;
+        
+        // Update play button state
+        video.addEventListener('play', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-pause';
+            }
+        });
+        
+        video.addEventListener('pause', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-play';
+            }
+        });
+        
+        // Add loading state
+        video.addEventListener('waiting', function() {
+            this.style.opacity = '0.7';
+        });
+        
+        video.addEventListener('playing', function() {
+            this.style.opacity = '1';
+        });
+    });
+    
+    // Make sure videos play when they come into view
+    const videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                if (video.paused) {
+                    video.play().catch(e => console.log("Autoplay prevented:", e));
+                }
+            } else {
+                if (!video.paused) {
+                    video.pause();
+                }
+            }
+        });
+    }, {
+        threshold: 0.5 // 50% of video in viewport
+    });
+    
+    // Observe all auto-play videos
+    document.querySelectorAll('video[autoplay]').forEach(video => {
+        videoObserver.observe(video);
+    });
 });
 </script>
 {% endblock %}
