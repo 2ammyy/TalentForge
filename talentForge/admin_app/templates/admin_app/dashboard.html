@@ -187,7 +187,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const growthChart = new Chart(ctx, {
-        type: 'line',
+        type: 'line', // type: 'bar',
+
         data: {
             labels: labels,
             datasets: [{

@@ -1,5 +1,4 @@
 <!-- talentForge\templates\includes\navbar.html -->
-<!-- talentForge\templates\includes\navbar.html -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-2 fixed-top">
     <div class="container">
 
@@ -42,7 +41,7 @@
                     </a>
                 </li>
 
-                <!-- Quick Profile Access - FIXED -->
+                <!-- Quick Profile Access -->
                 <li class="nav-item">
                     <a class="nav-link quick-profile-link" href="/posts/profile/{{ user.username }}/">
                         <i class="fas fa-user-circle me-1"></i> My Profile
@@ -80,32 +79,32 @@
             <!-- Right Menu -->
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
-               <!-- User Profile Section -->
-<li class="nav-item dropdown">
-    <a 
-       href="#" 
-       data-bs-toggle="dropdown" 
-       aria-expanded="false"
-       style="display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; color: white;">
-       
-        <!-- Avatar Container -->
-        <div class="user-avatar-container">
-            {% if user.userprofile.get_profile_picture %}
-                <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.3);">
-                    <img src="{{ user.userprofile.get_profile_picture }}" 
-                         alt="{{ user.username }}"
-                         style="width: 100%; height: 100%; object-fit: cover; display: block;">
-                </div>
-            {% else %}
-                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); font-size: 16px;">
-                    {{ user.username|first|upper }}
-                </div>
-            {% endif %}
-        </div>
-        
-        <!-- Username -->
-        <span class="username-text">{{ user.username }}</span>
-    </a>
+                <!-- User Profile Section -->
+                <li class="nav-item dropdown">
+                    <a 
+                       href="#" 
+                       data-bs-toggle="dropdown" 
+                       aria-expanded="false"
+                       style="display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; color: white;">
+                       
+                        <!-- Avatar Container -->
+                        <div class="user-avatar-container">
+                            {% if user.userprofile.get_profile_picture %}
+                                <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.3);">
+                                    <img src="{{ user.userprofile.get_profile_picture }}" 
+                                         alt="{{ user.username }}"
+                                         style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                </div>
+                            {% else %}
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); font-size: 16px;">
+                                    {{ user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Username -->
+                        <span class="username-text">{{ user.username }}</span>
+                    </a>
 
                     <!-- Dropdown Menu -->
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">
@@ -156,6 +155,61 @@
                             </a>
                         </li>
 
+                        <!-- Creator Features Section -->
+                        <li><hr class="dropdown-divider my-2"></li>
+                        
+                        <!-- Get follower count using the correct related_name from Follow model -->
+                        {% with follower_count=user.user_followers.count %}
+                        
+                        <!-- Creator Dashboard Item -->
+                        <li>
+                            {% if follower_count >= 1 %}
+                                <!-- User has at least 1 follower -->
+                                <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'creator:dashboard' %}">
+                                    <i class="fas fa-tachometer-alt me-3 text-warning"></i>
+                                    <span>Creator Dashboard</span>
+                                    <span class="badge bg-success ms-auto" style="font-size: 0.7rem;">
+                                        <i class="fas fa-check"></i> Unlocked
+                                    </span>
+                                </a>
+                            {% else %}
+                                <!-- User has no followers - Show modal trigger -->
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 creator-locked-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#creatorAdvertModal">
+                                    <i class="fas fa-tachometer-alt me-3 text-muted"></i>
+                                    <span>Creator Dashboard</span>
+                                    <span class="badge bg-secondary ms-auto" style="font-size: 0.7rem;">
+                                        <i class="fas fa-lock"></i> Locked
+                                    </span>
+                                </button>
+                            {% endif %}
+                        </li>
+
+                        <!-- Analytics Item -->
+                        <li>
+                            {% if follower_count >= 1 %}
+                                <!-- User has at least 1 follower -->
+                                <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'creator:analytics' %}">
+                                    <i class="fas fa-chart-line me-3 text-info"></i>
+                                    <span>Analytics</span>
+                                </a>
+                            {% else %}
+                                <!-- User has no followers - Show modal trigger -->
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 creator-locked-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#creatorAdvertModal">
+                                    <i class="fas fa-chart-line me-3 text-muted"></i>
+                                    <span>Analytics</span>
+                                    <span class="badge bg-secondary ms-auto" style="font-size: 0.7rem;">
+                                        <i class="fas fa-lock"></i> Locked
+                                    </span>
+                                </button>
+                            {% endif %}
+                        </li>
+                        
+                        {% endwith %}
+
                         <li><hr class="dropdown-divider my-2"></li>
 
                         <!-- Logout -->
@@ -189,6 +243,76 @@
         </div>
     </div>
 </nav>
+
+<!-- Creator requirement modal - EXACTLY like home.html -->
+<div class="modal fade" id="creatorAdvertModal" tabindex="-1" aria-labelledby="creatorAdvertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="creatorAdvertModalLabel">
+                    <i class="fas fa-lock me-2"></i>🔒 Creator Access Required
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You need <strong class="text-warning">at least 1 follower</strong> to access Creator features.</p>
+                
+                <div class="alert alert-warning mt-3 mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-users me-3 fs-4"></i>
+                        <div>
+                            <strong>Current followers:</strong>
+                            <div class="follower-count-display fs-3 fw-bold text-center mt-2">
+                                {% with follower_count=user.user_followers.count %}
+                                {{ follower_count|default:"0" }}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="fw-bold mb-2">🎯 <strong>How to get followers:</strong></p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-pen text-success me-3"></i>
+                        <span>Create interesting and engaging posts</span>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-user-plus text-primary me-3"></i>
+                        <span>Follow other users in your niche</span>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-star text-warning me-3"></i>
+                        <span>Complete your profile with skills and bio</span>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-comments text-info me-3"></i>
+                        <span>Engage with the community (like, comment, share)</span>
+                    </li>
+                </ul>
+                
+                <div class="mt-4 p-3 bg-light rounded">
+                    <small class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        <strong>Tip:</strong> Creator features include advanced analytics, monetization tools, and enhanced profile customization.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+                <a href="{% url 'posts:post_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i> Create Post
+                </a>
+                <a href="/posts/profile/{{ user.username }}/" class="btn btn-success">
+                    <i class="fas fa-user-edit me-1"></i> Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 /* ========== NAVBAR STYLES ========== */
 .navbar {
@@ -255,11 +379,78 @@
     border-radius: 8px;
     margin: 0.15rem 0.5rem;
     transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: calc(100% - 1rem);
+    text-align: left;
 }
 
 .dropdown-item:hover {
     background-color: #f8f9fa;
     transform: translateX(5px);
+}
+
+/* Creator Features Styling */
+.dropdown-item .text-warning {
+    color: #ffc107 !important;
+}
+
+.dropdown-item .text-info {
+    color: #17a2b8 !important;
+}
+
+.dropdown-item .text-muted {
+    color: #6c757d !important;
+}
+
+.dropdown-item:hover .text-muted {
+    color: #495057 !important;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.25em 0.5em;
+}
+
+/* Modal Styling */
+#creatorAdvertModal .modal-content {
+    border-radius: 12px;
+    border: none;
+}
+
+#creatorAdvertModal .modal-header {
+    background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.follower-count-display {
+    color: #e74c3c;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.75rem 0;
+    background: transparent;
+}
+
+.list-group-item i {
+    width: 24px;
+    text-align: center;
+}
+
+/* Locked item styling */
+.creator-locked-btn {
+    opacity: 0.7;
+    position: relative;
+}
+
+.creator-locked-btn:hover {
+    opacity: 1;
+    background-color: #f8f9fa !important;
 }
 
 /* Search bar styles */
@@ -334,6 +525,17 @@
     75% { transform: translateY(2px) rotate(-1deg); }
 }
 
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
 /* Responsive */
 @media (max-width: 992px) {
     .navbar .input-group {
@@ -353,6 +555,10 @@
         margin: 5px 0;
         text-align: center;
     }
+    
+    .dropdown-menu {
+        min-width: 250px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -369,6 +575,10 @@
         width: 100%;
         margin: 8px 0;
     }
+    
+    .modal-dialog {
+        margin: 1rem;
+    }
 }
 
 @media (max-width: 576px) {
@@ -381,6 +591,11 @@
     .quick-profile-link {
         font-size: 14px;
         padding: 5px 10px !important;
+    }
+    
+    .dropdown-item {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
     }
 }
 </style>
@@ -449,6 +664,41 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 this.style.transform = '';
             }, 150);
+        });
+    }
+    
+    // Handle locked creator items
+    const creatorLockedBtns = document.querySelectorAll('.creator-locked-btn');
+    creatorLockedBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Add shake animation
+            this.style.animation = 'shake 0.5s ease';
+            setTimeout(() => {
+                this.style.animation = '';
+            }, 500);
+        });
+    });
+    
+    // Modal animation
+    const creatorModal = document.getElementById('creatorAdvertModal');
+    if (creatorModal) {
+        creatorModal.addEventListener('shown.bs.modal', function() {
+            // Animate the follower count
+            const followerCountEl = this.querySelector('.follower-count-display');
+            if (followerCountEl) {
+                followerCountEl.style.animation = 'pulse 0.5s ease';
+                setTimeout(() => {
+                    followerCountEl.style.animation = '';
+                }, 500);
+                
+                // Color code based on count
+                const count = parseInt(followerCountEl.textContent);
+                if (count >= 1) {
+                    followerCountEl.style.color = '#28a745'; // Green
+                } else {
+                    followerCountEl.style.color = '#e74c3c'; // Red
+                }
+            }
         });
     }
 });
