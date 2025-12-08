@@ -101,6 +101,8 @@ DATABASES = {
         'USER': 'django_user',
         'PASSWORD': 'DjangoSecurePass123!',
         'HOST': 'localhost',
+# 'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
+
         'PORT': '5432',
     }
 }
