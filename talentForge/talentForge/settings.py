@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'posts',
     'creator',
     'admin_app.apps.AdminAppConfig',
+    'word_prediction',  # Word Prediction app
 
     # Allauth apps
     'allauth',
@@ -51,9 +52,13 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',  # Google provider
 
+    #third-party apps
+    'corsheaders',
+
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -63,6 +68,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
 ]
+
+# CORS settings (development)
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'talentForge.urls'
 
@@ -100,8 +109,8 @@ DATABASES = {
         'NAME': 'djangodb',
         'USER': 'django_user',
         'PASSWORD': 'DjangoSecurePass123!',
-        'HOST': 'localhost',
-# 'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
+        #'HOST': 'localhost',
+        'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
 
         'PORT': '5432',
     }

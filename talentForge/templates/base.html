@@ -15,8 +15,11 @@
     <link href="{% static 'css/main.css' %}" rel="stylesheet">
 
     <!-- Preconnect to video CDN if you're using one -->
-<link rel="preconnect" href="https://your-video-cdn.com">
-<link rel="dns-prefetch" href="https://your-video-cdn.com">
+    <link rel="preconnect" href="https://your-video-cdn.com">
+    <link rel="dns-prefetch" href="https://your-video-cdn.com">
+
+    <!-- Word Prediction CSS -->
+    <link href="{% static 'css/word-prediction.css' %}" rel="stylesheet">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -41,6 +44,7 @@
             {% block content %}
             {% endblock %}
         </div>
+        
     </div>
 
     <!-- Footer -->
@@ -52,6 +56,8 @@
     <!-- JS Personnalisé -->
     <script src="{% static 'js/main.js' %}"></script>
     
+    <!-- Word Prediction JS -->
+    <script src="{% static 'js/word-prediction.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
