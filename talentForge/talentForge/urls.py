@@ -38,8 +38,10 @@ urlpatterns = [
          name='password_reset_complete'),
          
     path('creator/', include('creator.urls', namespace='creator')),
+    path('word_prediction/', include('word_prediction.urls')),
 ]
 
 # Servir les fichiers médias en mode développement
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
