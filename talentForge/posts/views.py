@@ -364,14 +364,22 @@ def post_update(request, pk):
 
 # ============ PROFILES & SOCIAL FEATURES ============
 
+# In talentForge/posts/views.py
+
 @login_required
 def my_profile(request):
     """Profile of the logged-in user"""
     user_posts = Post.objects.filter(author=request.user).order_by('-created_at')
     
+    # Get shared posts
+    shared_posts = Share.objects.filter(user=request.user).select_related(
+        'post', 'post__author', 'post__author__userprofile'
+    ).order_by('-created_at')
+    
     context = {
         'profile_user': request.user,
         'user_posts': user_posts,
+        'shared_posts': shared_posts,
         'is_own_profile': True
     }
     
@@ -383,9 +391,15 @@ def user_profile(request, username):
     profile_user = get_object_or_404(User, username=username)
     user_posts = Post.objects.filter(author=profile_user).order_by('-created_at')
     
+    # Get shared posts
+    shared_posts = Share.objects.filter(user=profile_user).select_related(
+        'post', 'post__author', 'post__author__userprofile'
+    ).order_by('-created_at')
+    
     context = {
         'profile_user': profile_user,
         'user_posts': user_posts,
+        'shared_posts': shared_posts,
         'is_own_profile': False
     }
     

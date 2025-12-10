@@ -7,6 +7,7 @@
     :root {
         --profile-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         --creator-gradient: linear-gradient(135deg, #FF6B6B 0%, #FFA726 100%);
+        --share-gradient: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
         --card-shadow: 0 20px 40px rgba(102, 126, 234, 0.1);
         --glass-effect: rgba(255, 255, 255, 0.1);
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -241,6 +242,62 @@
     @keyframes blink {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
+    }
+
+    /* Profile Tabs */
+    .profile-tabs {
+        display: flex;
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 2rem;
+        gap: 1rem;
+    }
+
+    .profile-tab {
+        padding: 1rem 2rem;
+        background: none;
+        border: none;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #6b7280;
+        cursor: pointer;
+        position: relative;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .profile-tab:hover {
+        color: #667eea;
+    }
+
+    .profile-tab.active {
+        color: #667eea;
+    }
+
+    .profile-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: var(--profile-gradient);
+        border-radius: 2px 2px 0 0;
+    }
+
+    .profile-tab-badge {
+        background: #e5e7eb;
+        color: #4b5563;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .profile-tab.active .profile-tab-badge {
+        background: var(--profile-gradient);
+        color: white;
     }
 
     /* Action Buttons */
@@ -632,6 +689,118 @@
         color: #333;
     }
 
+    /* Shared Post Indicator */
+    .shared-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--share-gradient);
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin: 1rem 1.5rem 0.5rem;
+        animation: pulse 2s infinite;
+    }
+
+    .shared-indicator i {
+        font-size: 0.7rem;
+    }
+
+    .shared-by {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin: 0 1.5rem 0.5rem;
+        padding: 0.5rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        border-left: 3px solid #10b981;
+    }
+
+    .shared-by-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .shared-by-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .shared-by-text {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    .shared-by-text strong {
+        color: #374151;
+    }
+
+    .share-caption {
+        font-style: italic;
+        color: #6b7280;
+        padding: 0.5rem 1.5rem;
+        margin: 0.5rem 0;
+        background: #f3f4f6;
+        border-left: 3px solid #667eea;
+    }
+
+    .share-caption::before {
+        content: "💬 ";
+    }
+
+    /* Empty State for Shared Posts */
+    .no-shared-posts {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        border: 2px dashed #e5e7eb;
+    }
+
+    .no-shared-posts-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+        color: #10b981;
+    }
+
+    .no-shared-posts h3 {
+        font-size: 1.3rem;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .no-shared-posts p {
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Hide sections by default */
+    .content-section {
+        display: none;
+    }
+
+    .content-section.active {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Modal Styling */
     .modal-header {
         background: var(--profile-gradient);
@@ -681,6 +850,16 @@
         .profile-action-btn {
             padding: 0.6rem 1.2rem;
             font-size: 0.9rem;
+        }
+
+        .profile-tabs {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .profile-tab {
+            padding: 0.8rem 1rem;
+            justify-content: space-between;
         }
     }
 </style>
@@ -745,6 +924,10 @@
                         <strong>{{ profile_user.user_following.count }}</strong>
                         <span>Following</span>
                     </div>
+                    <div class="profile-stat-item">
+                        <strong>{{ shared_posts.count }}</strong>
+                        <span>Shares</span>
+                    </div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -801,10 +984,22 @@
         </div>
     </div>
 
-    <!-- Posts Section -->
-    <div class="posts-section">
+    <!-- Profile Tabs -->
+    <div class="profile-tabs">
+        <button class="profile-tab active" data-target="my-posts">
+            <i class="fas fa-pen-nib"></i> My Posts
+            <span class="profile-tab-badge">{{ user_posts.count }}</span>
+        </button>
+        <button class="profile-tab" data-target="shared-posts">
+            <i class="fas fa-share-alt"></i> Shared Posts
+            <span class="profile-tab-badge">{{ shared_posts.count }}</span>
+        </button>
+    </div>
+
+    <!-- My Posts Section -->
+    <div id="my-posts" class="content-section active">
         <div class="section-header">
-            <h2>Recent Posts</h2>
+            <h2>My Posts</h2>
             {% if profile_user == request.user %}
                 <a href="{% url 'posts:post_create' %}" class="create-post-btn">
                     <i class="fas fa-plus"></i> Create Post
@@ -966,6 +1161,191 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Shared Posts Section -->
+    <div id="shared-posts" class="content-section">
+        <div class="section-header">
+            <h2>Shared Posts</h2>
+            {% if profile_user == request.user %}
+                <a href="{% url 'posts:post_list' %}" class="create-post-btn">
+                    <i class="fas fa-share-alt"></i> Discover Posts
+                </a>
+            {% endif %}
+        </div>
+
+        {% if shared_posts %}
+            <div class="posts-grid">
+                {% for share in shared_posts %}
+                    <div class="post-card-modern">
+                        <!-- Shared Indicator -->
+                        <div class="shared-indicator">
+                            <i class="fas fa-share-alt"></i> Shared
+                        </div>
+                        
+                        <!-- Shared By Info -->
+                        <div class="shared-by">
+                            <div class="shared-by-avatar">
+                                {% if share.user.userprofile.profile_picture %}
+                                    <img src="{{ share.user.userprofile.profile_picture.url }}" alt="{{ share.user.username }}">
+                                {% elif share.user.userprofile.get_profile_picture %}
+                                    <img src="{{ share.user.userprofile.get_profile_picture }}" alt="{{ share.user.username }}">
+                                {% else %}
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--profile-gradient); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: bold;">
+                                        {{ share.user.username|first|upper }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="shared-by-text">
+                                <strong>{{ share.user.username }}</strong> shared this
+                                <span class="share-time">{{ share.created_at|timesince }} ago</span>
+                            </div>
+                        </div>
+
+                        {% if share.caption %}
+                        <div class="share-caption">
+                            "{{ share.caption }}"
+                        </div>
+                        {% endif %}
+
+                        <!-- Original Post Content -->
+                        {% with post=share.post %}
+                        <div class="post-header-modern">
+                            <div class="post-author-info-modern">
+                                <div class="author-avatar-modern">
+                                    {% if post.author.userprofile.profile_picture %}
+                                        <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% elif post.author.userprofile.get_profile_picture %}
+                                        <img src="{{ post.author.userprofile.get_profile_picture }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                        <div class="default-avatar-small">
+                                            {{ post.author.username|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Mini Creator Badge for Post Author -->
+                                    {% if post.author.user_followers.count > 0 %}
+                                    <div class="mini-creator-badge">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="post-author-modern">
+                                    <strong>
+                                        {{ post.author.get_full_name|default:post.author.username }}
+                                        {% if post.author.user_followers.count > 0 %}
+                                        <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
+                                        {% endif %}
+                                    </strong>
+                                    <div class="post-date-modern">
+                                        {{ post.created_at|timesince }} ago
+                                        {% if post.updated_at != post.created_at %}
+                                            <span class="post-edited">• edited</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if profile_user == request.user %}
+                            <div class="post-actions-dropdown-modern">
+                                <div class="dropdown">
+                                    <button class="dropdown-toggle-modern" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'posts:unshare_post' post.pk %}" onclick="return confirm('Are you sure you want to remove this share?')">
+                                                <i class="fas fa-trash text-danger me-2"></i>
+                                                Remove Share
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Post Type Badge -->
+                        {% if post.type %}
+                        <div class="post-type-badge-modern">
+                            <span class="type-badge-modern {{ post.type }}">
+                                {% if post.type == 'job' %}
+                                    <i class="fas fa-briefcase me-1"></i>
+                                {% elif post.type == 'image' %}
+                                    <i class="fas fa-image me-1"></i>
+                                {% elif post.type == 'video' %}
+                                    <i class="fas fa-video me-1"></i>
+                                {% else %}
+                                    <i class="fas fa-file-alt me-1"></i>
+                                {% endif %}
+                                {{ post.get_type_display }}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Post Content -->
+                        <div class="post-content-modern">
+                            <h3 class="post-title-modern">
+                                <a href="{% url 'posts:post_detail' post.pk %}">{{ post.title|default:"Untitled Post" }}</a>
+                            </h3>
+                            
+                            {% if post.content %}
+                            <div class="post-excerpt-modern">
+                                {{ post.content|truncatechars:120 }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Post Media -->
+                        {% if post.image %}
+                        <div class="post-media-modern">
+                            <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                        </div>
+                        {% endif %}
+
+                        <!-- Post Actions -->
+                        <div class="post-actions-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern">
+                                <i class="fas fa-comment"></i>
+                                <span class="action-count">{{ post.comments.count }}</span>
+                            </a>
+                            
+                            <button class="action-btn-modern {% if post.reactions.count %}liked{% endif %}" 
+                                    onclick="toggleReaction({{ post.id }}, this)">
+                                <i class="fas fa-heart"></i>
+                                <span class="action-count">{{ post.reactions.count }}</span>
+                            </button>
+                            
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern">
+                                <i class="fas fa-share"></i>
+                                <span class="action-count">{{ post.post_shares.count }}</span>
+                            </a>
+                        </div>
+                        {% endwith %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- No Shared Posts -->
+            <div class="no-shared-posts">
+                <div class="no-shared-posts-icon">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+                <h3>No Shared Posts</h3>
+                <p>
+                    {% if profile_user == request.user %}
+                        You haven't shared any posts yet. Share posts you find interesting!
+                    {% else %}
+                        {{ profile_user.username }} hasn't shared any posts yet.
+                    {% endif %}
+                </p>
+                {% if profile_user == request.user %}
+                    <a href="{% url 'posts:post_list' %}" class="create-post-btn">
+                        <i class="fas fa-compass"></i> Explore Posts
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
 </div>
 
 <!-- Report Modal -->
@@ -1007,52 +1387,77 @@
 {% endif %}
 
 <script>
-    // Toggle reaction with animation
-    function toggleReaction(postId, button) {
-        const heartIcon = button.querySelector('i');
-        const countSpan = button.querySelector('.action-count');
+    // Tab switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabs = document.querySelectorAll('.profile-tab');
+        const sections = document.querySelectorAll('.content-section');
         
-        // Visual feedback
-        button.classList.toggle('liked');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const targetId = this.dataset.target;
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show target section, hide others
+                sections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+            });
+        });
         
-        if (button.classList.contains('liked')) {
-            // Animate heart
-            heartIcon.style.transform = 'scale(1.3)';
-            setTimeout(() => heartIcon.style.transform = 'scale(1)', 300);
+        // Toggle reaction with animation
+        function toggleReaction(postId, button) {
+            const heartIcon = button.querySelector('i');
+            const countSpan = button.querySelector('.action-count');
             
-            // Update count
-            const currentCount = parseInt(countSpan.textContent);
-            countSpan.textContent = currentCount + 1;
-        } else {
-            // Update count
-            const currentCount = parseInt(countSpan.textContent);
-            countSpan.textContent = Math.max(0, currentCount - 1);
+            // Visual feedback
+            button.classList.toggle('liked');
+            
+            if (button.classList.contains('liked')) {
+                // Animate heart
+                heartIcon.style.transform = 'scale(1.3)';
+                setTimeout(() => heartIcon.style.transform = 'scale(1)', 300);
+                
+                // Update count
+                const currentCount = parseInt(countSpan.textContent);
+                countSpan.textContent = currentCount + 1;
+            } else {
+                // Update count
+                const currentCount = parseInt(countSpan.textContent);
+                countSpan.textContent = Math.max(0, currentCount - 1);
+            }
+            
+            // Send AJAX request
+            const url = `/posts/reaction/${postId}/`;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    reaction_type: 'like'
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  if (!data.success) {
+                      // Revert if error
+                      button.classList.toggle('liked');
+                      const currentCount = parseInt(countSpan.textContent);
+                      countSpan.textContent = Math.max(0, currentCount - 1);
+                  }
+              });
         }
         
-        // Send AJAX request
-        const url = `/posts/reaction/${postId}/`;
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                reaction_type: 'like'
-            })
-        }).then(response => response.json())
-          .then(data => {
-              if (!data.success) {
-                  // Revert if error
-                  button.classList.toggle('liked');
-                  const currentCount = parseInt(countSpan.textContent);
-                  countSpan.textContent = Math.max(0, currentCount - 1);
-              }
-          });
-    }
-    
-    // Initialize tooltips
-    document.addEventListener('DOMContentLoaded', function() {
+        // Expose function globally
+        window.toggleReaction = toggleReaction;
+        
         // Add hover effects to post cards
         const postCards = document.querySelectorAll('.post-card-modern');
         postCards.forEach(card => {
