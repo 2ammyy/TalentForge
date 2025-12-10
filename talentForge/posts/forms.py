@@ -1,9 +1,9 @@
 from django import forms
-from .models import Post, Comment, JobPost , Share, Report , UserProfile , Message
+from .models import Post, Comment, JobPost, Share, Report, UserProfile, Message
+from django.core.validators import validate_email
 
 class PostForm(forms.ModelForm):
-    
-    # Champs pour les offres d'emploi
+    # Job-specific fields
     company = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
@@ -23,6 +23,7 @@ class PostForm(forms.ModelForm):
     work_mode = forms.ChoiceField(
         required=False,
         choices=[
+            ('', 'Select work mode'),
             ('onsite', '🏢 On-site'),
             ('remote', '🏠 Remote'),
             ('hybrid', '🔀 Hybrid'),
@@ -36,6 +37,7 @@ class PostForm(forms.ModelForm):
     employment_type = forms.ChoiceField(
         required=False,
         choices=[
+            ('', 'Select employment type'),
             ('full_time', '🕒 Full-time'),
             ('part_time', '⏰ Part-time'),
             ('contract', '📝 Contract'),
@@ -50,6 +52,7 @@ class PostForm(forms.ModelForm):
     salary_range = forms.ChoiceField(
         required=False,
         choices=[
+            ('', 'Select salary range'),
             ('0-30k', '$0 - $30,000'),
             ('30k-50k', '$30,000 - $50,000'),
             ('50k-80k', '$50,000 - $80,000'),
@@ -93,10 +96,7 @@ class PostForm(forms.ModelForm):
         model = Post
         fields = ['type', 'title', 'content', 'image', 'video']
         widgets = {
-            'type': forms.Select(attrs={
-                'class': 'form-control',
-                'id': 'post-type-select'
-            }),
+            'type': forms.HiddenInput(),
             'title': forms.TextInput(attrs={
                 'placeholder': 'Enter post title...',
                 'class': 'form-control'
@@ -109,57 +109,54 @@ class PostForm(forms.ModelForm):
             }),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set initial values for job fields if editing a job post
+        if self.instance and self.instance.type == 'job' and hasattr(self.instance, 'job_details'):
+            job_details = self.instance.job_details
+            self.fields['company'].initial = job_details.company
+            self.fields['location'].initial = job_details.location
+            self.fields['work_mode'].initial = job_details.work_mode
+            self.fields['employment_type'].initial = job_details.employment_type
+            self.fields['salary_range'].initial = job_details.salary_range
+            self.fields['application_email'].initial = job_details.application_email
+            self.fields['skills_required'].initial = job_details.skills_required
+            self.fields['benefits'].initial = job_details.benefits
+    
     def clean(self):
         cleaned_data = super().clean()
         post_type = cleaned_data.get('type')
-        
-        # CORRECTION CRITIQUE : Gérer les valeurs multiples pour title et content
-        if 'title' in self.data:
-            title_values = self.data.getlist('title')
-            if title_values:
-                # Prendre la première valeur non vide
-                for value in title_values:
-                    if value and value.strip():  # Prendre la première valeur non vide
-                        cleaned_data['title'] = value
-                        break
-                else:
-                    cleaned_data['title'] = ''  # Toutes les valeurs sont vides
-        
-        if 'content' in self.data:
-            content_values = self.data.getlist('content')
-            if content_values:
-                # Prendre la première valeur non vide
-                for value in content_values:
-                    if value and value.strip():  # Prendre la première valeur non vide
-                        cleaned_data['content'] = value
-                        break
-                else:
-                    cleaned_data['content'] = ''  # Toutes les valeurs sont vides
-        
-        # Récupérer les valeurs corrigées
-        content = cleaned_data.get('content')
         image = cleaned_data.get('image')
         video = cleaned_data.get('video')
         
-        # Validation de base selon le type de post
-        if post_type == 'text' and not content:
-            raise forms.ValidationError("Text content is required for text posts.")
-        elif post_type == 'image' and not image:
-            raise forms.ValidationError("Image is required for image posts.")
-        elif post_type == 'video' and not video:
-            raise forms.ValidationError("Video is required for video posts.")
+        # AUTO-DETECT POST TYPE BASED ON CONTENT
+        if not post_type or post_type == 'text':
+            if image:
+                cleaned_data['type'] = 'image'
+            elif video:
+                cleaned_data['type'] = 'video'
         
-        # Validation pour les offres d'emploi
-        elif post_type == 'job':
+        # Validation for job posts
+        if post_type == 'job' or cleaned_data.get('type') == 'job':
             company = cleaned_data.get('company')
             location = cleaned_data.get('location')
             
             if not company:
-                raise forms.ValidationError("Company name is required.")
+                self.add_error('company', 'Company name is required for job posts.')
             if not location:
-                raise forms.ValidationError("Location is required.")
+                self.add_error('location', 'Location is required for job posts.')
             if not cleaned_data.get('title'):
-                raise forms.ValidationError("Job title is required.")
+                self.add_error('title', 'Job title is required.')
+            if not cleaned_data.get('content'):
+                self.add_error('content', 'Job description is required.')
+            
+            # Validate application email
+            application_email = cleaned_data.get('application_email')
+            if application_email:
+                try:
+                    validate_email(application_email)
+                except:
+                    self.add_error('application_email', 'Enter a valid email address.')
         
         return cleaned_data
     
@@ -170,19 +167,27 @@ class PostForm(forms.ModelForm):
         if commit:
             post.save()
             
-            # Créer les détails de l'offre d'emploi
+            # Create JobPost if it's a job post
             if post_type == 'job':
-                JobPost.objects.create(
-                    post=post,
-                    company=self.cleaned_data.get('company'),
-                    location=self.cleaned_data.get('location'),
-                    work_mode=self.cleaned_data.get('work_mode'),
-                    employment_type=self.cleaned_data.get('employment_type'),
-                    salary_range=self.cleaned_data.get('salary_range'),
-                    application_email=self.cleaned_data.get('application_email'),
-                    skills_required=self.cleaned_data.get('skills_required'),
-                    benefits=self.cleaned_data.get('benefits')
-                )
+                job_data = {
+                    'company': self.cleaned_data.get('company'),
+                    'location': self.cleaned_data.get('location'),
+                    'work_mode': self.cleaned_data.get('work_mode') or 'onsite',
+                    'employment_type': self.cleaned_data.get('employment_type') or 'full_time',
+                    'salary_range': self.cleaned_data.get('salary_range'),
+                    'application_email': self.cleaned_data.get('application_email'),
+                    'skills_required': self.cleaned_data.get('skills_required'),
+                    'benefits': self.cleaned_data.get('benefits'),
+                }
+                
+                if hasattr(post, 'job_details'):
+                    # Update existing JobPost
+                    for key, value in job_data.items():
+                        setattr(post.job_details, key, value)
+                    post.job_details.save()
+                else:
+                    # Create new JobPost
+                    JobPost.objects.create(post=post, **job_data)
         
         return post
 
@@ -199,6 +204,7 @@ class CommentForm(forms.ModelForm):
             }),
         }
 
+
 class ShareForm(forms.ModelForm):
     class Meta:
         model = Share
@@ -206,13 +212,14 @@ class ShareForm(forms.ModelForm):
         widgets = {
             'caption': forms.Textarea(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ajouter un commentaire...',
+                'placeholder': 'Add a comment...',
                 'rows': 3
             }),
         }
         labels = {
-            'caption': 'Votre commentaire'
+            'caption': 'Your comment'
         }
+
 
 class ReportForm(forms.ModelForm):
     class Meta:
@@ -226,7 +233,7 @@ class ReportForm(forms.ModelForm):
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
-                'placeholder': 'Please provide additional details about why you are reporting this post...'
+                'placeholder': 'Please provide additional details...'
             }),
         }
         labels = {
@@ -252,6 +259,7 @@ class MessageForm(forms.ModelForm):
                 'class': 'form-control'
             })
         }
+
 
 class SearchForm(forms.Form):
     q = forms.CharField(
