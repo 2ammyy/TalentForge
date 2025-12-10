@@ -94,6 +94,7 @@
         font-size: 3rem;
         font-weight: bold;
         transition: var(--transition);
+        object-fit: cover;
     }
 
     .profile-avatar img:hover {
@@ -575,8 +576,11 @@
     <div class="profile-card">
         <div class="profile-header">
             <div class="profile-avatar">
-                {% if profile_user.posts_profile.profile_picture %}
-                    <img src="{{ profile_user.posts_profile.profile_picture.url }}" alt="{{ profile_user.username }}">
+                {% if profile_user.userprofile.profile_picture %}
+                    <img src="{{ profile_user.userprofile.profile_picture.url }}" alt="{{ profile_user.username }}">
+                {% elif profile_user.userprofile.get_profile_picture %}
+                    <!-- Use the get_profile_picture method from base app -->
+                    <img src="{{ profile_user.userprofile.get_profile_picture }}" alt="{{ profile_user.username }}">
                 {% else %}
                     <div class="default-avatar">
                         {{ profile_user.username|first|upper }}
@@ -587,7 +591,7 @@
             <div class="profile-details">
                 <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
                 <p class="profile-username">@{{ profile_user.username }}</p>
-                <p class="profile-bio">{{ profile_user.posts_profile.bio|default:"No bio yet" }}</p>
+                <p class="profile-bio">{{ profile_user.userprofile.bio|default:"No bio yet" }}</p>
                 
                 <!-- Stats -->
                 <div class="profile-stats">
@@ -679,8 +683,10 @@
                         <div class="post-header-modern">
                             <div class="post-author-info-modern">
                                 <div class="author-avatar-modern">
-                                    {% if post.author.posts_profile.profile_picture %}
-                                        <img src="{{ post.author.posts_profile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% if post.author.userprofile.profile_picture %}
+                                        <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% elif post.author.userprofile.get_profile_picture %}
+                                        <img src="{{ post.author.userprofile.get_profile_picture }}" alt="{{ post.author.username }}">
                                     {% else %}
                                         <div class="default-avatar-small">
                                             {{ post.author.username|first|upper }}
@@ -873,8 +879,8 @@
             countSpan.textContent = Math.max(0, currentCount - 1);
         }
         
-        // Send AJAX request (you'll need to implement the backend endpoint)
-        const url = `/posts/${postId}/reaction/`;
+        // Send AJAX request
+        const url = `/posts/reaction/${postId}/`;
         fetch(url, {
             method: 'POST',
             headers: {
@@ -882,14 +888,15 @@
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                action: button.classList.contains('liked') ? 'like' : 'unlike'
+                reaction_type: 'like'
             })
         }).then(response => response.json())
           .then(data => {
               if (!data.success) {
                   // Revert if error
                   button.classList.toggle('liked');
-                  countSpan.textContent = data.reaction_count;
+                  const currentCount = parseInt(countSpan.textContent);
+                  countSpan.textContent = Math.max(0, currentCount - 1);
               }
           });
     }
