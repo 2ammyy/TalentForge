@@ -38,7 +38,7 @@ urlpatterns = [
          name='password_reset_complete'),
          
     path('creator/', include('creator.urls', namespace='creator')),
-    path('api/word-prediction/', include('word_prediction.urls')),
+    path('word_prediction/', include('word_prediction.urls')),
 ]
 
 # Servir les fichiers médias en mode développement

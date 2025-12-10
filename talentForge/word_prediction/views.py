@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods
 import json
 import logging
 from .services import word_prediction_service
@@ -8,13 +8,19 @@ from .services import word_prediction_service
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
-@require_POST
+@require_http_methods(["GET", "POST"])  # Allow both GET and POST
 def predict(request):
     """API endpoint for word prediction"""
     try:
-        data = json.loads(request.body)
-        text = data.get('text', '').strip()
-        num_suggestions = min(int(data.get('num', 3)), 5)
+        if request.method == 'GET':
+            # Handle GET requests (from your JavaScript)
+            text = request.GET.get('text', '').strip()
+            num_suggestions = min(int(request.GET.get('num_suggestions', 3)), 5)
+        else:
+            # Handle POST requests (with JSON body)
+            data = json.loads(request.body)
+            text = data.get('text', '').strip()
+            num_suggestions = min(int(data.get('num', 3)), 5)
         
         if not text or len(text) < 2:
             return JsonResponse({
@@ -33,10 +39,10 @@ def predict(request):
             'count': len(suggestions)
         })
         
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, ValueError):
         return JsonResponse({
             'success': False,
-            'error': 'Invalid JSON'
+            'error': 'Invalid request parameters'
         }, status=400)
     except Exception as e:
         logger.error(f"Prediction error: {e}")
