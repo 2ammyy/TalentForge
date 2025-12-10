@@ -2,109 +2,694 @@
 {% load static %} 
 {% block subtitle %}{{ profile_user.username }}'s Profile{% endblock %}
 
-{% block content %}
-<div class="container">
-    <div class="profile-container">
-        <!-- Header du profil -->
-        <div class="profile-header">
-            <div class="profile-info">
-                <div class="profile-avatar">
-                    {% if profile_user.posts_profile.profile_picture %}
-                        <img src="{{ profile_user.posts_profile.profile_picture.url }}" alt="{{ profile_user.username }}" class="author-avatar">
-                    {% else %}
-                        <div class="default-avatar">
-                            {{ profile_user.username|first|upper }}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="profile-details">
-                    <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
-                    <p class="profile-username">@{{ profile_user.username }}</p>
-                    <p class="profile-bio">{{ profile_user.posts_profile.bio|default:"No bio yet" }}</p>
-                    
-                    <div class="profile-stats">
-                        <div class="profile-stat-item">
-                            <strong>{{ user_posts.count }}</strong>
-                            <span>Posts</span>
-                        </div>
-                        <div class="profile-stat-item">
-                            <strong>{{ profile_user.user_followers.count }}</strong>
-                            <span>Followers</span>
-                        </div>
-                        <div class="profile-stat-item">
-                            <strong>{{ profile_user.user_following.count }}</strong>
-                            <span>Following</span>
-                        </div>
-                    </div>
+{% block extra_css %}
+<style>
+    :root {
+        --profile-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --card-shadow: 0 20px 40px rgba(102, 126, 234, 0.1);
+        --glass-effect: rgba(255, 255, 255, 0.1);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-                    {% if profile_user != request.user %}
-                        <div class="profile-actions">
-                            {% if is_following %}
-                                <form method="post" action="{% url 'posts:unfollow_user' profile_user.username %}" class="inline-form">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-outline">Unfollow</button>
-                                </form>
-                            {% else %}
-                                <form method="post" action="{% url 'posts:follow_user' profile_user.username %}" class="inline-form">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn create-post-btn">Follow</button>
-                                </form>
-                            {% endif %}
+    .profile-hero {
+        background: var(--profile-gradient);
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+        position: relative;
+        overflow: hidden;
+    }
 
-                            {% if is_blocked %}
-                                <form method="post" action="{% url 'posts:unblock_user' profile_user.username %}" class="inline-form">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-outline">Unblock</button>
-                                </form>
-                            {% else %}
-                                <form method="post" action="{% url 'posts:block_user' profile_user.username %}" class="inline-form">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-warning">Block</button>
-                                </form>
-                            {% endif %}
+    .profile-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+        opacity: 0.3;
+    }
 
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reportModal">
-                                Report
-                            </button>
+    .profile-container {
+        position: relative;
+        max-width: 1200px;
+        margin: -100px auto 0;
+        padding: 0 20px;
+    }
 
-                            <a href="{% url 'posts:conversation' profile_user.username %}" class="btn create-post-btn">
-                                💬 Message
-                            </a>
-                        </div>
-                    {% else %}
-                        <a href="{% url 'base:edit_profile' %}" class="btn btn-outline">Edit Profile</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+    /* Profile Card */
+    .profile-card {
+        background: white;
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .profile-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--profile-gradient);
+    }
+
+    .profile-header {
+        display: flex;
+        gap: 2rem;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+
+    /* Avatar */
+    .profile-avatar {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar img,
+    .default-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border: 6px solid white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        background: var(--profile-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 3rem;
+        font-weight: bold;
+        transition: var(--transition);
+    }
+
+    .profile-avatar img:hover {
+        transform: scale(1.05);
+    }
+
+    .profile-details {
+        flex: 1;
+    }
+
+    .profile-details h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .profile-username {
+        font-size: 1.2rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+
+    .profile-bio {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #666;
+        margin-bottom: 2rem;
+        max-width: 600px;
+    }
+
+    /* Stats */
+    .profile-stats {
+        display: flex;
+        gap: 3rem;
+        margin-bottom: 2rem;
+        padding: 1.5rem 0;
+        border-top: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .profile-stat-item {
+        text-align: center;
+    }
+
+    .profile-stat-item strong {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-stat-item span {
+        font-size: 0.9rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Action Buttons */
+    .profile-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+    }
+
+    .profile-action-btn {
+        padding: 0.8rem 1.8rem;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--transition);
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .profile-action-btn i {
+        font-size: 1.1rem;
+    }
+
+    .profile-action-btn.follow {
+        background: var(--profile-gradient);
+        color: white;
+    }
+
+    .profile-action-btn.follow:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .profile-action-btn.message {
+        background: #10b981;
+        color: white;
+    }
+
+    .profile-action-btn.message:hover {
+        background: #0da271;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .profile-action-btn.edit {
+        background: #f3f4f6;
+        color: #374151;
+        border: 2px solid #e5e7eb;
+    }
+
+    .profile-action-btn.edit:hover {
+        background: #e5e7eb;
+        transform: translateY(-3px);
+    }
+
+    .profile-action-btn.block {
+        background: #fef3c7;
+        color: #92400e;
+        border: 2px solid #fbbf24;
+    }
+
+    .profile-action-btn.block:hover {
+        background: #fde68a;
+        transform: translateY(-3px);
+    }
+
+    .profile-action-btn.report {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 2px solid #f87171;
+    }
+
+    .profile-action-btn.report:hover {
+        background: #fecaca;
+        transform: translateY(-3px);
+    }
+
+    /* Posts Section */
+    .posts-section {
+        margin-top: 2rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        position: relative;
+        padding-left: 1rem;
+    }
+
+    .section-header h2::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 24px;
+        background: var(--profile-gradient);
+        border-radius: 2px;
+    }
+
+    .create-post-btn {
+        background: var(--profile-gradient);
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        transition: var(--transition);
+        border: none;
+        cursor: pointer;
+    }
+
+    .create-post-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    /* Posts Grid */
+    .posts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .posts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Post Card */
+    .post-card-modern {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: var(--transition);
+        border: 1px solid #e5e7eb;
+    }
+
+    .post-card-modern:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(102, 126, 234, 0.15);
+    }
+
+    .post-header-modern {
+        padding: 1.5rem 1.5rem 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .post-author-info-modern {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .author-avatar-modern {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3px solid white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .author-avatar-modern img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .default-avatar-small {
+        width: 100%;
+        height: 100%;
+        background: var(--profile-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    .post-author-modern {
+        flex: 1;
+    }
+
+    .post-author-modern strong {
+        display: block;
+        font-size: 1rem;
+        color: #333;
+        margin-bottom: 0.2rem;
+    }
+
+    .post-date-modern {
+        font-size: 0.85rem;
+        color: #888;
+    }
+
+    /* Post Type Badge */
+    .post-type-badge-modern {
+        padding: 0 1.5rem 0.5rem;
+    }
+
+    .type-badge-modern {
+        display: inline-block;
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .type-badge-modern.text { background: #dbeafe; color: #1e40af; }
+    .type-badge-modern.image { background: #fce7f3; color: #be185d; }
+    .type-badge-modern.video { background: #dcfce7; color: #166534; }
+    .type-badge-modern.job { background: #fef3c7; color: #92400e; }
+
+    /* Post Content */
+    .post-content-modern {
+        padding: 0 1.5rem;
+    }
+
+    .post-title-modern {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 0.8rem;
+        color: #333;
+    }
+
+    .post-title-modern a {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .post-title-modern a:hover {
+        color: #667eea;
+    }
+
+    .post-excerpt-modern {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+    }
+
+    /* Post Media */
+    .post-media-modern {
+        margin: 1rem 0;
+    }
+
+    .post-image-modern {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* Post Actions */
+    .post-actions-modern {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        background: #f9fafb;
+    }
+
+    .action-btn-modern {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: var(--transition);
+        font-size: 0.95rem;
+    }
+
+    .action-btn-modern:hover {
+        background: white;
+        color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .action-btn-modern.liked {
+        color: #ef4444;
+    }
+
+    .action-count {
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* No Posts */
+    .no-posts-modern {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        border: 2px dashed #e5e7eb;
+    }
+
+    .no-posts-icon-modern {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+
+    .no-posts-modern h3 {
+        font-size: 1.5rem;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .no-posts-modern p {
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Dropdown Menu */
+    .post-actions-dropdown-modern {
+        position: relative;
+    }
+
+    .dropdown-toggle-modern {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #f3f4f6;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: var(--transition);
+        color: #666;
+    }
+
+    .dropdown-toggle-modern:hover {
+        background: #e5e7eb;
+        color: #333;
+    }
+
+    /* Modal Styling */
+    .modal-header {
+        background: var(--profile-gradient);
+        color: white;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        font-weight: 600;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+        .profile-hero {
+            padding: 3rem 0;
+        }
         
-        <!-- Section des posts -->
-        <div class="user-posts-section">
-            <div class="user-posts-header">
-                <h2>Posts</h2>
-                {% if profile_user == request.user %}
-                    <a href="{% url 'posts:post_create' %}" class="create-post-btn">
-                        ➕ Create Post
-                    </a>
+        .profile-container {
+            margin-top: -80px;
+            padding: 0 1rem;
+        }
+        
+        .profile-avatar img,
+        .default-avatar {
+            width: 120px;
+            height: 120px;
+        }
+        
+        .profile-stats {
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        .profile-action-btn {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="profile-hero">
+    <!-- Background pattern is created with CSS -->
+</div>
+
+<!-- Profile Container -->
+<div class="profile-container">
+    <!-- Profile Card -->
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {% if profile_user.posts_profile.profile_picture %}
+                    <img src="{{ profile_user.posts_profile.profile_picture.url }}" alt="{{ profile_user.username }}">
+                {% else %}
+                    <div class="default-avatar">
+                        {{ profile_user.username|first|upper }}
+                    </div>
                 {% endif %}
             </div>
-            <div class="posts-container">
+            
+            <div class="profile-details">
+                <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                <p class="profile-username">@{{ profile_user.username }}</p>
+                <p class="profile-bio">{{ profile_user.posts_profile.bio|default:"No bio yet" }}</p>
+                
+                <!-- Stats -->
+                <div class="profile-stats">
+                    <div class="profile-stat-item">
+                        <strong>{{ user_posts.count }}</strong>
+                        <span>Posts</span>
+                    </div>
+                    <div class="profile-stat-item">
+                        <strong>{{ profile_user.user_followers.count }}</strong>
+                        <span>Followers</span>
+                    </div>
+                    <div class="profile-stat-item">
+                        <strong>{{ profile_user.user_following.count }}</strong>
+                        <span>Following</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                {% if profile_user != request.user %}
+                    <div class="profile-actions">
+                        {% if is_following %}
+                            <form method="post" action="{% url 'posts:unfollow_user' profile_user.username %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="profile-action-btn follow">
+                                    <i class="fas fa-user-minus"></i> Unfollow
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{% url 'posts:follow_user' profile_user.username %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="profile-action-btn follow">
+                                    <i class="fas fa-user-plus"></i> Follow
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <a href="{% url 'posts:conversation' profile_user.username %}" class="profile-action-btn message">
+                            <i class="fas fa-comment"></i> Message
+                        </a>
+
+                        {% if is_blocked %}
+                            <form method="post" action="{% url 'posts:unblock_user' profile_user.username %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="profile-action-btn block">
+                                    <i class="fas fa-unlock"></i> Unblock
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{% url 'posts:block_user' profile_user.username %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="profile-action-btn block">
+                                    <i class="fas fa-ban"></i> Block
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <button type="button" class="profile-action-btn report" data-bs-toggle="modal" data-bs-target="#reportModal">
+                            <i class="fas fa-flag"></i> Report
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="profile-actions">
+                        <a href="{% url 'base:edit_profile' %}" class="profile-action-btn edit">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Posts Section -->
+    <div class="posts-section">
+        <div class="section-header">
+            <h2>Recent Posts</h2>
+            {% if profile_user == request.user %}
+                <a href="{% url 'posts:post_create' %}" class="create-post-btn">
+                    <i class="fas fa-plus"></i> Create Post
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Posts Grid -->
+        {% if user_posts %}
+            <div class="posts-grid">
                 {% for post in user_posts %}
-                    <div class="post-card">
-                        <div class="post-header">
-                            <div class="post-author-info">
-                                <div class="author-avatar">
+                    <div class="post-card-modern">
+                        <!-- Post Header -->
+                        <div class="post-header-modern">
+                            <div class="post-author-info-modern">
+                                <div class="author-avatar-modern">
                                     {% if post.author.posts_profile.profile_picture %}
                                         <img src="{{ post.author.posts_profile.profile_picture.url }}" alt="{{ post.author.username }}">
                                     {% else %}
-                                        <div class="default-avatar">
+                                        <div class="default-avatar-small">
                                             {{ post.author.username|first|upper }}
                                         </div>
                                     {% endif %}
                                 </div>
-                                <div class="post-author">
+                                <div class="post-author-modern">
                                     <strong>{{ post.author.get_full_name|default:post.author.username }}</strong>
-                                    <div class="post-date">
+                                    <div class="post-date-modern">
                                         {{ post.created_at|timesince }} ago
                                         {% if post.updated_at != post.created_at %}
                                             <span class="post-edited">• edited</span>
@@ -114,35 +699,27 @@
                             </div>
                             
                             {% if profile_user == request.user %}
-                            <div class="post-actions-dropdown">
+                            <div class="post-actions-dropdown-modern">
                                 <div class="dropdown">
-                                    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        ⋮
+                                    <button class="dropdown-toggle-modern" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-h"></i>
                                     </button>
-                                    <ul class="dropdown-menu">
+                                    <ul class="dropdown-menu dropdown-menu-end">
                                         <li>
-                                            <a class="dropdown-item edit-option" href="{% url 'posts:post_edit' post.pk %}">
-                                                <div class="dropdown-item-content">
-                                                    <i>✏️</i>
-                                                    <div class="dropdown-text">
-                                                        <span class="dropdown-title">Edit Post</span>
-                                                        <span class="dropdown-desc">Modify your post content</span>
-                                                    </div>
-                                                </div>
+                                            <a class="dropdown-item" href="{% url 'posts:post_edit' post.pk %}">
+                                                <i class="fas fa-edit text-primary me-2"></i>
+                                                Edit Post
                                             </a>
                                         </li>
-                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
                                         <li>
                                             <form method="post" action="{% url 'posts:post_delete' post.pk %}" class="delete-form">
                                                 {% csrf_token %}
-                                                <button type="submit" class="dropdown-item delete-option" onclick="return confirm('Are you sure you want to delete this post?')">
-                                                    <div class="dropdown-item-content">
-                                                        <i>🗑️</i>
-                                                        <div class="dropdown-text">
-                                                            <span class="dropdown-title">Delete Post</span>
-                                                            <span class="dropdown-desc">Remove this post permanently</span>
-                                                        </div>
-                                                    </div>
+                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to delete this post?')">
+                                                    <i class="fas fa-trash-alt me-2"></i>
+                                                    Delete Post
                                                 </button>
                                             </form>
                                         </li>
@@ -151,62 +728,87 @@
                             </div>
                             {% endif %}
                         </div>
-                        
+
+                        <!-- Post Type Badge -->
                         {% if post.type %}
-                        <div class="post-type-badge">
-                            <span class="badge {{ post.type }}">{{ post.get_type_display }}</span>
+                        <div class="post-type-badge-modern">
+                            <span class="type-badge-modern {{ post.type }}">
+                                {% if post.type == 'job' %}
+                                    <i class="fas fa-briefcase me-1"></i>
+                                {% elif post.type == 'image' %}
+                                    <i class="fas fa-image me-1"></i>
+                                {% elif post.type == 'video' %}
+                                    <i class="fas fa-video me-1"></i>
+                                {% else %}
+                                    <i class="fas fa-file-alt me-1"></i>
+                                {% endif %}
+                                {{ post.get_type_display }}
+                            </span>
                         </div>
                         {% endif %}
-                        
-                        <h3 class="post-title">
-                            <a href="{% url 'posts:post_detail' post.pk %}">{{ post.title }}</a>
-                        </h3>
-                        
-                        <div class="post-content">
-                            {{ post.content|truncatewords:50 }}
-                        </div>
-                        
-                        {% if post.image %}
-                        <div class="post-media">
-                            <img src="{{ post.image.url }}" alt="Post image" class="post-image">
-                        </div>
-                        {% endif %}
-                        
-                        <div class="post-actions">
-                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-link">
-                                💬 {{ post.comments.count }}
-                            </a>
-                            <span class="action-separator">•</span>
+
+                        <!-- Post Content -->
+                        <div class="post-content-modern">
+                            <h3 class="post-title-modern">
+                                <a href="{% url 'posts:post_detail' post.pk %}">{{ post.title|default:"Untitled Post" }}</a>
+                            </h3>
                             
-                            <!-- CORRECTION ICI : add_reaction au lieu de like_post -->
-                            <div class="reaction-section">
-                                <form method="post" action="{% url 'posts:add_reaction' post.pk %}" class="inline-form">
-                                    {% csrf_token %}
-                                    <button type="submit" class="reaction-btn {% if user_reaction %}liked{% endif %}">
-                                        ❤️
-                                        <span class="reaction-count">{{ post.reactions.count }}</span>
-                                    </button>
-                                </form>
+                            {% if post.content %}
+                            <div class="post-excerpt-modern">
+                                {{ post.content|truncatechars:120 }}
                             </div>
-                            
-                            <span class="action-separator">•</span>
-                            <span class="post-views">👁️ {{ post.views|default:0 }} views</span>
+                            {% endif %}
                         </div>
-                    </div>
-                {% empty %}
-                    <div class="no-posts">
-                        <div class="no-posts-icon">📝</div>
-                        <h3>No Posts Yet</h3>
-                        <p>{% if profile_user == request.user %}You haven't{% else %}{{ profile_user.username }} hasn't{% endif %} created any posts yet.</p>
-                        {% if profile_user == request.user %}
-                            <a href="{% url 'posts:post_create' %}" class="create-first-post">
-                                ➕ Create Your First Post
-                            </a>
+
+                        <!-- Post Media -->
+                        {% if post.image %}
+                        <div class="post-media-modern">
+                            <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                        </div>
                         {% endif %}
+
+                        <!-- Post Actions -->
+                        <div class="post-actions-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern">
+                                <i class="fas fa-comment"></i>
+                                <span class="action-count">{{ post.comments.count }}</span>
+                            </a>
+                            
+                            <button class="action-btn-modern {% if post.reactions.count %}liked{% endif %}" 
+                                    onclick="toggleReaction({{ post.id }}, this)">
+                                <i class="fas fa-heart"></i>
+                                <span class="action-count">{{ post.reactions.count }}</span>
+                            </button>
+                            
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern">
+                                <i class="fas fa-share"></i>
+                                <span class="action-count">{{ post.post_shares.count }}</span>
+                            </a>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
-        </div>
+        {% else %}
+            <!-- No Posts -->
+            <div class="no-posts-modern">
+                <div class="no-posts-icon-modern">
+                    <i class="fas fa-feather-alt"></i>
+                </div>
+                <h3>No Posts Yet</h3>
+                <p>
+                    {% if profile_user == request.user %}
+                        You haven't created any posts yet.
+                    {% else %}
+                        {{ profile_user.username }} hasn't created any posts yet.
+                    {% endif %}
+                </p>
+                {% if profile_user == request.user %}
+                    <a href="{% url 'posts:post_create' %}" class="create-post-btn">
+                        <i class="fas fa-plus"></i> Create Your First Post
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 </div>
 
@@ -247,4 +849,64 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+    // Toggle reaction with animation
+    function toggleReaction(postId, button) {
+        const heartIcon = button.querySelector('i');
+        const countSpan = button.querySelector('.action-count');
+        
+        // Visual feedback
+        button.classList.toggle('liked');
+        
+        if (button.classList.contains('liked')) {
+            // Animate heart
+            heartIcon.style.transform = 'scale(1.3)';
+            setTimeout(() => heartIcon.style.transform = 'scale(1)', 300);
+            
+            // Update count
+            const currentCount = parseInt(countSpan.textContent);
+            countSpan.textContent = currentCount + 1;
+        } else {
+            // Update count
+            const currentCount = parseInt(countSpan.textContent);
+            countSpan.textContent = Math.max(0, currentCount - 1);
+        }
+        
+        // Send AJAX request (you'll need to implement the backend endpoint)
+        const url = `/posts/${postId}/reaction/`;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: button.classList.contains('liked') ? 'like' : 'unlike'
+            })
+        }).then(response => response.json())
+          .then(data => {
+              if (!data.success) {
+                  // Revert if error
+                  button.classList.toggle('liked');
+                  countSpan.textContent = data.reaction_count;
+              }
+          });
+    }
+    
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add hover effects to post cards
+        const postCards = document.querySelectorAll('.post-card-modern');
+        postCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
 {% endblock %}
