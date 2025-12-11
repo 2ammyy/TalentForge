@@ -109,12 +109,13 @@ DATABASES = {
         'NAME': 'djangodb',
         'USER': 'django_user',
         'PASSWORD': 'DjangoSecurePass123!',
-        #'HOST': 'localhost',
         'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
-
         'PORT': '5432',
     }
 }
+#'HOST': 'localhost',
+#'HOST': '10.209.202.115',  # Fac  ipv4 address Machine -- Server
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

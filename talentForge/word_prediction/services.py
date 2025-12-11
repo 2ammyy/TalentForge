@@ -20,7 +20,8 @@ class WordPredictionService:
     
     def _get_cache_key(self, text):
         """Generate cache key from text"""
-        return text.strip().lower()
+        # Normalize: trim, lowercase, and remove extra spaces
+        return re.sub(r'\s+', ' ', text.strip().lower())
     
     def _get_cached_result(self, text):
         """Get cached result if available and fresh"""
@@ -30,6 +31,7 @@ class WordPredictionService:
         if key in self._cache:
             timestamp = self._cache_timestamps.get(key, 0)
             if current_time - timestamp < self.cache_duration:
+                logger.debug(f"Cache hit for: '{text}'")
                 return self._cache[key]
         
         return None
@@ -39,6 +41,7 @@ class WordPredictionService:
         key = self._get_cache_key(text)
         self._cache[key] = result
         self._cache_timestamps[key] = time.time()
+        logger.debug(f"Cached result for: '{text}' -> {result}")
     
     def clean_word(self, word):
         """Clean a single word"""
@@ -46,22 +49,31 @@ class WordPredictionService:
             return None
         
         # Remove common unwanted characters
-        word = re.sub(r'^[^\w\s]+', '', word)  # Remove leading non-word chars
-        word = re.sub(r'[^\w\s]+$', '', word)  # Remove trailing non-word chars
+        word = re.sub(r'^[^\w\s-]+', '', word)  # Remove leading non-word chars
+        word = re.sub(r'[^\w\s-]+$', '', word)  # Remove trailing non-word chars
         
         word = word.strip()
         
         # Skip if too short or just punctuation
-        if len(word) < 2 or word.lower() in ['the', 'and', 'for', 'with', 'that']:
+        if len(word) < 2:
             return None
+        
+        # Common words to keep (they're useful for autocomplete)
+        common_words = {'a', 'i', 'to', 'in', 'on', 'at', 'of', 'for', 'and', 'the', 'is', 'are', 'was', 'were'}
+        if word.lower() in common_words and len(word) <= 3:
+            return word
         
         return word
     
     def get_ollama_completion(self, text):
-        """Get completion from Ollama with error handling"""
+        """Get completion from Ollama with optimized prompt"""
         try:
-            # Use a prompt that encourages short completions
-            prompt = f"Predict next expression after '{text}':"
+            prompt = f"""You are an autocomplete assistant for TalentForge - a community forum about creativity, art, cooking, and job opportunities.           
+            Suggest 1-3 words that would naturally continue this text in our creative community:
+            "{text}"
+            Next words:"""
+            
+            logger.info(f"Requesting prediction for: '{text}'")
             
             response = requests.post(
                 f"{self.base_url}/api/generate",
@@ -70,10 +82,17 @@ class WordPredictionService:
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.7,
-                        "top_p": 0.9,
-                        "num_predict": 12,
-                        "stop": ["\n", ".", "!", "?", ",", ";", ":", "\"", "'"]
+                        "temperature": 0.4,      # Lower for more predictable results
+                        "top_p": 0.85,           # Focus on probable tokens
+                        "num_predict": 8,        # Shorter to avoid long phrases
+                        "stop": [
+                            "\n", ".", "!", "?", ",", ";", ":", 
+                            "\"", "'", ")", "]", "}", ">",
+                            " -", "--", "---", "->", ":", ";",
+                            "Next:", "Suggest:", "Completion:", "Output:"
+                        ],
+                        "repeat_penalty": 1.1,
+                        "top_k": 30
                     }
                 },
                 timeout=self.timeout
@@ -81,13 +100,20 @@ class WordPredictionService:
             
             if response.status_code == 200:
                 result = response.json()
-                return result.get('response', '').strip()
+                completion = result.get('response', '').strip()
+                
+                # Additional cleaning
+                completion = re.sub(r'^["\':;,.!?\s]+', '', completion)
+                completion = re.sub(r'["\':;,.!?\s]+$', '', completion)
+                
+                logger.info(f"Raw completion for '{text}': '{completion}'")
+                return completion
             
             logger.warning(f"Ollama returned status {response.status_code}")
             return None
             
         except requests.exceptions.Timeout:
-            logger.debug("Ollama request timeout")
+            logger.debug(f"Ollama timeout for: '{text}'")
             return None
         except Exception as e:
             logger.debug(f"Ollama request failed: {e}")
@@ -101,9 +127,20 @@ class WordPredictionService:
         # Clean the completion
         completion = completion.strip()
         
+        logger.debug(f"Extracting from completion: '{completion}'")
+        
         # Remove the original text if present at start
         if completion.lower().startswith(text.lower()):
             completion = completion[len(text):].strip()
+        
+        # Handle cases where completion might contain the prompt text
+        prompt_indicators = ["next:", "suggest:", "completion:", "output:"]
+        for indicator in prompt_indicators:
+            if indicator in completion.lower():
+                parts = completion.lower().split(indicator)
+                if len(parts) > 1:
+                    completion = parts[1].strip()
+                    break
         
         # Split and clean words
         raw_words = completion.split()
@@ -119,19 +156,25 @@ class WordPredictionService:
         if not clean_words:
             return []
         
-        # Generate suggestions
+        # Generate suggestions - IMPROVED LOGIC
         suggestions = []
         
-        # Single word suggestions
+        # Start with single words (most useful for autocomplete)
         for word in clean_words[:3]:
             suggestions.append(word)
         
-        # Phrase suggestions
+        # Add 2-word phrases if available
         if len(clean_words) >= 2:
-            suggestions.append(f"{clean_words[0]} {clean_words[1]}")
+            two_words = f"{clean_words[0]} {clean_words[1]}"
+            if two_words not in suggestions:
+                suggestions.append(two_words)
         
+        # Add 3-word phrases if available and not too long
         if len(clean_words) >= 3:
-            suggestions.append(f"{clean_words[0]} {clean_words[1]} {clean_words[2]}")
+            three_words = f"{clean_words[0]} {clean_words[1]} {clean_words[2]}"
+            if len(three_words) <= 25:  # Don't suggest overly long phrases
+                if three_words not in suggestions:
+                    suggestions.append(three_words)
         
         # Remove duplicates while preserving order
         seen = set()
@@ -141,55 +184,59 @@ class WordPredictionService:
                 seen.add(s)
                 unique_suggestions.append(s)
         
+        logger.debug(f"Extracted suggestions: {unique_suggestions}")
         return unique_suggestions
     
     def get_smart_fallback(self, text):
         """Get intelligent fallback suggestions based on context"""
-        text_lower = text.lower()
+        text_lower = text.lower().strip()
         words = text_lower.split()
         
         if not words:
-            # return ["the", "and", "for"]
-            return[]
+            return []
         
         last_word = words[-1]
         
-        # Context-aware fallback suggestions
+        # Expanded context-aware fallback suggestions
         context_map = {
             # Common word endings
-            "hello": ["there", "world", "everyone"],
-            "hi": ["there", "how", "everyone"],
-            "how": ["are", "do", "can", "is"],
-            "are": ["you", "we", "they", "these"],
-            "you": ["are", "can", "will", "have"],
-            "the": ["best", "next", "way", "project"],
-            "what": ["is", "are", "do", "can"],
-            "when": ["will", "is", "are", "can"],
-            "where": ["is", "are", "can", "do"],
-            "why": ["is", "are", "do", "would"],
-            "i": ["am", "have", "will", "want"],
-            "we": ["are", "have", "will", "can"],
-            "they": ["are", "have", "will", "can"],
-            "can": ["you", "we", "i", "someone"],
-            "need": ["to", "a", "the", "some"],
-            "want": ["to", "a", "the", "some"],
-            "project": ["is", "will", "has", "needs"],
-            "weather": ["is", "today", "looks", "seems"],
-            "is": ["good", "great", "done", "ready"],
-            "to": ["be", "do", "get", "make"],
-            "go": ["to", "for", "with", "and"],
-            "let's": ["go", "do", "try", "see"],
+            "hello": ["there", "world", "everyone", "friend"],
+            "hi": ["there", "how", "everyone", "friend"],
+            "hey": ["there", "how", "you", "everyone"],
+            "how": ["are", "do", "can", "is", "would"],
+            "are": ["you", "we", "they", "these", "there"],
+            "you": ["are", "can", "will", "have", "should"],
+            "the": ["best", "next", "way", "project", "most"],
+            "what": ["is", "are", "do", "can", "should"],
+            "when": ["will", "is", "are", "can", "should"],
+            "where": ["is", "are", "can", "do", "should"],
+            "why": ["is", "are", "do", "would", "should"],
+            "i": ["am", "have", "will", "want", "need"],
+            "we": ["are", "have", "will", "can", "should"],
+            "they": ["are", "have", "will", "can", "should"],
+            "can": ["you", "we", "i", "someone", "anyone"],
+            "need": ["to", "a", "the", "some", "help"],
+            "want": ["to", "a", "the", "some", "more"],
+            "project": ["is", "will", "has", "needs", "requires"],
+            "weather": ["is", "today", "looks", "seems", "forecast"],
+            "is": ["good", "great", "done", "ready", "awesome"],
+            "to": ["be", "do", "get", "make", "see"],
+            "go": ["to", "for", "with", "and", "now"],
+            "let's": ["go", "do", "try", "see", "make"],
             
             # Two-word patterns
-            "how are": ["you", "things", "you doing"],
-            "i want": ["to", "a", "some", "the"],
-            "can you": ["help", "do", "tell", "show"],
-            "the project": ["is", "will", "has", "needs"],
-            "i need": ["to", "a", "some", "help"],
-            "let's go": ["to", "for", "now", "there"],
-            "what is": ["your", "the", "this", "that"],
-            "when will": ["you", "we", "it", "they"],
-            "how to": ["use", "do", "make", "fix"],
+            "how are": ["you", "things", "you doing", "you today"],
+            "i want": ["to", "a", "some", "the", "to go"],
+            "can you": ["help", "do", "tell", "show", "please"],
+            "the project": ["is", "will", "has", "needs", "requires"],
+            "i need": ["to", "a", "some", "help", "assistance"],
+            "let's go": ["to", "for", "now", "there", "outside"],
+            "what is": ["your", "the", "this", "that", "happening"],
+            "when will": ["you", "we", "it", "they", "this"],
+            "how to": ["use", "do", "make", "fix", "improve"],
+            "thank you": ["so", "very", "so much", "for", "thanks"],
+            "good morning": ["everyone", "world", "team", "friends"],
+            "happy birthday": ["to", "to you", "wishes", "my friend"],
         }
         
         # Check two-word context first
@@ -202,8 +249,25 @@ class WordPredictionService:
         if last_word in context_map:
             return context_map[last_word][:3]
         
-        # Generic fallbacks
-        return ["the", "and", "for"][:3]
+        # Check if last word is incomplete (user is typing a word)
+        if len(last_word) <= 5:  # Short partial word
+            common_completions = {
+                "th": ["the", "that", "this", "then"],
+                "he": ["hello", "help", "here", "he"],
+                "ha": ["have", "has", "happy", "had"],
+                "yo": ["you", "your", "yours", "yesterday"],
+                "wa": ["was", "want", "water", "way"],
+                "go": ["go", "good", "going", "gold"],
+                "co": ["could", "come", "code", "computer"],
+            }
+            if last_word in common_completions:
+                return common_completions[last_word][:3]
+        
+        # Generic fallbacks based on text length
+        if len(text) < 10:
+            return ["a", "the", "to"][:3]
+        else:
+            return ["and", "for", "with"][:3]
     
     def predict(self, text, num_suggestions=3):
         """
@@ -211,7 +275,7 @@ class WordPredictionService:
         Returns up to num_suggestions predictions.
         """
         text = text.strip()
-        if len(text) < 2:
+        if len(text) < 1:  # Changed from 2 to 1 to handle single character predictions
             return []
         
         # Check cache first
@@ -257,6 +321,7 @@ class WordPredictionService:
                     "model": self.model,
                     "response_time_ms": round(response_time, 2),
                     "cache_size": len(self._cache),
+                    "cache_hit_rate": self._calculate_cache_hit_rate(),
                     "service": "ollama"
                 }
             return {
@@ -270,6 +335,21 @@ class WordPredictionService:
                 "error": str(e),
                 "service": "ollama"
             }
+    
+    def _calculate_cache_hit_rate(self):
+        """Calculate cache hit rate (simplified)"""
+        if not self._cache:
+            return 0
+        # Simple calculation - in production, track actual hits/misses
+        valid_entries = sum(1 for k in self._cache 
+                          if time.time() - self._cache_timestamps.get(k, 0) < self.cache_duration)
+        return round(valid_entries / max(len(self._cache), 1) * 100, 1)
+    
+    def clear_cache(self):
+        """Clear the prediction cache"""
+        self._cache.clear()
+        self._cache_timestamps.clear()
+        logger.info("Prediction cache cleared")
 
 # Global instance
 word_prediction_service = WordPredictionService()
