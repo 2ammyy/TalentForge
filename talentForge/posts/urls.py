@@ -51,4 +51,6 @@ path('post/<int:pk>/', views.post_detail, name='post_detail'),
     # ============ UTILITY ============
     path('test-email/', views.test_email_view, name='test_email'),
     path('feed/', views.feed, name='feed'),
+
+    path('check-toxicity/', views.check_toxicity_api, name='check_toxicity_api'),
 ]
