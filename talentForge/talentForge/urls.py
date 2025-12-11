@@ -10,7 +10,7 @@ urlpatterns = [
     path('posts/', include('posts.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('allauth.urls')),  # ← Allauth URLs
- path('admin-app/', include('admin_app.urls')),
+    path('admin-app/', include('admin_app.urls')),
          # Password reset URLs
     path('password-reset/', 
          auth_views.PasswordResetView.as_view(
