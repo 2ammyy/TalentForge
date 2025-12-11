@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Dashboard Créateur - TalentForge{% endblock %}
+{% block title %}Creator Dashboard - TalentForge{% endblock %}
 
 {% block content %}
 <div class="creator-dashboard">
@@ -10,14 +10,15 @@
         <!-- Sidebar -->
         <aside class="creator-sidebar">
             <div class="creator-profile-card">
-                <div class="creator-avatar">
+                <!-- <div class="creator-avatar">
                     {{ request.user.username|first|upper }}
-                </div>
+                </div> -->
                 <h3>{{ request.user.username }}</h3>
                 
                 {% if creator_profile.is_verified %}
-                <div class="verified-badge">
-                    <i class="fas fa-check"></i> Créateur Vérifié
+                <div class="verified-badge" style="color: #28a745; margin-right: 8px;">
+                    <i class="fas fa-check" style="color: #28a745; margin-right: 8px;"></i> Verified Creator
+                
                 </div>
                 {% else %}
                 <div class="upgrade-prompt" style="text-align: center; margin-top: 1rem;">
@@ -26,15 +27,15 @@
                     </small>
                     {% if real_time_stats.followers_count >= 1 %}
                     <button class="btn btn-sm btn-primary upgrade-btn" style="width: 100%;">
-                        Devenir Créateur ✓
+                        Become Creator ✓
                     </button>
                     {% else %}
-                    <small style="color: #dc3545;">1 follower requis</small>
+                    <small style="color: #dc3545;">1 follower required</small>
                     {% endif %}
                 </div>
                 {% endif %}
                 
-                <div class="creator-stats">
+                <!-- <div class="creator-stats">
                     <div class="stat-mini">
                         <span class="number" id="real-followers">{{ real_time_stats.followers_count }}</span>
                         <span class="label">Followers</span>
@@ -44,29 +45,29 @@
                         <span class="label">Posts</span>
                     </div>
                 </div>
-            </div>
-            
+            </div> -->
+<!--             
             <nav class="creator-nav">
                 <a href="{% url 'creator:dashboard' %}" class="nav-link active">
                     <i class="fas fa-chart-line"></i> Dashboard
-                </a>
-                <!-- Commenter temporairement analytics jusqu'à ce que la vue soit prête -->
-                <a href="#" class="nav-link" style="color: #6c757d;">
-                    <i class="fas fa-chart-bar"></i> Analytics (bientôt)
+                </a> -->
+                <!-- Temporarily comment out analytics until view is ready -->
+                <!-- <a href="#" class="nav-link" style="color: #6c757d;">
+                    <i class="fas fa-chart-bar"></i> Analytics (coming soon)
                 </a>
             </nav>
-        </aside>
+        </aside> -->
 
         <!-- Main Content -->
         <main class="dashboard-main">
             <!-- Welcome Banner -->
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-                <h2>Bonjour {{ request.user.username }} ! 🎉</h2>
+                <h2>Hello {{ request.user.username }}! 🎉</h2>
                 <p>
                     {% if creator_profile.is_verified %}
-                    Vous êtes un créateur vérifié avec <strong>{{ real_time_stats.followers_count }} follower(s)</strong>
+                    You are a verified creator with <strong>{{ real_time_stats.followers_count }} follower(s)</strong>
                     {% else %}
-                    Vous avez <strong>{{ real_time_stats.followers_count }}/1 follower(s)</strong> pour devenir créateur
+                    You have <strong>{{ real_time_stats.followers_count }}/1 follower(s)</strong> to become a creator
                     {% endif %}
                 </p>
             </div>
@@ -77,9 +78,9 @@
                     <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #333;" id="live-followers">
                         {{ real_time_stats.followers_count }}
                     </div>
-                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Followers Totaux</div>
+                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Total Followers</div>
                     <div style="font-size: 0.8rem; font-weight: 600; color: #28a745;">
-                        <i class="fas fa-sync-alt"></i> <span id="update-time">Temps réel</span>
+                        <i class="fas fa-sync-alt"></i> <span id="update-time">Real-time</span>
                     </div>
                 </div>
                 
@@ -87,9 +88,9 @@
                     <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #333;" id="live-engagement">
                         {{ real_time_stats.engagement_rate }}%
                     </div>
-                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Taux d'Engagement</div>
+                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Engagement Rate</div>
                     <div style="font-size: 0.8rem; font-weight: 600; color: #28a745;">
-                        <i class="fas fa-chart-line"></i> Actif
+                        <i class="fas fa-chart-line"></i> Active
                     </div>
                 </div>
                 
@@ -97,9 +98,9 @@
                     <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;" id="live-posts">
                         {{ real_time_stats.total_posts }}
                     </div>
-                    <div style="font-size: 0.9rem; margin-bottom: 0.5rem; opacity: 0.9;">Posts Totaux</div>
+                    <div style="font-size: 0.9rem; margin-bottom: 0.5rem; opacity: 0.9;">Total Posts</div>
                     <div style="font-size: 0.8rem; font-weight: 600; opacity: 0.9;">
-                        <i class="fas fa-pen-fancy"></i> Votre contenu
+                        <i class="fas fa-pen-fancy"></i> Your content
                     </div>
                 </div>
 
@@ -107,7 +108,7 @@
                     <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: #333;" id="live-likes">
                         {{ real_time_stats.total_likes }}
                     </div>
-                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Likes Totaux</div>
+                    <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 0.5rem;">Total Likes</div>
                     <div style="font-size: 0.8rem; font-weight: 600; color: #28a745;">
                         <i class="fas fa-heart"></i> Engagement
                     </div>
@@ -296,38 +297,38 @@
             <!-- Recent Activity -->
             <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h3 style="margin: 0; color: #333;">Activité Récente</h3>
+                    <h3 style="margin: 0; color: #333;">Recent Activity</h3>
                     <button class="btn btn-sm btn-outline-primary" id="refresh-activity">
-                        <i class="fas fa-sync-alt"></i> Actualiser
+                        <i class="fas fa-sync-alt"></i> Refresh
                     </button>
                 </div>
                 <div class="activity-list" id="activity-list">
                     {% if real_time_stats.total_posts > 0 %}
                         <div style="padding: 1rem; border-bottom: 1px solid #e9ecef;">
                             <i class="fas fa-pen-fancy" style="color: #667eea; margin-right: 0.5rem;"></i>
-                            <span>Vous avez {{ real_time_stats.total_posts }} post(s) publié(s)</span>
+                            <span>You have published {{ real_time_stats.total_posts }} post(s)</span>
                         </div>
                     {% endif %}
                     
                     {% if real_time_stats.total_likes > 0 %}
                         <div style="padding: 1rem; border-bottom: 1px solid #e9ecef;">
                             <i class="fas fa-heart" style="color: #dc3545; margin-right: 0.5rem;"></i>
-                            <span>Vos posts ont reçu {{ real_time_stats.total_likes }} like(s)</span>
+                            <span>Your posts have received {{ real_time_stats.total_likes }} like(s)</span>
                         </div>
                     {% endif %}
                     
                     {% if real_time_stats.followers_count > 0 %}
                         <div style="padding: 1rem; border-bottom: 1px solid #e9ecef;">
                             <i class="fas fa-user-plus" style="color: #28a745; margin-right: 0.5rem;"></i>
-                            <span>Vous avez {{ real_time_stats.followers_count }} follower(s)</span>
+                            <span>You have {{ real_time_stats.followers_count }} follower(s)</span>
                         </div>
                     {% endif %}
                     
                     {% if real_time_stats.total_posts == 0 and real_time_stats.total_likes == 0 %}
                         <div style="text-align: center; padding: 2rem; color: #6c757d;">
                             <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                            <p>Aucune activité récente</p>
-                            <small>Commencez à publier du contenu !</small>
+                            <p>No recent activity</p>
+                            <small>Start publishing content!</small>
                         </div>
                     {% endif %}
                 </div>
@@ -339,36 +340,36 @@
 
 {% block extra_js %}
 <script>
-// Mise à jour en temps réel des stats
+// Real-time stats update
 function updateRealTimeStats() {
     fetch('{% url "creator:api_stats" %}')
         .then(response => response.json())
         .then(data => {
-            // Mettre à jour les éléments avec les nouvelles données
+            // Update elements with new data
             document.getElementById('live-followers').textContent = data.followers_count;
             document.getElementById('live-engagement').textContent = data.engagement_rate + '%';
             document.getElementById('live-posts').textContent = data.total_posts;
             document.getElementById('live-likes').textContent = data.total_likes;
             
-            // Mettre à jour le timestamp
-            document.getElementById('update-time').textContent = 'Mis à jour: ' + new Date().toLocaleTimeString();
+            // Update timestamp
+            document.getElementById('update-time').textContent = 'Updated: ' + new Date().toLocaleTimeString();
             
-            // Mettre à jour le statut de vérification
+            // Update verification status
             if (data.is_verified && !document.querySelector('.verified-badge')) {
-                location.reload(); // Recharger si devenu vérifié
+                location.reload(); // Reload if became verified
             }
         })
         .catch(error => {
-            console.error('Erreur mise à jour temps réel:', error);
+            console.error('Real-time update error:', error);
         });
 }
 
-// Actualiser les prédictions
+// Refresh predictions
 function refreshPredictions() {
     const predictBtn = document.querySelector('.predict-btn');
     const originalText = predictBtn.innerHTML;
     
-    predictBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calcul...';
+    predictBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
     predictBtn.disabled = true;
 
     fetch('{% url "creator:generate_prediction" %}', {
@@ -388,7 +389,7 @@ function refreshPredictions() {
             document.getElementById('pred-confidence').textContent = data.prediction.confidence + '% confidence';
             
             // Show success message
-            showToast('Prédictions actualisées avec les dernières données!', 'success');
+            showToast('Predictions updated with latest data!', 'success');
         }
     })
     .finally(() => {
@@ -397,34 +398,34 @@ function refreshPredictions() {
     });
 }
 
-// Initialisation
+// Initialization
 document.addEventListener('DOMContentLoaded', function() {
-    // Mise à jour automatique toutes les 30 secondes
+    // Automatic update every 30 seconds
     setInterval(updateRealTimeStats, 30000);
     
-    // Premier chargement
+    // Initial load
     updateRealTimeStats();
     
-    // Bouton de prédiction
+    // Prediction button
     const predictBtn = document.querySelector('.predict-btn');
     if (predictBtn) {
         predictBtn.addEventListener('click', refreshPredictions);
     }
     
-    // Bouton d'actualisation d'activité
+    // Activity refresh button
     const refreshBtn = document.getElementById('refresh-activity');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function() {
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             setTimeout(() => {
                 updateRealTimeStats();
-                this.innerHTML = '<i class="fas fa-sync-alt"></i> Actualiser';
-                showToast('Activité actualisée', 'success');
+                this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                showToast('Activity refreshed', 'success');
             }, 1000);
         });
     }
     
-    // Bouton de mise à niveau
+    // Upgrade button
     const upgradeBtn = document.querySelector('.upgrade-btn');
     if (upgradeBtn) {
         upgradeBtn.addEventListener('click', function() {
@@ -439,15 +440,15 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Félicitations! Vous êtes maintenant créateur vérifié!', 'success');
+                    showToast('Congratulations! You are now a verified creator!', 'success');
                     setTimeout(() => location.reload(), 2000);
                 } else {
-                    showToast('Erreur: ' + data.error, 'error');
-                    this.innerHTML = 'Devenir Créateur ✓';
+                    showToast('Error: ' + data.error, 'error');
+                    this.innerHTML = 'Become Creator ✓';
                 }
             })
             .catch(() => {
-                this.innerHTML = 'Devenir Créateur ✓';
+                this.innerHTML = 'Become Creator ✓';
             });
         });
     }
