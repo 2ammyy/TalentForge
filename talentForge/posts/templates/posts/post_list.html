@@ -1,1529 +1,482 @@
 {% extends 'base.html' %}
-{% load static %} 
+{% load static %}
 
-{% block subtitle %}All Posts{% endblock %}
+{% block subtitle %}Explore TalentForge{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-/* Video Player Styles */
-.video-container {
-    position: relative;
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    background: #000;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-}
-
-.post-video {
-    width: 100%;
-    height: auto;
-    max-height: 500px;
-    object-fit: contain;
-    display: block;
-    background: #000;
-}
-
-/* Video Overlay */
-.video-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.8) 0%,
-        rgba(0, 0, 0, 0.4) 30%,
-        rgba(0, 0, 0, 0) 70%
-    );
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px;
-    pointer-events: none;
-}
-
-.video-container:hover .video-overlay,
-.video-container:focus-within .video-overlay {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-/* Play/Pause Button */
-.play-pause-btn {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid white;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    pointer-events: auto;
-    z-index: 10;
-}
-
-.play-pause-btn:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: translate(-50%, -50%) scale(1.1);
-}
-
-.play-pause-btn .fa-play {
-    margin-left: 5px;
-}
-
-/* Progress Bar */
-.video-progress-container {
-    position: absolute;
-    bottom: 60px;
-    left: 20px;
-    right: 20px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-    cursor: pointer;
-    overflow: hidden;
-    pointer-events: auto;
-    z-index: 10;
-}
-
-.video-progress-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 0%;
-    background: #ff4757;
-    border-radius: 2px;
-    transition: width 0.1s linear;
-}
-
-.video-progress-buffer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 0%;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 2px;
-}
-
-/* Bottom Controls */
-.video-controls-bottom {
-    position: absolute;
-    bottom: 10px;
-    left: 20px;
-    right: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    pointer-events: auto;
-    z-index: 10;
-}
-
-.video-controls-left,
-.video-controls-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.video-control {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.video-control:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.video-time {
-    color: white;
-    font-size: 14px;
-    font-family: monospace;
-    min-width: 120px;
-}
-
-/* Volume Slider */
-.volume-slider-container {
-    width: 80px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.volume-btn:hover + .volume-slider-container,
-.volume-slider-container:hover {
-    opacity: 1;
-}
-
-.volume-slider {
-    width: 100%;
-    height: 4px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-    outline: none;
-}
-
-.volume-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: white;
-    cursor: pointer;
-}
-
-.volume-slider::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: white;
-    cursor: pointer;
-    border: none;
-}
-
-/* Loading Spinner */
-.video-loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-}
-
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+    :root {
+        --creative-purple: #8A2BE2;
+        --creative-blue: #4169E1;
+        --creative-teal: #20B2AA;
+        --light-bg: #F8F7FF;
+        --card-shadow: 0 10px 30px rgba(138, 43, 226, 0.1);
     }
-}
 
-/* Error Message */
-.video-error {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: white;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 20px;
-    border-radius: 8px;
-    z-index: 20;
-}
+    .feed-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
 
-.video-error i {
-    font-size: 32px;
-    margin-bottom: 10px;
-    color: #ff4757;
-}
+    .feed-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
 
-/* Fullscreen Styles */
-.video-container:fullscreen .post-video {
-    max-height: 100vh;
-    height: 100%;
-}
+    .feed-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 0.5rem;
+    }
 
-.video-container:fullscreen .video-overlay {
-    padding: 30px;
-}
+    /* Filters */
+    .filters-section {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        flex-wrap: wrap;
+    }
 
-/* Hide controls when not hovering (with delay) */
-.video-overlay:not(:hover):not(:focus-within) .play-pause-btn,
-.video-overlay:not(:hover):not(:focus-within) .video-controls-bottom,
-.video-overlay:not(:hover):not(:focus-within) .video-progress-container {
-    opacity: 0;
-    transition: opacity 0.5s ease 0.5s;
-}
+    .filter-btn {
+        padding: 0.8rem 1.5rem;
+        border: 2px solid #E5E7EB;
+        border-radius: 25px;
+        background: white;
+        color: #555;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
-.video-overlay:hover .play-pause-btn,
-.video-overlay:hover .video-controls-bottom,
-.video-overlay:hover .video-progress-container,
-.video-overlay:focus-within .play-pause-btn,
-.video-overlay:focus-within .video-controls-bottom,
-.video-overlay:focus-within .video-progress-container {
-    opacity: 1;
-    transition: opacity 0.3s ease;
-}
+    .filter-btn.active {
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        color: white;
+        border-color: transparent;
+    }
 
-/* Video states */
-.video-paused .play-pause-btn .fa-play,
-.video-playing .play-pause-btn .fa-pause {
-    display: block;
-}
+    /* Pinterest Grid */
+    .pinterest-grid {
+        column-count: 4;
+        column-gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
 
-.video-paused .play-pause-btn .fa-pause,
-.video-playing .play-pause-btn .fa-play {
-    display: none;
-}
+    @media (max-width: 1200px) {
+        .pinterest-grid { column-count: 3; }
+    }
+    @media (max-width: 900px) {
+        .pinterest-grid { column-count: 2; }
+    }
+    @media (max-width: 600px) {
+        .pinterest-grid { column-count: 1; }
+    }
 
-/* Post Card Styles */
-.posts-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-}
+    /* Pin Card */
+    .pin-card {
+        break-inside: avoid;
+        margin-bottom: 1.5rem;
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 1px solid #E5E7EB;
+    }
 
-.posts-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-}
+    .pin-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(138, 43, 226, 0.2);
+    }
 
-.posts-header h2 {
-    margin: 0;
-    color: #333;
-}
+    /* Media */
+    .pin-media {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+    }
 
-.create-post-btn {
-    background: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background 0.3s;
-}
+    .pin-media img, .pin-media video {
+        width: 100%;
+        height: auto;
+        display: block;
+        transition: transform 0.5s ease;
+    }
 
-.create-post-btn:hover {
-    background: #0056b3;
-    color: white;
-}
+    .pin-card:hover .pin-media img {
+        transform: scale(1.05);
+    }
 
-.filter-section {
-    margin-bottom: 20px;
-}
+    /* Type Badge */
+    .type-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        z-index: 2;
+    }
 
-.filter-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
+    .type-badge.visual-art { 
+        background: linear-gradient(135deg, #4169E1, #20B2AA);
+        color: white;
+    }
+    .type-badge.video { 
+        background: linear-gradient(135deg, #20B2AA, #8A2BE2);
+        color: white;
+    }
+    .type-badge.writing { 
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        color: white;
+    }
+    .type-badge.job { 
+        background: linear-gradient(135deg, #FF6B6B, #FFA726);
+        color: white;
+    }
 
-.filter-btn {
-    padding: 8px 16px;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
+    /* Content */
+    .pin-content {
+        padding: 1.2rem;
+    }
 
-.filter-btn.active {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-}
+    .pin-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0.8rem;
+        color: #333;
+    }
 
-.post-card {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+    .pin-description {
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
 
-.post-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 15px;
-}
+    /* Footer */
+    .pin-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid #E5E7EB;
+    }
 
-.post-author-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+    .pin-author {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
-.author-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-}
+    .author-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid #E5E7EB;
+    }
 
-.author-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+    .author-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
 
-.default-avatar {
-    width: 100%;
-    height: 100%;
-    background: #007bff;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-}
+    .pin-stats {
+        display: flex;
+        gap: 1rem;
+    }
 
-.post-author {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.post-date {
-    color: #666;
-    font-size: 0.9em;
-}
-
-.post-type-badge {
-    margin-bottom: 10px;
-}
-
-.badge {
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: 500;
-}
-
-.badge.text { background: #e3f2fd; color: #1565c0; }
-.badge.image { background: #f3e5f5; color: #7b1fa2; }
-.badge.video { background: #e8f5e8; color: #2e7d32; }
-.badge.job { background: #fff3e0; color: #ef6c00; }
-
-.post-title {
-    margin: 10px 0;
-    color: #333;
-}
-
-.post-content {
-    margin: 15px 0;
-    line-height: 1.6;
-    color: #444;
-}
-
-.post-media {
-    margin: 15px 0;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.post-image {
-    width: 100%;
-    max-height: 500px;
-    object-fit: cover;
-    border-radius: 8px;
-}
-
-.post-actions {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-    flex-wrap: wrap;
-}
-
-.action-link {
-    color: #666;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: color 0.3s;
-}
-
-.action-link:hover {
-    color: #007bff;
-}
-
-.action-separator {
-    color: #ddd;
-}
-
-.reaction-section {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.reaction-btn {
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 4px;
-    transition: all 0.3s;
-}
-
-.reaction-btn:hover {
-    background: #f5f5f5;
-}
-
-.reaction-btn.liked {
-    color: #e91e63;
-}
-
-.reaction-count {
-    min-width: 20px;
-    text-align: center;
-}
-
-.shares-section {
-    margin-top: 10px;
-    padding: 10px;
-    background: #f9f9f9;
-    border-radius: 5px;
-}
-
-.no-posts {
-    text-align: center;
-    padding: 50px 20px;
-    color: #666;
-}
-
-.no-posts-icon {
-    font-size: 48px;
-    color: #ddd;
-    margin-bottom: 20px;
-}
-
-.create-first-post {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 10px 20px;
-    background: #007bff;
-    color: white;
-    border-radius: 5px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    justify-content: center;
-    max-width: 200px;
-    margin: 20px auto 0;
-}
-
-.pagination-container {
-    margin-top: 30px;
-}
-
-/* Dropdown styles */
-.post-actions-dropdown .dropdown-toggle {
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
-}
-
-.post-actions-dropdown .dropdown-toggle:hover {
-    background: #f5f5f5;
-}
-
-.dropdown-menu {
-    min-width: 250px;
-}
-
-.dropdown-item-content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.dropdown-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.dropdown-title {
-    font-weight: 500;
-}
-
-.dropdown-desc {
-    font-size: 0.85em;
-    color: #666;
-}
-
-.delete-option .dropdown-title {
-    color: #dc3545;
-}
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+        color: #888;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="posts-container">
-    <div class="posts-header">
-        <h2>📝 All Posts</h2>
-        <a href="{% url 'posts:post_create' %}" class="create-post-btn">
-            <i class="fas fa-plus"></i> Create New Post
-        </a>
+<div class="feed-container">
+    <div class="feed-header">
+        <h1>✨ Discover Creative Inspiration</h1>
+        <p>Browse through amazing works from our creative community</p>
     </div>
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-        <div class="filter-buttons">
-            <button class="filter-btn active" data-filter="all">All Posts</button>
-            <button class="filter-btn" data-filter="text">Text</button>
-            <button class="filter-btn" data-filter="image">Images</button>
-            <button class="filter-btn" data-filter="video">Videos</button>
-            <button class="filter-btn" data-filter="job">Job Offers</button>
-        </div>
+    <!-- Filters -->
+    <div class="filters-section">
+        <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-th"></i> All Posts
+        </button>
+        <button class="filter-btn" data-filter="visual-art">
+            <i class="fas fa-palette"></i> Visual Arts
+        </button>
+        <button class="filter-btn" data-filter="video">
+            <i class="fas fa-video"></i> Videos
+        </button>
+        <button class="filter-btn" data-filter="writing">
+            <i class="fas fa-pen-nib"></i> Writings
+        </button>
+        <button class="filter-btn" data-filter="job">
+            <i class="fas fa-briefcase"></i> Jobs
+        </button>
     </div>
-
-    <!-- Debug Info -->
-    <div style="display: none;">
-        <!-- Debug: User info -->
-        <div data-user="{{ user.username }}" data-authenticated="{{ user.is_authenticated }}"></div>
-        <!-- Debug: Posts count -->
-        <div data-posts-count="{{ posts|length }}"></div>
-    </div>
-
+<!-- Pinterest Grid -->
+<div class="pinterest-grid" id="pinterestGrid">
     {% for post in posts %}
-    <div class="post-card" data-post-type="{{ post.type }}" data-post-id="{{ post.id }}">
-        <div class="post-header">
-            <div class="post-author-info">
-                <div class="author-avatar">
-                    {% if post.author.profile.avatar %}
-                        <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
-                    {% else %}
-                        <div class="default-avatar">{{ post.author.username|first|upper }}</div>
+    {% comment %} FIRST check if it's a job post {% endcomment %}
+    {% if post.type == 'job' or post.job_details %}
+        {% comment %} Job Post - This should always show as job {% endcomment %}
+        <div class="pin-card" data-post-type="job" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge job"><i class="fas fa-briefcase"></i> Job</div>
+            
+            <!-- Media Section -->
+            {% if post.image %}
+            <div class="pin-media">
+                <img src="{{ post.image.url }}" alt="{{ post.title|default:'Job' }}" loading="lazy">
+            </div>
+            {% else %}
+            <div class="pin-media" style="background: linear-gradient(135deg, #FF6B6B, #FFA726); min-height: 200px; display: flex; align-items: center; justify-content: center; color: white; padding: 2rem;">
+                <div style="text-align: center;">
+                    {% if post.job_details and post.job_details.company %}
+                    <h3 style="margin-bottom: 1rem;">{{ post.job_details.company }}</h3>
                     {% endif %}
-                </div>
-                <div class="post-author">
-                    <strong>{{ post.author.username }}</strong>
-                    <span class="post-date">— {{ post.created_at|date:"M d, Y · H:i" }}</span>
-                    {% if post.updated_at != post.created_at %}
-                    <span class="post-edited">(edited)</span>
+                    <h4 style="margin-bottom: 0.5rem;">{{ post.title|default:"Job Opportunity" }}</h4>
+                    {% if post.job_details and post.job_details.location %}
+                    <p><i class="fas fa-map-marker-alt"></i> {{ post.job_details.location }}</p>
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
             
-            <!-- MENU DROPDOWN -->
-            <div class="post-actions-dropdown">
-                <div class="dropdown">
-                    <button class="dropdown-toggle" type="button" id="dropdownMenuButton-{{ post.id }}" 
-                            data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton-{{ post.id }}">
-                        <!-- Share Option - Pour tous les utilisateurs authentifiés -->
-                        {% if user.is_authenticated %}
-                        <li>
-                            <a class="dropdown-item share-option" href="{% url 'posts:share_post' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-share"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Share Post</span>
-                                        <small class="dropdown-desc">Share this post with others</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Edit Option (Author only) -->
-                        {% if user.is_authenticated and user == post.author %}
-                        <li>
-                            <a class="dropdown-item edit-option" href="{% url 'posts:post_edit' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-edit"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Edit Post</span>
-                                        <small class="dropdown-desc">Modify your post content</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Report Option (Not for author) -->
-                        {% if user.is_authenticated and user != post.author %}
-                        <li>
-                            <a class="dropdown-item report-option" href="{% url 'posts:report_post' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-flag"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Report Post</span>
-                                        <small class="dropdown-desc">Report inappropriate content</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Delete Option (Author only) -->
-                        {% if user.is_authenticated and user == post.author %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item delete-option text-danger" href="{% url 'posts:post_delete' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-trash"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Delete Post</span>
-                                        <small class="dropdown-desc">Permanently remove this post</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Si l'utilisateur n'est pas connecté -->
-                        {% if not user.is_authenticated %}
-                        <li>
-                            <a class="dropdown-item" href="{% url 'base:login' %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Login</span>
-                                        <small class="dropdown-desc">Sign in to access options</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Post Type Badge -->
-        <div class="post-type-badge">
-            <span class="badge {{ post.type }}">{{ post.get_type_display }}</span>
-        </div>
-
-        <!-- Post Title -->
-        {% if post.title %}
-        <h4 class="post-title">{{ post.title }}</h4>
-        {% endif %}
-        
-        <!-- Post Content -->
-        <div class="post-content">
-            <p>{{ post.content|linebreaksbr }}</p>
-        </div>
-
-        <!-- Post Media -->
-        {% if post.image %}
-        <div class="post-media">
-            <img src="{{ post.image.url }}" class="post-image" alt="Post image" loading="lazy">
-        </div>
-        {% endif %}
-        
-        {% if post.video %}
-        <div class="post-media video-container" data-video-id="{{ post.id }}">
-            <video 
-                class="post-video" 
-                preload="metadata" 
-                playsinline
-                muted
-                poster="{% if post.thumbnail %}{{ post.thumbnail.url }}{% endif %}"
-            >
-                <source src="{{ post.video.url }}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-            
-            <!-- Video Overlay (for hover controls) -->
-            <div class="video-overlay">
-                <!-- Play/Pause Button -->
-                <button class="video-control play-pause-btn" aria-label="Play/Pause" tabindex="0">
-                    <i class="fas fa-play"></i>
-                    <i class="fas fa-pause" style="display: none;"></i>
-                </button>
+            <!-- Content Section -->
+            <div class="pin-content">
+                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
                 
-                <!-- Progress Bar -->
-                <div class="video-progress-container">
-                    <div class="video-progress-bar"></div>
-                    <div class="video-progress-buffer"></div>
-                </div>
-                
-                <!-- Bottom Controls -->
-                <div class="video-controls-bottom">
-                    <!-- Left Side Controls -->
-                    <div class="video-controls-left">
-                        <button class="video-control volume-btn" aria-label="Mute/Unmute" tabindex="0">
-                            <i class="fas fa-volume-up"></i>
-                        </button>
-                        <div class="volume-slider-container">
-                            <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1" tabindex="0">
-                        </div>
-                        <span class="video-time">00:00 / 00:00</span>
-                    </div>
+                <!-- Job Specific Details -->
+                {% if post.job_details %}
+                <div style="margin-bottom: 1rem;">
+                    {% if post.job_details.company %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
+                        <i class="fas fa-building"></i> {{ post.job_details.company }}
+                    </p>
+                    {% endif %}
                     
-                    <!-- Right Side Controls -->
-                    <div class="video-controls-right">
-                        <button class="video-control fullscreen-btn" aria-label="Fullscreen" tabindex="0">
-                            <i class="fas fa-expand"></i>
-                        </button>
+                    {% if post.job_details.location %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
+                        <i class="fas fa-map-marker-alt"></i> {{ post.job_details.location }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if post.job_details.employment_type %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
+                        <i class="fas fa-clock"></i> {{ post.job_details.get_employment_type_display }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if post.job_details.salary_range %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 1rem;">
+                        <i class="fas fa-money-bill-wave"></i> {{ post.job_details.get_salary_range_display }}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #FF6B6B; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
                     </div>
                 </div>
-                
-                <!-- Loading Spinner -->
-                <div class="video-loading-spinner" style="display: none;">
-                    <div class="spinner"></div>
-                </div>
-                
-                <!-- Error Message -->
-                <div class="video-error" style="display: none;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Video failed to load</p>
-                    <button class="retry-btn" style="margin-top: 10px; padding: 5px 10px;">Retry</button>
+            </div>
+        </div>
+    
+    {% elif post.video %}
+        {% comment %} Video Post {% endcomment %}
+        <div class="pin-card" data-post-type="video" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge video"><i class="fas fa-video"></i> Video</div>
+            <div class="pin-media">
+                <video src="{{ post.video.url }}" 
+                       preload="metadata"
+                       muted
+                       loop
+                       poster="{% if post.image %}{{ post.image.url }}{% endif %}">
+                </video>
+            </div>
+            <div class="pin-content">
+                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #20B2AA; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                    </div>
                 </div>
             </div>
         </div>
-        {% endif %}
-
-        <!-- Post Actions -->
-        <div class="post-actions">
-            <a href="{% url 'posts:post_detail' post.id %}" class="action-link">
-                <i class="fas fa-comment"></i> Comments ({{ post.comments.count }})
-            </a>
-            <span class="action-separator">|</span>
-            
-            <div class="reaction-section">
-                {% with post_id=post.id|stringformat:"s" %}
-                <button class="reaction-btn like-btn {% if user.is_authenticated and post_id in liked_post_ids %}liked{% endif %}" 
-                        data-post-id="{{ post.id }}" data-reaction-type="like">
-                    <i class="fas fa-heart"></i> Like
-                </button>
-                {% endwith %}
-                <span class="reaction-count" id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
+    
+    {% elif post.image %}
+        {% comment %} Image Post (Visual Art) {% endcomment %}
+        <div class="pin-card" data-post-type="visual-art" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge visual-art"><i class="fas fa-palette"></i> Visual Art</div>
+            <div class="pin-media">
+                <img src="{{ post.image.url }}" alt="{{ post.title|default:'Visual Art' }}" loading="lazy">
             </div>
-            
-            <span class="action-separator">|</span>
-            <a href="{% url 'posts:share_post' post.id %}" class="action-link">
-                <i class="fas fa-share"></i> Share ({{ post.post_shares.count }})
-            </a>
+            <div class="pin-content">
+                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #4169E1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <!-- Shares Section -->
-        {% if post.post_shares.exists %}
-        <div class="shares-section">
-            <small style="color: #666;">
-                <i class="fas fa-share"></i> Shared by: 
-                {% for share in post.post_shares.all|slice:":3" %}
-                    <strong>{{ share.user.username }}</strong>{% if share.caption %} - "{{ share.caption }}"{% endif %}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-                {% if post.post_shares.count > 3 %} and {{ post.post_shares.count|add:"-3" }} more{% endif %}
-            </small>
+    
+    {% else %}
+        {% comment %} Text Post (Writing) {% endcomment %}
+        <div class="pin-card" data-post-type="writing" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge writing"><i class="fas fa-pen-nib"></i> Writing</div>
+            <div class="pin-media" style="background: linear-gradient(135deg, #8A2BE2, #4169E1); min-height: 200px; display: flex; align-items: center; justify-content: center; color: white; padding: 2rem;">
+                <div style="text-align: center;">
+                    {% if post.title %}<h3>{{ post.title }}</h3>{% endif %}
+                    {% if post.content %}<p>{{ post.content|truncatechars:150 }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="pin-content">
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #8A2BE2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        {% endif %}
-        
-    </div>
+    {% endif %}
     {% empty %}
-    <div class="no-posts">
-        <div class="no-posts-icon">
-            <i class="fas fa-newspaper"></i>
-        </div>
+    <div style="text-align: center; padding: 4rem; grid-column: 1 / -1;">
         <h3>No posts yet</h3>
-        <p>Be the first to create a post and start the conversation!</p>
-        <a href="{% url 'posts:post_create' %}" class="create-first-post">
-            <i class="fas fa-plus"></i> Create First Post
-        </a>
+        <p>Be the first to share your creativity!</p>
     </div>
     {% endfor %}
-
-    <!-- Pagination -->
-    {% if is_paginated %}
-    <div class="pagination-container">
-        <nav aria-label="Posts pagination">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1" aria-label="First">
-                        <i class="fas fa-angle-double-left"></i>
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                        <i class="fas fa-angle-left"></i>
-                    </a>
-                </li>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
-                        <i class="fas fa-angle-right"></i>
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
-                        <i class="fas fa-angle-double-right"></i>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        <div class="pagination-info">
-            <small>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</small>
-        </div>
-    </div>
-    {% endif %}
 </div>
-{% endblock %}
+</div>
 
-{% block extra_js %}
 <script>
-// Video Player Manager
-class VideoPlayerManager {
-    constructor() {
-        this.videoPlayers = new Map();
-        this.observer = null;
-        this.init();
-    }
-
-    init() {
-        this.setupIntersectionObserver();
-        this.setupEventListeners();
-        this.initializeVideos();
-    }
-
-    setupIntersectionObserver() {
-        const options = {
-            root: null,
-            rootMargin: '100px',
-            threshold: 0.1
-        };
-
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const videoContainer = entry.target;
-                const player = this.videoPlayers.get(videoContainer.dataset.videoId);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter functionality
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const pinCards = document.querySelectorAll('.pin-card');
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const filter = this.dataset.filter;
                 
-                if (player) {
-                    if (entry.isIntersecting) {
-                        this.handleVideoInViewport(player);
+                // Update active button
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Filter cards
+                pinCards.forEach(card => {
+                    const postType = card.dataset.postType;
+                    
+                    if (filter === 'all' || filter === postType) {
+                        card.style.display = 'block';
                     } else {
-                        this.handleVideoOutOfViewport(player);
+                        card.style.display = 'none';
                     }
-                }
+                });
             });
-        }, options);
-    }
-
-    setupEventListeners() {
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this.pauseAllVideos();
-            }
         });
-
-        window.addEventListener('blur', () => {
-            this.pauseAllVideos();
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.fullscreenElement) {
-                document.exitFullscreen();
-            }
-        });
-
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            this.pauseAllVideos();
-        });
-    }
-
-    initializeVideos() {
-        const videoContainers = document.querySelectorAll('.video-container');
         
-        videoContainers.forEach(container => {
-            const videoId = container.dataset.videoId;
-            const video = container.querySelector('.post-video');
-            const overlay = container.querySelector('.video-overlay');
+        // Video autoplay on hover
+        const videos = document.querySelectorAll('video');
+        videos.forEach(video => {
+            const card = video.closest('.pin-card');
             
-            if (video && overlay) {
-                const player = {
-                    container,
-                    video,
-                    overlay,
-                    videoId,
-                    isPlaying: false,
-                    isMuted: video.muted,
-                    isFullscreen: false,
-                    wasPlayingBeforeViewportLeave: false,
-                    progressBar: overlay.querySelector('.video-progress-bar'),
-                    bufferBar: overlay.querySelector('.video-progress-buffer'),
-                    timeDisplay: overlay.querySelector('.video-time'),
-                    playBtn: overlay.querySelector('.play-pause-btn'),
-                    volumeBtn: overlay.querySelector('.volume-btn'),
-                    volumeSlider: overlay.querySelector('.volume-slider'),
-                    fullscreenBtn: overlay.querySelector('.fullscreen-btn'),
-                    loadingSpinner: overlay.querySelector('.video-loading-spinner'),
-                    errorDisplay: overlay.querySelector('.video-error'),
-                    retryBtn: overlay.querySelector('.retry-btn'),
-                    progressContainer: overlay.querySelector('.video-progress-container')
-                };
-
-                this.videoPlayers.set(videoId, player);
-                this.setupVideoPlayer(player);
-                this.observer.observe(container);
-            }
-        });
-    }
-
-    setupVideoPlayer(player) {
-        const { video, overlay, progressContainer } = player;
-
-        // Video events
-        video.addEventListener('loadeddata', () => this.onVideoLoaded(player));
-        video.addEventListener('timeupdate', () => this.updateProgress(player));
-        video.addEventListener('progress', () => this.updateBuffer(player));
-        video.addEventListener('waiting', () => this.showLoading(player));
-        video.addEventListener('playing', () => {
-            this.hideLoading(player);
-            player.isPlaying = true;
-            this.updatePlayButton(player);
-            this.hideControls(player);
-        });
-        video.addEventListener('pause', () => {
-            player.isPlaying = false;
-            this.updatePlayButton(player);
-        });
-        video.addEventListener('ended', () => this.onVideoEnded(player));
-        video.addEventListener('error', (e) => this.handleVideoError(player, e));
-        video.addEventListener('volumechange', () => this.updateVolumeUI(player));
-        video.addEventListener('enterpictureinpicture', () => this.onPictureInPicture(player));
-        video.addEventListener('leavepictureinpicture', () => this.onLeavePictureInPicture(player));
-
-        // Overlay events (hover logic)
-        overlay.addEventListener('mouseenter', (e) => {
-            e.stopPropagation();
-            this.showControls(player);
-        });
-
-        overlay.addEventListener('mouseleave', (e) => {
-            e.stopPropagation();
-            if (player.isPlaying) {
-                this.hideControls(player);
-            }
-        });
-
-        // Click to play/pause
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay || e.target.closest('.play-pause-btn')) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.togglePlayPause(player);
-            }
-        });
-
-        // Progress bar click
-        progressContainer.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const rect = progressContainer.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
-            this.seekTo(player, pos);
-        });
-
-        // Volume controls
-        player.volumeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggleMute(player);
-        });
-
-        player.volumeSlider.addEventListener('input', (e) => {
-            e.stopPropagation();
-            this.setVolume(player, parseFloat(e.target.value));
-        });
-
-        // Fullscreen
-        player.fullscreenBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggleFullscreen(player);
-        });
-
-        // Retry button for errors
-        if (player.retryBtn) {
-            player.retryBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.retryVideo(player);
-            });
-        }
-
-        // Keyboard shortcuts
-        video.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case ' ':
-                case 'k':
-                    e.preventDefault();
-                    this.togglePlayPause(player);
-                    break;
-                case 'm':
-                    e.preventDefault();
-                    this.toggleMute(player);
-                    break;
-                case 'f':
-                    e.preventDefault();
-                    this.toggleFullscreen(player);
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    this.seekRelative(player, -5);
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    this.seekRelative(player, 5);
-                    break;
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    e.preventDefault();
-                    const percent = parseInt(e.key) / 10;
-                    this.seekTo(player, percent);
-                    break;
-            }
-        });
-
-        // Initialize UI
-        this.updateVolumeUI(player);
-        this.updateTimeDisplay(player);
-        
-        // Try autoplay if in viewport
-        if (this.isElementInViewport(player.container)) {
-            this.tryAutoplay(player);
-        }
-    }
-
-    handleVideoInViewport(player) {
-        if (player.wasPlayingBeforeViewportLeave) {
-            this.playVideo(player).catch(() => {
-                player.wasPlayingBeforeViewportLeave = false;
-            });
-        } else {
-            this.tryAutoplay(player);
-        }
-    }
-
-    handleVideoOutOfViewport(player) {
-        player.wasPlayingBeforeViewportLeave = player.isPlaying;
-        this.pauseVideo(player);
-    }
-
-    tryAutoplay(player) {
-        if (player.video.muted) {
-            this.playVideo(player).catch(error => {
-                console.log('Autoplay prevented:', error);
-                this.updatePlayButton(player);
-            });
-        }
-    }
-
-    async playVideo(player) {
-        try {
-            await player.video.play();
-            player.isPlaying = true;
-            this.updatePlayButton(player);
-            this.hideControls(player);
-            return true;
-        } catch (error) {
-            player.isPlaying = false;
-            this.updatePlayButton(player);
-            
-            if (error.name === 'NotAllowedError') {
-                this.showControls(player);
-            }
-            
-            throw error;
-        }
-    }
-
-    pauseVideo(player) {
-        player.video.pause();
-        player.isPlaying = false;
-        this.updatePlayButton(player);
-    }
-
-    togglePlayPause(player) {
-        if (player.isPlaying) {
-            this.pauseVideo(player);
-            this.showControls(player);
-        } else {
-            this.playVideo(player).catch(() => {
-                if (player.video.muted) {
-                    player.video.muted = false;
-                    this.updateVolumeUI(player);
-                    this.playVideo(player).catch(console.error);
-                }
-            });
-        }
-    }
-
-    toggleMute(player) {
-        player.video.muted = !player.video.muted;
-        if (!player.video.muted && player.video.volume === 0) {
-            player.video.volume = 0.5;
-            player.volumeSlider.value = 0.5;
-        }
-        this.updateVolumeUI(player);
-    }
-
-    setVolume(player, volume) {
-        player.video.volume = volume;
-        player.video.muted = volume === 0;
-        this.updateVolumeUI(player);
-    }
-
-    updateVolumeUI(player) {
-        const { video, volumeBtn } = player;
-        const icon = volumeBtn.querySelector('i');
-        
-        if (video.muted || video.volume === 0) {
-            icon.className = 'fas fa-volume-mute';
-            player.volumeSlider.value = 0;
-        } else if (video.volume < 0.5) {
-            icon.className = 'fas fa-volume-down';
-            player.volumeSlider.value = video.volume;
-        } else {
-            icon.className = 'fas fa-volume-up';
-            player.volumeSlider.value = video.volume;
-        }
-    }
-
-    toggleFullscreen(player) {
-        if (!document.fullscreenElement) {
-            player.container.requestFullscreen().catch(err => {
-                console.log('Fullscreen error:', err);
-            });
-        } else {
-            document.exitFullscreen();
-        }
-    }
-
-    seekTo(player, percentage) {
-        if (player.video.duration) {
-            player.video.currentTime = percentage * player.video.duration;
-        }
-    }
-
-    seekRelative(player, seconds) {
-        if (player.video.duration) {
-            player.video.currentTime = Math.max(0, 
-                Math.min(player.video.duration, player.video.currentTime + seconds)
-            );
-        }
-    }
-
-    updateProgress(player) {
-        const { video, progressBar } = player;
-        if (video.duration && !isNaN(video.duration)) {
-            const percent = (video.currentTime / video.duration) * 100;
-            progressBar.style.width = percent + '%';
-            this.updateTimeDisplay(player);
-        }
-    }
-
-    updateBuffer(player) {
-        const { video, bufferBar } = player;
-        if (video.buffered.length > 0 && video.duration) {
-            const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-            const percent = (bufferedEnd / video.duration) * 100;
-            bufferBar.style.width = percent + '%';
-        }
-    }
-
-    updateTimeDisplay(player) {
-        const { video, timeDisplay } = player;
-        const current = this.formatTime(video.currentTime);
-        const duration = this.formatTime(video.duration);
-        timeDisplay.textContent = `${current} / ${duration}`;
-    }
-
-    formatTime(seconds) {
-        if (isNaN(seconds)) return '00:00';
-        
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    showLoading(player) {
-        if (player.loadingSpinner) {
-            player.loadingSpinner.style.display = 'block';
-        }
-    }
-
-    hideLoading(player) {
-        if (player.loadingSpinner) {
-            player.loadingSpinner.style.display = 'none';
-        }
-    }
-
-    showControls(player) {
-        player.overlay.style.opacity = '1';
-        player.overlay.style.pointerEvents = 'auto';
-    }
-
-    hideControls(player) {
-        if (player.isPlaying) {
-            player.overlay.style.opacity = '0';
-            player.overlay.style.pointerEvents = 'none';
-        }
-    }
-
-    updatePlayButton(player) {
-        const playIcon = player.playBtn.querySelector('.fa-play');
-        const pauseIcon = player.playBtn.querySelector('.fa-pause');
-        
-        if (player.isPlaying) {
-            playIcon.style.display = 'none';
-            pauseIcon.style.display = 'block';
-        } else {
-            playIcon.style.display = 'block';
-            pauseIcon.style.display = 'none';
-        }
-    }
-
-    onVideoLoaded(player) {
-        this.updateTimeDisplay(player);
-        player.video.style.opacity = '1';
-    }
-
-    onVideoEnded(player) {
-        player.isPlaying = false;
-        this.updatePlayButton(player);
-        this.showControls(player);
-        
-        setTimeout(() => {
-            if (!player.isPlaying) {
-                player.video.currentTime = 0;
-                this.updateProgress(player);
-            }
-        }, 3000);
-    }
-
-    handleVideoError(player, error) {
-        console.error('Video error:', error);
-        if (player.errorDisplay) {
-            player.errorDisplay.style.display = 'block';
-        }
-        this.hideLoading(player);
-    }
-
-    retryVideo(player) {
-        if (player.errorDisplay) {
-            player.errorDisplay.style.display = 'none';
-        }
-        player.video.load();
-        this.playVideo(player).catch(console.error);
-    }
-
-    onPictureInPicture(player) {
-        player.isPlaying = true;
-        this.updatePlayButton(player);
-    }
-
-    onLeavePictureInPicture(player) {
-        // Handle PiP exit if needed
-    }
-
-    pauseAllVideos() {
-        this.videoPlayers.forEach(player => {
-            if (player.isPlaying) {
-                this.pauseVideo(player);
-            }
-        });
-    }
-
-    isElementInViewport(el) {
-        const rect = el.getBoundingClientRect();
-        return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-        );
-    }
-
-    destroy() {
-        this.pauseAllVideos();
-        if (this.observer) {
-            this.observer.disconnect();
-        }
-        this.videoPlayers.clear();
-    }
-}
-
-// Initialize video player manager
-let videoPlayerManager = null;
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize video players
-    videoPlayerManager = new VideoPlayerManager();
-    
-    // Filter functionality
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    const postCards = document.querySelectorAll('.post-card');
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const filter = this.dataset.filter;
-            
-            // Update active button
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Filter posts
-            postCards.forEach(card => {
-                if (filter === 'all' || card.dataset.postType === filter) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
+            card.addEventListener('mouseenter', function() {
+                video.play();
             });
             
-            // Reinitialize videos after filtering
-            setTimeout(() => {
-                if (videoPlayerManager) {
-                    videoPlayerManager.destroy();
-                    videoPlayerManager = new VideoPlayerManager();
-                }
-            }, 100);
+            card.addEventListener('mouseleave', function() {
+                video.pause();
+                video.currentTime = 0;
+            });
+            
+            card.addEventListener('click', function() {
+                video.pause();
+            });
+            
+            video.muted = true;
         });
     });
-    
-    // Like button functionality
-    document.querySelectorAll('.like-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const postId = this.dataset.postId;
-            const reactionType = this.dataset.reactionType;
-            const isLiked = this.classList.contains('liked');
-            
-            // Toggle like state
-            if (isLiked) {
-                // Unlike
-                this.classList.remove('liked');
-                const countElement = document.getElementById(`reaction-count-${postId}`);
-                let count = parseInt(countElement.textContent);
-                countElement.textContent = Math.max(0, count - 1);
-            } else {
-                // Like
-                this.classList.add('liked');
-                const countElement = document.getElementById(`reaction-count-${postId}`);
-                let count = parseInt(countElement.textContent);
-                countElement.textContent = count + 1;
-            }
-            
-            // Send AJAX request
-            fetch(`/posts/${postId}/react/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    reaction_type: reactionType,
-                    action: isLiked ? 'remove' : 'add'
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Reaction updated');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Revert UI on error
-                if (isLiked) {
-                    this.classList.add('liked');
-                } else {
-                    this.classList.remove('liked');
-                }
-            });
-        });
-    });
-    
-    // Handle window resize
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            if (videoPlayerManager) {
-                videoPlayerManager.destroy();
-                videoPlayerManager = new VideoPlayerManager();
-            }
-        }, 250);
-    });
-});
-
-// Helper function to get CSRF token
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// Export for debugging
-if (typeof window !== 'undefined') {
-    window.VideoPlayerManager = VideoPlayerManager;
-}
 </script>
 {% endblock %}

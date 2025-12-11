@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 import json
+from django.core.paginator import Paginator
 
 from .models import Post, Comment, Reaction, JobPost, Share, Report, UserProfile, Message, Notification, Follow, Block
 from .forms import PostForm, CommentForm, ShareForm, ReportForm, UserProfileForm, MessageForm, SearchForm
@@ -17,59 +18,16 @@ from .forms import PostForm, CommentForm, ShareForm, ReportForm, UserProfileForm
 @login_required
 def post_create(request):
     if request.method == 'POST':
-        post_type = request.POST.get('type', 'text')
-        print(f"🎯 Type de post reçu: {post_type}")
-        print(f"🎯 Données reçues: {request.POST}")
-
         form = PostForm(request.POST, request.FILES)
-
+        
         if form.is_valid():
-            print("✅ Formulaire valide")
             post = form.save(commit=False)
             post.author = request.user
-
-            # DEBUG: Print job details before saving
-            if post_type == 'job':
-                print("🔍 Détails job avant sauvegarde:")
-                print(f"   Company: {form.cleaned_data.get('company')}")
-                print(f"   Location: {form.cleaned_data.get('location')}")
-                print(f"   Work Mode: {form.cleaned_data.get('work_mode')}")
-                print(f"   Employment Type: {form.cleaned_data.get('employment_type')}")
-
             post.save()
-
-            if post.type == 'job':
-                try:
-                    # Vérifiez si JobPost existe
-                    if hasattr(post, 'job_details'):
-                        job_details = post.job_details
-                        print(f"✅ JobPost créé avec succès!")
-                        print(f"   Company: {job_details.company}")
-                        print(f"   Location: {job_details.location}")
-                    else:
-                        print("❌ CRITIQUE: JobPost non créé!")
-                        # Création d'urgence du JobPost
-                        company = form.cleaned_data.get('company', 'Unknown Company')
-                        location = form.cleaned_data.get('location', 'Unknown Location')
-                        JobPost.objects.create(
-                            post=post,
-                            company=company,
-                            location=location,
-                            work_mode=form.cleaned_data.get('work_mode', 'onsite'),
-                            employment_type=form.cleaned_data.get('employment_type', 'full_time'),
-                            salary_range=form.cleaned_data.get('salary_range'),
-                            application_email=form.cleaned_data.get('application_email'),
-                            skills_required=form.cleaned_data.get('skills_required'),
-                            benefits=form.cleaned_data.get('benefits')
-                        )
-                        print(f"🚨 JobPost créé d'urgence: {company} - {location}")
-                except Exception as e:
-                    print(f"💥 Erreur lors de la vérification JobPost: {e}")
-
+            
             messages.success(request, 'Your post has been created successfully!')
             return redirect('posts:post_detail', pk=post.pk)
         else:
-            print("❌ Erreurs de formulaire:", form.errors)
             messages.error(request, 'Please correct the errors below.')
     else:
         post_type = request.GET.get('type', 'text')
@@ -77,43 +35,40 @@ def post_create(request):
 
     return render(request, 'posts/post_create.html', {
         'form': form,
-        'post_type': post_type
+        'post_type': post_type if 'post_type' in locals() else 'text'
     })
 
 
 def post_list(request):
-    posts = Post.objects.all().order_by('-created_at')
-    
-    # Ajoutez le préchargement des relations pour optimiser les performances
-    posts = posts.select_related(
+    # Get all posts with related data
+    posts = Post.objects.all().select_related(
         'author', 
-        'author__userprofile',  # Si vous avez un profil utilisateur
-        'job_details'  # Si vous avez des détails de job
+        'author__userprofile',
+        'job_details'
     ).prefetch_related(
         'comments',
-        'reactions', 
+        'reactions',
         'post_shares'
-    )
+    ).order_by('-created_at')
     
-    # Pagination (optionnel mais recommandé)
-    from django.core.paginator import Paginator
-    paginator = Paginator(posts, 10)  # 10 posts par page
+    # Pagination
+    paginator = Paginator(posts, 12)  # 12 posts per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     return render(request, 'posts/post_list.html', {
-        'posts': page_obj,  # ICI : vous devez passer les posts au contexte !
+        'posts': page_obj,
         'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
     })
 
 
 def post_detail(request, pk):
-    """Vue pour les détails d'un post"""
+    """View for post details"""
     post = get_object_or_404(Post, pk=pk)
     comments = post.comments.all().order_by('created_at')
     
-    # Vérifier si l'utilisateur a déjà réagi à ce post
+    # Check if user has already reacted to this post
     user_reaction = None
     if request.user.is_authenticated:
         user_reaction = Reaction.objects.filter(post=post, user=request.user).first()
@@ -126,7 +81,7 @@ def post_detail(request, pk):
             comment.author = request.user
             comment.save()
             
-            # Créer une notification pour l'auteur du post
+            # Create notification for post author
             if post.author != request.user:
                 Notification.objects.create(
                     user=post.author,
@@ -150,8 +105,23 @@ def post_detail(request, pk):
 
 @login_required
 def feed(request):
-    posts = Post.objects.all().order_by('-created_at')
-    return render(request, 'posts/feed.html', {'posts': posts})
+    # Show posts from followed users and popular posts
+    following_ids = Follow.objects.filter(follower=request.user).values_list('following_id', flat=True)
+    posts = Post.objects.filter(
+        Q(author_id__in=following_ids) | 
+        Q(reactions__gt=5)  # Popular posts
+    ).distinct().select_related('author', 'author__userprofile').order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'posts/feed.html', {
+        'posts': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+    })
 
 
 @require_POST
@@ -162,21 +132,21 @@ def add_reaction(request, post_id):
         data = json.loads(request.body)
         reaction_type = data.get('reaction_type', 'like')
         
-        # Vérifier si l'utilisateur a déjà réagi
+        # Check if user has already reacted
         existing_reaction = Reaction.objects.filter(post=post, user=request.user).first()
         
         if existing_reaction:
             if existing_reaction.reaction_type == reaction_type:
-                # Supprimer la réaction si c'est la même
+                # Remove reaction if it's the same
                 existing_reaction.delete()
                 action = 'removed'
             else:
-                # Mettre à jour la réaction
+                # Update reaction
                 existing_reaction.reaction_type = reaction_type
                 existing_reaction.save()
                 action = 'updated'
         else:
-            # Créer une nouvelle réaction
+            # Create new reaction
             Reaction.objects.create(
                 post=post,
                 user=request.user,
@@ -184,7 +154,7 @@ def add_reaction(request, post_id):
             )
             action = 'added'
             
-            # Créer une notification pour l'auteur du post
+            # Create notification for post author
             if post.author != request.user:
                 Notification.objects.create(
                     user=post.author,
@@ -209,26 +179,26 @@ def add_reaction(request, post_id):
 def share_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     
-    # Vérifier si l'utilisateur a déjà partagé ce post
+    # Check if user has already shared this post
     existing_share = Share.objects.filter(post=post, user=request.user).first()
     
     if request.method == 'POST':
         form = ShareForm(request.POST)
         if form.is_valid():
             if existing_share:
-                # Mettre à jour le partage existant
+                # Update existing share
                 existing_share.caption = form.cleaned_data['caption']
                 existing_share.save()
                 action = 'updated'
             else:
-                # Créer un nouveau partage
+                # Create new share
                 share = form.save(commit=False)
                 share.post = post
                 share.user = request.user
                 share.save()
                 action = 'created'
                 
-                # Créer une notification pour l'auteur du post
+                # Create notification for post author
                 if post.author != request.user:
                     Notification.objects.create(
                         user=post.author,
@@ -275,11 +245,6 @@ def unshare_post(request, post_id):
 def report_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     
-    # Vérifier que l'utilisateur a un email
-    print(f"🔍 DEBUG: User email: {request.user.email}")
-    if not request.user.email:
-        messages.warning(request, 'Please add an email address to your account to receive confirmation emails.')
-    
     # Check if user has already reported this post
     existing_report = Report.objects.filter(post=post, reporter=request.user).first()
     
@@ -298,7 +263,7 @@ def report_post(request, post_id):
                 report.post = post
                 report.reporter = request.user
                 report.save()
-                messages.success(request, 'Thank you for reporting this post. We have sent you a confirmation email.')
+                messages.success(request, 'Thank you for reporting this post.')
             
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': 'Report submitted successfully'})
@@ -399,33 +364,48 @@ def post_update(request, pk):
 
 # ============ PROFILES & SOCIAL FEATURES ============
 
+# In talentForge/posts/views.py
+
 @login_required
 def my_profile(request):
-    """Profil de l'utilisateur connecté"""
+    """Profile of the logged-in user"""
     user_posts = Post.objects.filter(author=request.user).order_by('-created_at')
+    
+    # Get shared posts
+    shared_posts = Share.objects.filter(user=request.user).select_related(
+        'post', 'post__author', 'post__author__userprofile'
+    ).order_by('-created_at')
     
     context = {
         'profile_user': request.user,
         'user_posts': user_posts,
+        'shared_posts': shared_posts,
         'is_own_profile': True
     }
     
     return render(request, 'posts/profile.html', context)
 
+
 def user_profile(request, username):
-    """Profil d'un autre utilisateur"""
+    """Profile of another user"""
     profile_user = get_object_or_404(User, username=username)
     user_posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+    
+    # Get shared posts
+    shared_posts = Share.objects.filter(user=profile_user).select_related(
+        'post', 'post__author', 'post__author__userprofile'
+    ).order_by('-created_at')
     
     context = {
         'profile_user': profile_user,
         'user_posts': user_posts,
+        'shared_posts': shared_posts,
         'is_own_profile': False
     }
     
-    # Vérifier les relations sociales seulement si l'utilisateur est connecté
+    # Check social relations only if user is logged in
     if request.user.is_authenticated and request.user != profile_user:
-        # Vérifier si l'utilisateur suit ce profil
+        # Check if user follows this profile
         try:
             context['is_following'] = Follow.objects.filter(
                 follower=request.user, 
@@ -434,7 +414,7 @@ def user_profile(request, username):
         except:
             context['is_following'] = False
         
-        # Vérifier si l'utilisateur a bloqué ce profil
+        # Check if user has blocked this profile
         try:
             context['is_blocked'] = Block.objects.filter(
                 blocker=request.user, 
@@ -445,39 +425,18 @@ def user_profile(request, username):
     
     return render(request, 'posts/profile.html', context)
 
-# @login_required
-# def edit_profile(request):
-#     """Vue pour éditer le profil utilisateur"""
-#     try:
-#         profile = request.user.posts_profile
-#     except UserProfile.DoesNotExist:
-#         # Créer le profil s'il n'existe pas
-#         profile = UserProfile.objects.create(user=request.user)
-    
-#     if request.method == 'POST':
-#         form = UserProfileForm(request.POST, request.FILES, instance=profile)
-#         if form.is_valid():
-#             form.save()
-#             messages.success(request, 'Your profile has been updated successfully!')
-#             return redirect('posts:my_profile')
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = UserProfileForm(instance=profile)
-    
-#     return render(request, 'posts/edit_profile.html', {
-#         'form': form,
-#         'profile': profile
-#     })
+
 @login_required
 def edit_profile(request):
-    """Redirige vers la page d'édition de profil dans l'app base"""
-    return redirect('base:edit_profile')  # Redirection vers l'app base
+    """Redirect to base app profile edit"""
+    return redirect('base:edit_profile')
+
+
 # ============ SOCIAL ACTIONS ============
 
 @login_required
 def follow_user(request, username):
-    """Suivre un utilisateur"""
+    """Follow a user"""
     if request.method == 'POST':
         user_to_follow = get_object_or_404(User, username=username)
         
@@ -485,33 +444,34 @@ def follow_user(request, username):
             messages.error(request, "You cannot follow yourself.")
             return redirect('posts:user_profile', username=username)
         
-        # Vérifier si déjà suivi
+        # Check if already following
         if Follow.objects.filter(follower=request.user, following=user_to_follow).exists():
             messages.info(request, f"You are already following {username}.")
             return redirect('posts:user_profile', username=username)
         
-        # Créer la relation de suivi
+        # Create follow relationship
         Follow.objects.create(follower=request.user, following=user_to_follow)
         
-        # Créer une notification
+        # Create notification
         try:
             Notification.objects.create(
                 user=user_to_follow,
-                message=f"{request.user.username} started following you",
+                from_user=request.user,
                 notification_type='follow',
-                related_user=request.user
+                post=None
             )
         except:
-            pass  # Ignorer si le modèle Notification n'existe pas encore
+            pass
         
         messages.success(request, f"You are now following {username}.")
         return redirect('posts:user_profile', username=username)
     
     return redirect('posts:user_profile', username=username)
 
+
 @login_required
 def unfollow_user(request, username):
-    """Ne plus suivre un utilisateur"""
+    """Unfollow a user"""
     if request.method == 'POST':
         user_to_unfollow = get_object_or_404(User, username=username)
         
@@ -530,9 +490,10 @@ def unfollow_user(request, username):
     
     return redirect('posts:user_profile', username=username)
 
+
 @login_required
 def block_user(request, username):
-    """Bloquer un utilisateur"""
+    """Block a user"""
     if request.method == 'POST':
         user_to_block = get_object_or_404(User, username=username)
         
@@ -540,15 +501,15 @@ def block_user(request, username):
             messages.error(request, "You cannot block yourself.")
             return redirect('posts:user_profile', username=username)
         
-        # Vérifier si déjà bloqué
+        # Check if already blocked
         if Block.objects.filter(blocker=request.user, blocked=user_to_block).exists():
             messages.info(request, f"You have already blocked {username}.")
             return redirect('posts:user_profile', username=username)
         
-        # Créer la relation de blocage
+        # Create block relationship
         Block.objects.create(blocker=request.user, blocked=user_to_block)
         
-        # Supprimer les relations de suivi si elles existent
+        # Remove follow relationships if they exist
         Follow.objects.filter(follower=request.user, following=user_to_block).delete()
         Follow.objects.filter(follower=user_to_block, following=request.user).delete()
         
@@ -557,9 +518,10 @@ def block_user(request, username):
     
     return redirect('posts:user_profile', username=username)
 
+
 @login_required
 def unblock_user(request, username):
-    """Débloquer un utilisateur"""
+    """Unblock a user"""
     if request.method == 'POST':
         user_to_unblock = get_object_or_404(User, username=username)
         
@@ -578,9 +540,10 @@ def unblock_user(request, username):
     
     return redirect('posts:user_profile', username=username)
 
+
 @login_required
 def report_user(request, username):
-    """Signaler un utilisateur"""
+    """Report a user"""
     if request.method == 'POST':
         user_to_report = get_object_or_404(User, username=username)
         
@@ -591,19 +554,20 @@ def report_user(request, username):
         reason = request.POST.get('reason')
         details = request.POST.get('details', '')
         
-        # Créer le rapport avec les bons noms de champs
+        # Create report
         Report.objects.create(
             reporter=request.user,
-            reported_user=user_to_report,  # Utilise reported_user au lieu de reported_user
+            reported_user=user_to_report,
             reason=reason,
-            description=details,  # Utilise description au lieu de details
-            post=None  # Pas de post associé pour les rapports d'utilisateurs
+            description=details,
+            post=None
         )
         
         messages.success(request, f"Thank you for reporting {username}. We will review your report.")
         return redirect('posts:user_profile', username=username)
     
     return redirect('posts:user_profile', username=username)
+
 
 # ============ SEARCH ============
 
@@ -645,6 +609,7 @@ def search_view(request):
         'user_results': user_results,
         'job_results': job_results,
     })
+
 
 # ============ MESSAGING SYSTEM ============
 
@@ -716,6 +681,7 @@ def conversation_view(request, username):
         'message_list': message_list,
         'form': form
     })
+
 
 # ============ NOTIFICATIONS ============
 

@@ -1,11 +1,11 @@
 <!-- talentForge\templates\includes\navbar.html -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-2 fixed-top">
-    <div class="container">
-
-        <!-- Logo et Drapeau Palestine -->
-        <div class="d-flex align-items-center">
-            <!-- Drapeau Palestine -->
-            <div class="palestine-flag me-3" aria-label="Drapeau de la Palestine">
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNavbar">
+    <div class="container-fluid px-4">
+        
+        <!-- Brand & Flag -->
+        <div class="navbar-brand-container d-flex align-items-center">
+            <!-- Palestine Flag -->
+            <div class="palestine-flag me-3" aria-label="Flag of Palestine" role="img">
                 <svg viewBox="0 0 36 24" width="30" height="20" aria-hidden="true">
                     <rect y="0" width="36" height="8" fill="#000"/>
                     <rect y="8" width="36" height="8" fill="#fff"/>
@@ -13,101 +13,131 @@
                     <polygon points="0,0 13,12 0,24" fill="#e4312b"/>
                 </svg>
             </div>
-            <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'base:home' %}">
-                <i class="fas fa-rocket me-2 text-primary"></i> TalentForge
+            
+            <!-- Logo -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'base:home' %}">
+                <div class="logo-icon me-2">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-primary">Talent</span>
+                    <span class="logo-secondary">Forge</span>
+                </div>
             </a>
         </div>
 
-        <!-- Mobile toggle -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <!-- Mobile Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Navbar content -->
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <!-- Navbar Content -->
+        <div class="collapse navbar-collapse" id="navbarContent">
             
-            <!-- Left Menu -->
-            <ul class="navbar-nav me-auto mt-2 mt-lg-0">
+            <!-- Navigation Links -->
+            <ul class="navbar-nav me-auto">
                 {% if user.is_authenticated %}
+                <!-- Home -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'base:home' %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <span class="nav-text">Home</span>
+                    </a>
+                </li>
+
+                <!-- Explore -->
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:post_list' %}">
-                        <i class="fas fa-newspaper me-1"></i> Posts
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'posts:post_create' %}">
-                        <i class="fas fa-plus-circle me-1"></i> Create
-                    </a>
-                </li>
-
-                <!-- Quick Profile Access -->
-                <li class="nav-item">
-                    <a class="nav-link quick-profile-link" href="/posts/profile/{{ user.username }}/">
-                        <i class="fas fa-user-circle me-1"></i> My Profile
-                    </a>
-                </li>
-
-                <!-- Search bar -->
-                <li class="nav-item d-flex align-items-center">
-                    <form class="d-flex ms-lg-3 my-2 my-lg-0 search-navbar" method="GET"
-                          action="{% url 'posts:search' %}">
-                        <div class="input-group">
-                            <input type="text" name="q" class="form-control"
-                                   placeholder="Search…" value="{{ request.GET.q|default:'' }}">
-                            <button class="btn btn-outline-light" type="submit">
-                                <i class="fas fa-search"></i>
-                            </button>
+                        <div class="nav-icon">
+                            <i class="fas fa-compass"></i>
                         </div>
-                    </form>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'posts:messages' %}">
-                        <i class="fas fa-comments me-1"></i> 
+                        <span class="nav-text">Explore</span>
                     </a>
                 </li>
 
+                <!-- Create Post -->
+                <li class="nav-item create-post-nav">
+                    <a class="nav-link create-post-btn" href="{% url 'posts:post_create' %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <span class="nav-text">Create</span>
+                    </a>
+                </li>
+
+                <!-- Search -->
+                <li class="nav-item search-nav">
+                    <div class="search-container">
+                        <form method="GET" action="{% url 'posts:search' %}" class="search-form">
+                            <div class="input-group">
+                                <button class="search-icon-btn" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <input type="text" name="q" class="form-control search-input" 
+                                       placeholder="Search posts, people, jobs..." 
+                                       value="{{ request.GET.q|default:'' }}">
+                            </div>
+                        </form>
+                    </div>
+                </li>
+
+                <!-- Messages -->
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'posts:notifications' %}">
-                        <i class="fas fa-bell me-1"></i> 
+                    <a class="nav-link messages-link" href="{% url 'posts:messages' %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <span class="nav-text">Messages</span>
+                    </a>
+                </li>
+
+                <!-- Notifications -->
+                <li class="nav-item">
+                    <a class="nav-link notifications-link" href="{% url 'posts:notifications' %}">
+                        <div class="nav-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <span class="nav-text">Notifications</span>
                     </a>
                 </li>
                 {% endif %}
             </ul>
 
-            <!-- Right Menu -->
-            <ul class="navbar-nav">
+            <!-- User Section - Your Custom Dropdown -->
+            <ul class="navbar-nav ms-auto">
                 {% if user.is_authenticated %}
-                <!-- User Profile Section -->
+                <!-- User Profile Dropdown - Using Your First Code -->
                 <li class="nav-item dropdown">
                     <a 
                        href="#" 
                        data-bs-toggle="dropdown" 
                        aria-expanded="false"
-                       style="display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; color: white;">
+                       class="nav-link dropdown-toggle d-flex align-items-center"
+                       style="display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; color: white !important;">
                        
                         <!-- Avatar Container -->
-                        <div class="user-avatar-container">
+                        <div class="user-avatar-container me-2">
                             {% if user.userprofile.get_profile_picture %}
-                                <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.3);">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.5);">
                                     <img src="{{ user.userprofile.get_profile_picture }}" 
                                          alt="{{ user.username }}"
                                          style="width: 100%; height: 100%; object-fit: cover; display: block;">
                                 </div>
                             {% else %}
-                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.3); font-size: 16px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.5); font-size: 16px;">
                                     {{ user.username|first|upper }}
                                 </div>
                             {% endif %}
                         </div>
                         
                         <!-- Username -->
-                        <span class="username-text">{{ user.username }}</span>
+                        <span class="username-text d-none d-md-block">{{ user.username }}</span>
                     </a>
 
                     <!-- Dropdown Menu -->
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 280px;">
                         <!-- Header with user info -->
                         <li class="dropdown-header">
                             <div class="d-flex align-items-center">
@@ -126,7 +156,7 @@
                                 </div>
                                 <div>
                                     <div class="fw-bold text-dark">{{ user.username }}</div>
-                                    <small class="text-muted">{{ user.email }}</small>
+                                    <small class="text-muted">{{ user.email|truncatechars:20 }}</small>
                                 </div>
                             </div>
                         </li>
@@ -155,8 +185,21 @@
                             </a>
                         </li>
 
+                        <!-- My Reports -->
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'posts:my_reports' %}">
+                                <i class="fas fa-flag me-3 text-warning"></i>
+                                <span>My Reports</span>
+                            </a>
+                        </li>
+
                         <!-- Creator Features Section -->
                         <li><hr class="dropdown-divider my-2"></li>
+                        
+                        <!-- Creator Features Header -->
+                        <li class="dropdown-header">
+                            <small>CREATOR FEATURES</small>
+                        </li>
                         
                         <!-- Get follower count using the correct related_name from Follow model -->
                         {% with follower_count=user.user_followers.count %}
@@ -174,7 +217,7 @@
                                 </a>
                             {% else %}
                                 <!-- User has no followers - Show modal trigger -->
-                                <button type="button" class="dropdown-item d-flex align-items-center py-2 creator-locked-btn" 
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 creator-locked-btn w-100 text-start" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#creatorAdvertModal">
                                     <i class="fas fa-tachometer-alt me-3 text-muted"></i>
@@ -196,7 +239,7 @@
                                 </a>
                             {% else %}
                                 <!-- User has no followers - Show modal trigger -->
-                                <button type="button" class="dropdown-item d-flex align-items-center py-2 creator-locked-btn" 
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 creator-locked-btn w-100 text-start" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#creatorAdvertModal">
                                     <i class="fas fa-chart-line me-3 text-muted"></i>
@@ -216,7 +259,7 @@
                         <li>
                             <form method="post" action="{% url 'base:logout' %}" class="mb-0">
                                 {% csrf_token %}
-                                <button class="dropdown-item d-flex align-items-center py-2 text-danger" type="submit">
+                                <button class="dropdown-item d-flex align-items-center py-2 text-danger w-100 text-start" type="submit">
                                     <i class="fas fa-sign-out-alt me-3"></i>
                                     <span>Logout</span>
                                 </button>
@@ -224,18 +267,20 @@
                         </li>
                     </ul>
                 </li>
-
+                
                 {% else %}
-                <!-- Login/Signup for non-authenticated users -->
+                <!-- Auth Buttons -->
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'base:login' %}">
-                        <i class="fas fa-sign-in-alt me-1"></i> Login
+                    <a class="nav-link auth-link login-link" href="{% url 'base:login' %}">
+                        <i class="fas fa-sign-in-alt me-1"></i>
+                        <span>Login</span>
                     </a>
                 </li>
-
+                
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'base:signup' %}">
-                        <i class="fas fa-user-plus me-1"></i> Sign Up
+                    <a class="nav-link auth-link signup-link" href="{% url 'base:signup' %}">
+                        <i class="fas fa-user-plus me-1"></i>
+                        <span>Sign Up</span>
                     </a>
                 </li>
                 {% endif %}
@@ -244,69 +289,86 @@
     </div>
 </nav>
 
-<!-- Creator requirement modal - EXACTLY like home.html -->
+<!-- Creator Requirement Modal -->
 <div class="modal fade" id="creatorAdvertModal" tabindex="-1" aria-labelledby="creatorAdvertModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="creatorAdvertModalLabel">
-                    <i class="fas fa-lock me-2"></i>🔒 Creator Access Required
+                <h5 class="modal-title d-flex align-items-center">
+                    <i class="fas fa-crown me-2 text-warning"></i>
+                    Unlock Creator Features
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>You need <strong class="text-warning">at least 1 follower</strong> to access Creator features.</p>
+                <div class="text-center mb-4">
+                    <div class="lock-icon mb-3">
+                        <i class="fas fa-lock fa-3x text-muted"></i>
+                    </div>
+                    <h4 class="fw-bold">Creator Access Required</h4>
+                    <p class="text-muted">Get at least 1 follower to unlock premium creator tools</p>
+                </div>
                 
-                <div class="alert alert-warning mt-3 mb-4">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-users me-3 fs-4"></i>
-                        <div>
-                            <strong>Current followers:</strong>
-                            <div class="follower-count-display fs-3 fw-bold text-center mt-2">
-                                {% with follower_count=user.user_followers.count %}
-                                {{ follower_count|default:"0" }}
-                                {% endwith %}
+                <div class="stats-card mb-4">
+                    <div class="stats-content">
+                        <div class="stats-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stats-info">
+                            <div class="stats-label">Current Followers</div>
+                            <div class="stats-value">
+                                {{ user.user_followers.count|default:"0" }}
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <p class="fw-bold mb-2">🎯 <strong>How to get followers:</strong></p>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex align-items-center">
-                        <i class="fas fa-pen text-success me-3"></i>
-                        <span>Create interesting and engaging posts</span>
-                    </li>
-                    <li class="list-group-item d-flex align-items-center">
-                        <i class="fas fa-user-plus text-primary me-3"></i>
-                        <span>Follow other users in your niche</span>
-                    </li>
-                    <li class="list-group-item d-flex align-items-center">
-                        <i class="fas fa-star text-warning me-3"></i>
-                        <span>Complete your profile with skills and bio</span>
-                    </li>
-                    <li class="list-group-item d-flex align-items-center">
-                        <i class="fas fa-comments text-info me-3"></i>
-                        <span>Engage with the community (like, comment, share)</span>
-                    </li>
-                </ul>
+                <div class="how-to-card">
+                    <h6 class="mb-3 fw-bold">🎯 How to Get Followers:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Create engaging content
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Connect with your community
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Share your expertise
+                        </li>
+                        <li>
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Be active and consistent
+                        </li>
+                    </ul>
+                </div>
                 
-                <div class="mt-4 p-3 bg-light rounded">
-                    <small class="text-muted">
-                        <i class="fas fa-lightbulb me-1"></i>
-                        <strong>Tip:</strong> Creator features include advanced analytics, monetization tools, and enhanced profile customization.
-                    </small>
+                <div class="creator-benefits mt-4 p-3 rounded">
+                    <h6 class="fw-bold mb-2">✨ Creator Benefits:</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-1">
+                            <i class="fas fa-chart-line text-info me-2"></i>
+                            Advanced Analytics
+                        </li>
+                        <li class="mb-1">
+                            <i class="fas fa-bolt text-warning me-2"></i>
+                            Premium Tools
+                        </li>
+                        <li>
+                            <i class="fas fa-gem text-primary me-2"></i>
+                            Exclusive Features
+                        </li>
+                    </ul>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i> Close
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Close
                 </button>
                 <a href="{% url 'posts:post_create' %}" class="btn btn-primary">
-                    <i class="fas fa-plus-circle me-1"></i> Create Post
-                </a>
-                <a href="/posts/profile/{{ user.username }}/" class="btn btn-success">
-                    <i class="fas fa-user-edit me-1"></i> Edit Profile
+                    <i class="fas fa-plus me-1"></i> Create Post
                 </a>
             </div>
         </div>
@@ -315,363 +377,496 @@
 
 <style>
 /* ========== NAVBAR STYLES ========== */
-.navbar {
-    z-index: 1030;
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
-}
-
-.navbar-nav .nav-item .nav-link {
-    padding-left: 0.6rem;
-    padding-right: 0.6rem;
-    font-size: 16px;
+#mainNavbar {
+    background: linear-gradient(135deg, #1a2a6c 0%, #2d3748 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 0;
     transition: all 0.3s ease;
-    border-radius: 6px;
+    min-height: 70px;
 }
 
-.navbar-nav .nav-item .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
+#mainNavbar.scrolled {
+    background: rgba(26, 42, 108, 0.95);
+    backdrop-filter: blur(20px);
 }
 
-/* Quick Profile Link Styles */
-.quick-profile-link {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    margin: 0 8px;
-    padding: 6px 12px !important;
-    border-radius: 20px !important;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    transition: all 0.3s ease !important;
+/* Logo Styles */
+.navbar-brand-container {
+    gap: 1rem;
 }
 
-.quick-profile-link:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.logo-icon {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #FF6B6B, #FFA726);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: logoPulse 2s ease-in-out infinite;
 }
 
-/* User Avatar Styles */
-.user-avatar-container {
-    display: flex;
-    align-items: center;
-}
-
-.username-text {
-    font-weight: 500;
-    color: white;
-}
-
-/* Dropdown Styles */
-.dropdown-menu {
-    min-width: 280px;
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    animation: dropdownFadeIn 0.2s ease-out;
-}
-
-.dropdown-header {
-    padding: 1rem 1rem 0.5rem 1rem;
-    background: transparent;
-}
-
-.dropdown-item {
-    border-radius: 8px;
-    margin: 0.15rem 0.5rem;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: calc(100% - 1rem);
-    text-align: left;
-}
-
-.dropdown-item:hover {
-    background-color: #f8f9fa;
-    transform: translateX(5px);
-}
-
-/* Creator Features Styling */
-.dropdown-item .text-warning {
-    color: #ffc107 !important;
-}
-
-.dropdown-item .text-info {
-    color: #17a2b8 !important;
-}
-
-.dropdown-item .text-muted {
-    color: #6c757d !important;
-}
-
-.dropdown-item:hover .text-muted {
-    color: #495057 !important;
-}
-
-.badge {
-    font-weight: 500;
-    padding: 0.25em 0.5em;
-}
-
-/* Modal Styling */
-#creatorAdvertModal .modal-content {
-    border-radius: 12px;
-    border: none;
-}
-
-#creatorAdvertModal .modal-header {
-    background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
-    color: white;
-    border-radius: 12px 12px 0 0;
-}
-
-.follower-count-display {
-    color: #e74c3c;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-.list-group-item {
-    border: none;
-    padding: 0.75rem 0;
-    background: transparent;
-}
-
-.list-group-item i {
-    width: 24px;
-    text-align: center;
-}
-
-/* Locked item styling */
-.creator-locked-btn {
-    opacity: 0.7;
-    position: relative;
-}
-
-.creator-locked-btn:hover {
-    opacity: 1;
-    background-color: #f8f9fa !important;
-}
-
-/* Search bar styles */
-.navbar .input-group {
-    min-width: 250px;
-}
-
-.navbar .form-control {
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    border-radius: 8px;
-}
-
-.navbar .form-control::placeholder {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.navbar .btn-outline-light {
-    border-color: rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
-}
-
-/* Drapeau Palestine */
-.palestine-flag {
-    cursor: pointer;
-    position: relative;
-    display: inline-block;
-    animation: wave 3s ease-in-out infinite;
-    will-change: transform;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
-}
-
-.palestine-flag::after {
-    content: "Viva Palestina";
-    position: absolute;
-    bottom: -35px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    z-index: 9999;
-}
-
-.palestine-flag:hover::after {
-    opacity: 1;
-}
-
-/* Animations */
-@keyframes dropdownFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-@keyframes wave {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    25% { transform: translateY(-2px) rotate(1deg); }
-    75% { transform: translateY(2px) rotate(-1deg); }
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-    20%, 40%, 60%, 80% { transform: translateX(2px); }
-}
-
-@keyframes pulse {
+@keyframes logoPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
 }
 
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.logo-primary {
+    color: white;
+}
+
+.logo-secondary {
+    color: #FF6B6B;
+}
+
+/* Palestine Flag */
+.palestine-flag {
+    position: relative;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.palestine-flag:hover {
+    transform: translateY(-2px) scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+/* Navigation Items */
+.navbar-nav .nav-item {
+    margin: 0 0.5rem;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #FF6B6B, #FFA726);
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.nav-link:hover::before {
+    width: 100%;
+}
+
+.nav-icon {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    position: relative;
+}
+
+.nav-text {
+    font-weight: 500;
+}
+
+/* Create Post Button */
+.create-post-nav .nav-link {
+    background: linear-gradient(135deg, #FF6B6B, #FFA726);
+    color: white !important;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.create-post-nav .nav-link:hover {
+    background: linear-gradient(135deg, #FFA726, #FF6B6B);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+/* Search Bar */
+.search-container {
+    margin: 0 1rem;
+}
+
+.search-form {
+    position: relative;
+    width: 300px;
+}
+
+.search-input {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border-radius: 25px !important;
+    padding-left: 3rem !important;
+    height: 42px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 107, 107, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1) !important;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.search-icon-btn {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    z-index: 10;
+    cursor: pointer;
+}
+
+/* Messages & Notifications */
+.messages-link, .notifications-link {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: linear-gradient(135deg, #FF6B6B, #FFA726);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    animation: badgePulse 1.5s infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Custom Dropdown (Your First Code) */
+.user-dropdown .nav-link {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.5rem !important;
+    border-radius: 50px;
+}
+
+/* Your Custom Dropdown Menu */
+.dropdown-menu {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 0.5rem;
+    min-width: 280px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: dropdownSlide 0.3s ease;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-header {
+    color: #6b7280;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.75rem 1rem;
+}
+
+.dropdown-item {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0.15rem 0;
+    color: #374151;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    transform: translateX(5px);
+}
+
+.dropdown-item:hover i {
+    color: white !important;
+}
+
+/* Creator Locked Items */
+.creator-locked-btn {
+    background: none;
+    border: none;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.creator-locked-btn:hover {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+    transform: none !important;
+}
+
+.creator-locked-btn:hover i {
+    color: #6b7280 !important;
+}
+
+/* Auth Links */
+.auth-link {
+    font-weight: 600;
+    padding: 0.5rem 1.5rem !important;
+}
+
+.login-link {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.signup-link {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white !important;
+}
+
+/* Modal Styles */
+.modal-content {
+    background: linear-gradient(135deg, #1a2a6c, #2d3748);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stats-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.stats-icon {
+    font-size: 2rem;
+    color: #FFA726;
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.stats-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+}
+
+.how-to-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.creator-benefits {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 167, 38, 0.1));
+    border: 1px solid rgba(255, 167, 38, 0.2);
+}
+
 /* Responsive */
 @media (max-width: 992px) {
-    .navbar .input-group {
-        min-width: 200px;
-        margin: 10px 0;
+    .search-form {
+        width: 250px;
     }
     
     .username-text {
         display: none;
     }
-    
-    .navbar-nav {
-        gap: 0.5rem;
-    }
-    
-    .quick-profile-link {
-        margin: 5px 0;
-        text-align: center;
-    }
-    
-    .dropdown-menu {
-        min-width: 250px;
-    }
 }
 
 @media (max-width: 768px) {
-    .navbar .input-group {
-        min-width: 100%;
-        margin: 10px 0;
+    #mainNavbar {
+        padding: 0.5rem;
     }
     
-    .palestine-flag::after {
+    .navbar-brand-container {
+        gap: 0.5rem;
+    }
+    
+    .logo-text {
+        font-size: 1.3rem;
+    }
+    
+    .search-form {
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+    
+    .nav-text {
         display: none;
     }
     
-    .quick-profile-link {
-        width: 100%;
-        margin: 8px 0;
+    .nav-link {
+        padding: 0.5rem !important;
+        justify-content: center;
     }
     
-    .modal-dialog {
-        margin: 1rem;
+    .dropdown-menu {
+        position: fixed;
+        top: 70px;
+        right: 1rem;
+        left: 1rem;
+        width: calc(100% - 2rem);
     }
 }
 
 @media (max-width: 576px) {
-    .user-avatar-container > div {
-        width: 32px !important;
-        height: 32px !important;
-        font-size: 14px !important;
+    .logo-text {
+        font-size: 1.2rem;
     }
     
-    .quick-profile-link {
-        font-size: 14px;
-        padding: 5px 10px !important;
+    .palestine-flag {
+        display: none;
     }
     
-    .dropdown-item {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9rem;
+    .nav-item {
+        margin: 0 0.25rem;
     }
 }
 </style>
 
 <script>
-// Navbar specific JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // Palestine flag interactions
+    // Navbar scroll effect
+    const navbar = document.getElementById('mainNavbar');
+    
+    if (navbar) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    }
+    
+    // Palestine flag particles
     const flag = document.querySelector('.palestine-flag');
     if (flag) {
         flag.addEventListener('click', function(e) {
             e.preventDefault();
-            createFlagParticles();
+            createFlagParticles(this);
         });
     }
-
-    // Flag particles animation
-    function createFlagParticles() {
-        const flagRect = flag.getBoundingClientRect();
+    
+    function createFlagParticles(element) {
+        const rect = element.getBoundingClientRect();
         const colors = ['#000000', '#FFFFFF', '#009736', '#E4312B'];
         
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 8; i++) {
             const particle = document.createElement('div');
             particle.style.cssText = `
                 position: fixed;
-                width: 4px;
-                height: 4px;
+                width: 6px;
+                height: 6px;
                 background-color: ${colors[Math.floor(Math.random() * colors.length)]};
                 border-radius: 50%;
                 pointer-events: none;
                 z-index: 9999;
-                left: ${flagRect.left + flagRect.width / 2}px;
-                top: ${flagRect.top + flagRect.height / 2}px;
+                left: ${rect.left + rect.width / 2}px;
+                top: ${rect.top + rect.height / 2}px;
+                animation: particleFloat 1s ease-out forwards;
             `;
             
             document.body.appendChild(particle);
-            
-            const angle = Math.random() * Math.PI * 2;
-            const velocity = 2 + Math.random() * 3;
-            const vx = Math.cos(angle) * velocity;
-            const vy = Math.sin(angle) * velocity;
-            
-            let opacity = 1;
-            const animateParticle = () => {
-                opacity -= 0.02;
-                particle.style.opacity = opacity;
-                particle.style.transform = `translate(${vx * (1 - opacity) * 50}px, ${vy * (1 - opacity) * 50}px)`;
-                
-                if (opacity > 0) {
-                    requestAnimationFrame(animateParticle);
-                } else {
-                    particle.remove();
+            setTimeout(() => particle.remove(), 1000);
+        }
+        
+        // Add CSS for animation if not already present
+        if (!document.querySelector('#particle-animation')) {
+            const style = document.createElement('style');
+            style.id = 'particle-animation';
+            style.textContent = `
+                @keyframes particleFloat {
+                    0% {
+                        opacity: 1;
+                        transform: translate(0, 0) scale(1);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(0);
+                    }
                 }
-            };
-            
-            animateParticle();
+            `;
+            document.head.appendChild(style);
         }
     }
     
-    // Quick profile link animation
-    const quickProfileLink = document.querySelector('.quick-profile-link');
-    if (quickProfileLink) {
-        quickProfileLink.addEventListener('click', function(e) {
-            // Add click feedback
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
-        });
-    }
+    // Active link highlighting
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link[href]');
     
-    // Handle locked creator items
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+            link.style.background = 'rgba(255, 255, 255, 0.2)';
+        }
+    });
+    
+    // Creator locked items animation
     const creatorLockedBtns = document.querySelectorAll('.creator-locked-btn');
     creatorLockedBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Add shake animation
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
             this.style.animation = 'shake 0.5s ease';
             setTimeout(() => {
                 this.style.animation = '';
@@ -679,27 +874,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Modal animation
-    const creatorModal = document.getElementById('creatorAdvertModal');
-    if (creatorModal) {
-        creatorModal.addEventListener('shown.bs.modal', function() {
-            // Animate the follower count
-            const followerCountEl = this.querySelector('.follower-count-display');
-            if (followerCountEl) {
-                followerCountEl.style.animation = 'pulse 0.5s ease';
-                setTimeout(() => {
-                    followerCountEl.style.animation = '';
-                }, 500);
-                
-                // Color code based on count
-                const count = parseInt(followerCountEl.textContent);
-                if (count >= 1) {
-                    followerCountEl.style.color = '#28a745'; // Green
-                } else {
-                    followerCountEl.style.color = '#e74c3c'; // Red
-                }
+    // Add shake animation if not present
+    if (!document.querySelector('#shake-animation')) {
+        const style = document.createElement('style');
+        style.id = 'shake-animation';
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+                20%, 40%, 60%, 80% { transform: translateX(2px); }
             }
-        });
+        `;
+        document.head.appendChild(style);
     }
 });
 </script>
