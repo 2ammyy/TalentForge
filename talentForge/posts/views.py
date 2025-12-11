@@ -13,7 +13,61 @@ from django.core.paginator import Paginator
 from .models import Post, Comment, Reaction, JobPost, Share, Report, UserProfile, Message, Notification, Follow, Block
 from .forms import PostForm, CommentForm, ShareForm, ReportForm, UserProfileForm, MessageForm, SearchForm
 
+from utils.moderation import is_toxic_content
+
+
+# ADD THIS NEW FUNCTION TO views.py (anywhere in the views file)
+@csrf_exempt
+@require_POST
+def check_toxicity_api(request):
+    """
+    API endpoint for real-time content checking
+    Called by JavaScript as user types
+    """
+    content = request.POST.get('content', '').strip()
+    
+    if not content:
+        return JsonResponse({
+            'error': 'No content provided',
+            'is_toxic': False,
+            'score': 0.0
+        })
+    
+    # Use our utility function
+    is_toxic, score = is_toxic_content(content)
+    
+    return JsonResponse({
+        'is_toxic': is_toxic,
+        'score': float(score),
+        'content_length': len(content),
+        'message': 'Content checked successfully'
+    })
+
+
 # ============ POSTS ============
+
+# @login_required
+# def post_create(request):
+#     if request.method == 'POST':
+#         form = PostForm(request.POST, request.FILES)
+        
+#         if form.is_valid():
+#             post = form.save(commit=False)
+#             post.author = request.user
+#             post.save()
+            
+#             messages.success(request, 'Your post has been created successfully!')
+#             return redirect('posts:post_detail', pk=post.pk)
+#         else:
+#             messages.error(request, 'Please correct the errors below.')
+#     else:
+#         post_type = request.GET.get('type', 'text')
+#         form = PostForm(initial={'type': post_type})
+
+#     return render(request, 'posts/post_create.html', {
+#         'form': form,
+#         'post_type': post_type if 'post_type' in locals() else 'text'
+#     })
 
 @login_required
 def post_create(request):
@@ -21,6 +75,25 @@ def post_create(request):
         form = PostForm(request.POST, request.FILES)
         
         if form.is_valid():
+            # --- ADD TOXICITY CHECK HERE ---
+            content = form.cleaned_data.get('content', '')
+            is_toxic, score = is_toxic_content(content)
+            
+            if is_toxic:
+                messages.error(
+                    request,
+                    f"⚠️ Your post contains inappropriate language "
+                    f"(detected with {score:.0%} confidence). "
+                    "Please modify your text before posting."
+                )
+                # Return form with entered data
+                return render(request, 'posts/post_create.html', {
+                    'form': form,
+                    'post_type': request.GET.get('type', 'text')
+                })
+            # --- END TOXICITY CHECK ---
+            
+            # If not toxic, proceed with saving
             post = form.save(commit=False)
             post.author = request.user
             post.save()
@@ -37,7 +110,6 @@ def post_create(request):
         'form': form,
         'post_type': post_type if 'post_type' in locals() else 'text'
     })
-
 
 def post_list(request):
     # Get all posts with related data
@@ -63,6 +135,46 @@ def post_list(request):
     })
 
 
+# def post_detail(request, pk):
+#     """View for post details"""
+#     post = get_object_or_404(Post, pk=pk)
+#     comments = post.comments.all().order_by('created_at')
+    
+#     # Check if user has already reacted to this post
+#     user_reaction = None
+#     if request.user.is_authenticated:
+#         user_reaction = Reaction.objects.filter(post=post, user=request.user).first()
+
+#     if request.method == 'POST' and request.user.is_authenticated:
+#         comment_form = CommentForm(request.POST)
+#         if comment_form.is_valid():
+#             comment = comment_form.save(commit=False)
+#             comment.post = post
+#             comment.author = request.user
+#             comment.save()
+            
+#             # Create notification for post author
+#             if post.author != request.user:
+#                 Notification.objects.create(
+#                     user=post.author,
+#                     from_user=request.user,
+#                     notification_type='comment',
+#                     post=post
+#                 )
+            
+#             messages.success(request, 'Comment added successfully!')
+#             return redirect('posts:post_detail', pk=post.pk)
+#     else:
+#         comment_form = CommentForm()
+
+#     return render(request, 'posts/post_detail.html', {
+#         'post': post,
+#         'comments': comments,
+#         'form': comment_form,
+#         'user_reaction': user_reaction
+#     })
+
+# In the same views.py - MODIFY THE post_detail FUNCTION
 def post_detail(request, pk):
     """View for post details"""
     post = get_object_or_404(Post, pk=pk)
@@ -76,6 +188,25 @@ def post_detail(request, pk):
     if request.method == 'POST' and request.user.is_authenticated:
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
+            # --- ADD TOXICITY CHECK FOR COMMENTS ---
+            comment_content = comment_form.cleaned_data.get('content', '')
+            is_toxic, score = is_toxic_content(comment_content)
+            
+            if is_toxic:
+                messages.error(
+                    request,
+                    f"⚠️ Your comment contains inappropriate language "
+                    f"(detected with {score:.0%} confidence). "
+                    "Please modify your text."
+                )
+                return render(request, 'posts/post_detail.html', {
+                    'post': post,
+                    'comments': comments,
+                    'form': comment_form,
+                    'user_reaction': user_reaction
+                })
+            # --- END TOXICITY CHECK ---
+            
             comment = comment_form.save(commit=False)
             comment.post = post
             comment.author = request.user
@@ -101,7 +232,6 @@ def post_detail(request, pk):
         'form': comment_form,
         'user_reaction': user_reaction
     })
-
 
 @login_required
 def feed(request):
@@ -309,6 +439,34 @@ def test_email_view(request):
         return HttpResponse(f"❌ Failed to send test email: {str(e)}")
 
 
+# @login_required
+# def post_edit(request, pk):
+#     """View for editing an existing post"""
+#     post = get_object_or_404(Post, pk=pk)
+    
+#     # Check if user is authorized to edit
+#     if post.author != request.user and not request.user.is_staff:
+#         messages.error(request, "You don't have permission to edit this post.")
+#         return redirect('posts:post_detail', pk=post.pk)
+    
+#     if request.method == 'POST':
+#         form = PostForm(request.POST, request.FILES, instance=post)
+#         if form.is_valid():
+#             updated_post = form.save()
+#             messages.success(request, 'Post updated successfully!')
+#             return redirect('posts:post_detail', pk=updated_post.pk)
+#         else:
+#             messages.error(request, 'Please correct the errors below.')
+#     else:
+#         form = PostForm(instance=post)
+    
+#     return render(request, 'posts/post_edit.html', {
+#         'form': form,
+#         'post': post
+#     })
+
+
+# MODIFY THE post_edit FUNCTION
 @login_required
 def post_edit(request, pk):
     """View for editing an existing post"""
@@ -322,6 +480,23 @@ def post_edit(request, pk):
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, instance=post)
         if form.is_valid():
+            # --- ADD TOXICITY CHECK FOR EDITS ---
+            content = form.cleaned_data.get('content', '')
+            is_toxic, score = is_toxic_content(content)
+            
+            if is_toxic:
+                messages.error(
+                    request,
+                    f"⚠️ Your post contains inappropriate language "
+                    f"(detected with {score:.0%} confidence). "
+                    "Please modify your text."
+                )
+                return render(request, 'posts/post_edit.html', {
+                    'form': form,
+                    'post': post
+                })
+            # --- END TOXICITY CHECK ---
+            
             updated_post = form.save()
             messages.success(request, 'Post updated successfully!')
             return redirect('posts:post_detail', pk=updated_post.pk)
@@ -334,7 +509,6 @@ def post_edit(request, pk):
         'form': form,
         'post': post
     })
-
 
 @login_required
 def post_delete(request, pk):
@@ -685,6 +859,33 @@ def conversation_view(request, username):
 
 # ============ NOTIFICATIONS ============
 
+# @login_required
+# def notifications_view(request):
+#     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
+#     unread_count = notifications.filter(is_read=False).count()
+    
+#     # Mark as read when user views notifications
+#     if request.method == 'GET':
+#         notifications.update(is_read=True)
+    
+#     return render(request, 'posts/notifications.html', {
+#         'notifications': notifications,
+#         'unread_count': unread_count
+#     })
+
+
+# @login_required
+# def get_unread_counts(request):
+#     unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
+#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    
+#     return JsonResponse({
+#         'unread_messages': unread_messages,
+#         'unread_notifications': unread_notifications
+#     })
+
+# ============ NOTIFICATIONS ============
+
 @login_required
 def notifications_view(request):
     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
@@ -700,14 +901,32 @@ def notifications_view(request):
     })
 
 
+# @login_required
+# def get_unread_counts(request):
+#     unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
+#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    
+#     return JsonResponse({
+#         'unread_messages': unread_messages,
+#         'unread_notifications': unread_notifications
+#     })
 @login_required
 def get_unread_counts(request):
-    unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
-    unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    """API endpoint to get unread counts for navbar updates"""
+    unread_notifications = Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    ).count()
+    
+    # You can keep messages count too if you want
+    unread_messages = Message.objects.filter(
+        receiver=request.user, 
+        is_read=False
+    ).count()
     
     return JsonResponse({
-        'unread_messages': unread_messages,
-        'unread_notifications': unread_notifications
+        'unread_notifications': unread_notifications,
+        'unread_messages': unread_messages
     })
 
 
