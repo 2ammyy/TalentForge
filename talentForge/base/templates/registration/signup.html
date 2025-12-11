@@ -1,111 +1,1216 @@
+<!-- talentForge\base\templates\registration\signup.html -->
 {% extends 'base.html' %}
 {% load static %} 
 {% block title %}Sign Up - TalentForge{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">Create Your TalentForge Account</h4>
-            </div>
-            <div class="card-body">
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="id_first_name" class="form-label">First Name:</label>
-                            {{ form.first_name }}
-                            {% if form.first_name.errors %}
-                                <div class="text-danger small">{{ form.first_name.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="id_last_name" class="form-label">Last Name:</label>
-                            {{ form.last_name }}
-                            {% if form.last_name.errors %}
-                                <div class="text-danger small">{{ form.last_name.errors }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_username" class="form-label">Username:</label>
-                        {{ form.username }}
-                        <div class="form-text">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</div>
-                        {% if form.username.errors %}
-                            <div class="text-danger small">{{ form.username.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="id_email" class="form-label">Email:</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
-                            <div class="text-danger small">{{ form.email.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3 position-relative">
-                        <label for="id_password1" class="form-label">Password:</label>
-                        {{ form.password1 }}
-                        <button type="button" class="btn btn-sm position-absolute top-50 end-0 me-2" 
-                                onclick="togglePassword('id_password1', this)" style="background: none; border: none;">
-                            👁️
-                        </button>
-                        <div class="form-text">
-                            Your password must contain at least 8 characters and can't be too common.
-                        </div>
-                        {% if form.password1.errors %}
-                            <div class="text-danger small">{{ form.password1.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3 position-relative">
-                        <label for="id_password2" class="form-label">Confirm Password:</label>
-                        {{ form.password2 }}
-                        <button type="button" class="btn btn-sm position-absolute top-50 end-0 me-2" 
-                                onclick="togglePassword('id_password2', this)" style="background: none; border: none;">
-                            👁️
-                        </button>
-                        {% if form.password2.errors %}
-                            <div class="text-danger small">{{ form.password2.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <button type="submit" class="btn btn-success w-100 mb-3">Sign Up</button>
-                </form>
+<style>
+/* ========== ARTISTIC SIGNUP STYLES ========== */
+.signup-container {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
 
-                <div class="text-center mb-3">
-                    <div class="text-muted my-3">─ OR ─</div>
+.signup-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(43, 108, 176, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 90% 30%, rgba(29, 209, 161, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(255, 107, 107, 0.15) 0%, transparent 50%);
+    z-index: -1;
+}
+
+.artistic-signup-card {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(25px);
+    border-radius: 35px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 
+        0 30px 60px -12px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    position: relative;
+    max-width: 500px;
+    width: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: cardFloatSignup 1s ease-out;
+}
+
+@keyframes cardFloatSignup {
+    0% {
+        opacity: 0;
+        transform: translateY(50px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.artistic-signup-card:hover {
+    transform: translateY(-8px) rotateX(3deg);
+}
+
+.artistic-signup-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: linear-gradient(90deg, 
+        #2bc6b0 0%, 
+        #2b6cb0 33%, 
+        #ff6b6b 66%, 
+        #f7b731 100%);
+    z-index: 2;
+}
+
+.signup-header {
+    background: linear-gradient(135deg, #2bc6b0 0%, #2b6cb0 100%);
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.signup-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+        radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
+    background-size: 80px 80px;
+    animation: patternMove 20s linear infinite;
+    z-index: 1;
+}
+
+@keyframes patternMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 80px 80px; }
+}
+
+.artistic-signup-logo {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff 0%, #ffd93d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    z-index: 2;
+    animation: logoSparkle 3s ease-in-out infinite;
+}
+
+@keyframes logoSparkle {
+    0%, 100% { 
+        filter: drop-shadow(0 0 10px rgba(43, 198, 176, 0.3));
+        transform: scale(1);
+    }
+    50% { 
+        filter: drop-shadow(0 0 20px rgba(43, 108, 176, 0.5));
+        transform: scale(1.05);
+    }
+}
+
+.signup-header h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: white;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
+}
+
+.signup-subtitle {
+    color: rgba(255, 255, 255, 0.95);
+    margin-top: 0.5rem;
+    font-size: 1.1rem;
+    position: relative;
+    z-index: 2;
+}
+
+.signup-body {
+    padding: 2.5rem;
+    position: relative;
+}
+
+.form-row-artistic {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 576px) {
+    .form-row-artistic {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+.form-group-artistic-signup {
+    flex: 1;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.form-group-artistic-signup label {
+    display: block;
+    margin-bottom: 0.6rem;
+    color: #2c3e50;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transform-origin: left;
+    transition: all 0.3s ease;
+}
+
+.input-artistic-signup {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    padding-right: 50px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(43, 198, 176, 0.2);
+    border-radius: 15px;
+    font-size: 1rem;
+    color: #2c3e50;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    outline: none;
+}
+
+.input-artistic-signup:focus {
+    border-color: #2bc6b0;
+    box-shadow: 0 0 0 4px rgba(43, 198, 176, 0.1), 0 10px 30px rgba(43, 198, 176, 0.2);
+    transform: translateY(-2px);
+}
+
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #2bc6b0;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 5px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.password-toggle:hover {
+    background: rgba(43, 198, 176, 0.1);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.password-toggle .eye-icon,
+.password-toggle .eye-slash-icon {
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.password-toggle .eye-slash-icon {
+    display: none;
+}
+
+.password-toggle.showing .eye-icon {
+    display: none;
+}
+
+.password-toggle.showing .eye-slash-icon {
+    display: inline-block;
+}
+
+.password-strength {
+    margin-top: 0.5rem;
+    height: 4px;
+    background: rgba(43, 198, 176, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff6b6b, #f7b731, #2bc6b0);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.password-hints {
+    margin-top: 0.5rem;
+    padding-left: 1.5rem;
+}
+
+.password-hint {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.password-hint.valid {
+    color: #2bc6b0;
+}
+
+.password-hint.valid::before {
+    content: '✓';
+    color: #2bc6b0;
+    font-weight: bold;
+}
+
+.password-hint.invalid::before {
+    content: '○';
+    color: #ff6b6b;
+}
+
+.btn-artistic-signup {
+    background: linear-gradient(135deg, #2bc6b0 0%, #2b6cb0 100%);
+    color: white;
+    border: none;
+    padding: 1.2rem 2rem;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(43, 198, 176, 0.3);
+    margin-top: 1rem;
+}
+
+.btn-artistic-signup::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.8s ease;
+}
+
+.btn-artistic-signup:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(43, 198, 176, 0.4);
+    background: linear-gradient(135deg, #2b6cb0 0%, #2bc6b0 100%);
+}
+
+.btn-artistic-signup:hover::before {
+    left: 100%;
+}
+
+.btn-google-signup {
+    background: white;
+    border: 2px solid rgba(43, 198, 176, 0.2);
+    color: #2c3e50;
+    padding: 1rem 2rem;
+    border-radius: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    margin-top: 1rem;
+}
+
+.btn-google-signup:hover {
+    border-color: #2bc6b0;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.divider-signup {
+    display: flex;
+    align-items: center;
+    margin: 2rem 0;
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.divider-signup::before,
+.divider-signup::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #cbd5e0, transparent);
+}
+
+.divider-signup span {
+    padding: 0 1.5rem;
+    background: white;
+    font-weight: 500;
+}
+
+.signup-links {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(43, 198, 176, 0.1);
+}
+
+.signup-link {
+    color: #2bc6b0;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.signup-link:hover {
+    color: white;
+    background: linear-gradient(135deg, #2bc6b0 0%, #2b6cb0 100%);
+    padding: 0.5rem 1.5rem;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(43, 198, 176, 0.3);
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 2rem;
+    right: 2rem;
+    height: 2px;
+    background: rgba(43, 198, 176, 0.2);
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.step {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid rgba(43, 198, 176, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #2bc6b0;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    background: #2bc6b0;
+    border-color: #2bc6b0;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 5px 15px rgba(43, 198, 176, 0.4);
+}
+
+.step.completed {
+    background: #2bc6b0;
+    border-color: #2bc6b0;
+    color: white;
+}
+
+.step.completed::after {
+    content: '✓';
+    font-size: 1.2rem;
+}
+
+.creative-alert {
+    border-radius: 15px;
+    border: none;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 2px solid #f7b731;
+    color: #92400e;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    animation: slideIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    position: relative;
+}
+
+.creative-alert.success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-color: #2bc6b0;
+    color: #065f46;
+}
+
+.creative-alert.error {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-color: #ff6b6b;
+    color: #991b1b;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.floating-creatives {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.floating-creative {
+    position: absolute;
+    opacity: 0.1;
+    animation: creativeFloat 20s infinite linear;
+}
+
+@keyframes creativeFloat {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    33% {
+        transform: translate(30px, -30px) rotate(120deg);
+    }
+    66% {
+        transform: translate(-20px, 20px) rotate(240deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(360deg);
+    }
+}
+
+@media (max-width: 576px) {
+    .signup-container {
+        padding: 1rem;
+    }
+    
+    .artistic-signup-card {
+        max-width: 100%;
+        border-radius: 25px;
+    }
+    
+    .signup-body {
+        padding: 1.5rem;
+    }
+    
+    .progress-steps::before {
+        left: 1.5rem;
+        right: 1.5rem;
+    }
+}
+</style>
+
+<script>
+// Artistic Signup JavaScript - Fixed Password Toggle
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎨 Artistic Signup Initialized');
+    
+    // Initialize password features with improved toggle
+    initPasswordFeatures();
+    
+    // Initialize form animations
+    initSignupAnimations();
+    
+    // Initialize progress steps
+    initProgressSteps();
+    
+    // Add floating creative elements
+    createFloatingCreatives();
+    
+    // Form validation enhancements
+    enhanceSignupValidation();
+    
+    // Auto-dismiss alerts
+    autoDismissAlerts();
+});
+
+function initPasswordFeatures() {
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+    
+    passwordInputs.forEach((input, index) => {
+        // Remove any existing toggle
+        const existingToggle = input.parentNode.querySelector('.password-toggle');
+        if (existingToggle) {
+            existingToggle.remove();
+        }
+        
+        // Ensure parent has relative positioning
+        input.parentNode.style.position = 'relative';
+        
+        // Create new toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'password-toggle';
+        toggleBtn.setAttribute('aria-label', 'Show password');
+        toggleBtn.innerHTML = `
+            <i class="fas fa-eye eye-icon"></i>
+            <i class="fas fa-eye-slash eye-slash-icon"></i>
+        `;
+        
+        // Style the button
+        Object.assign(toggleBtn.style, {
+            position: 'absolute',
+            right: '15px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'none',
+            border: 'none',
+            color: '#2bc6b0',
+            cursor: 'pointer',
+            fontSize: '1.2rem',
+            padding: '5px',
+            borderRadius: '50%',
+            width: '36px',
+            height: '36px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: '10',
+            transition: 'all 0.3s ease'
+        });
+        
+        // Add hover effects
+        toggleBtn.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('showing')) {
+                this.style.background = 'rgba(43, 198, 176, 0.1)';
+                this.style.transform = 'translateY(-50%) scale(1.1)';
+            }
+        });
+        
+        toggleBtn.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('showing')) {
+                this.style.background = 'none';
+                this.style.transform = 'translateY(-50%) scale(1)';
+            }
+        });
+        
+        // Add click event - FIXED
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const eyeIcon = this.querySelector('.eye-icon');
+            const eyeSlashIcon = this.querySelector('.eye-slash-icon');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                this.classList.add('showing');
+                this.setAttribute('aria-label', 'Hide password');
+                
+                // Animation
+                this.style.transform = 'translateY(-50%) rotate(180deg) scale(1.2)';
+                setTimeout(() => {
+                    this.style.transform = 'translateY(-50%) scale(1.1)';
+                }, 300);
+            } else {
+                input.type = 'password';
+                this.classList.remove('showing');
+                this.setAttribute('aria-label', 'Show password');
+                
+                // Animation
+                this.style.transform = 'translateY(-50%) rotate(0deg) scale(1.2)';
+                setTimeout(() => {
+                    this.style.transform = 'translateY(-50%) scale(1.1)';
+                }, 300);
+            }
+            
+            // Add focus to input for better UX
+            input.focus();
+        });
+        
+        // Add to parent
+        input.parentNode.appendChild(toggleBtn);
+        
+        // For password1, add strength indicator
+        if (input.id === 'id_password1') {
+            setupPasswordStrength(input);
+        }
+    });
+}
+
+function setupPasswordStrength(input) {
+    // Remove existing strength indicators
+    const existingStrength = input.parentNode.querySelector('.password-strength');
+    const existingHints = input.parentNode.querySelector('.password-hints');
+    if (existingStrength) existingStrength.remove();
+    if (existingHints) existingHints.remove();
+    
+    // Create strength container
+    const strengthContainer = document.createElement('div');
+    strengthContainer.className = 'password-strength';
+    strengthContainer.innerHTML = '<div class="password-strength-bar"></div>';
+    
+    // Create hints container
+    const hintsContainer = document.createElement('div');
+    hintsContainer.className = 'password-hints';
+    
+    const hints = [
+        'At least 8 characters',
+        'Contains uppercase letter',
+        'Contains lowercase letter',
+        'Contains number',
+        'Contains special character'
+    ];
+    
+    hints.forEach(hint => {
+        const hintEl = document.createElement('div');
+        hintEl.className = 'password-hint invalid';
+        hintEl.textContent = hint;
+        hintsContainer.appendChild(hintEl);
+    });
+    
+    // Insert after input
+    input.parentNode.insertBefore(strengthContainer, input.nextSibling);
+    input.parentNode.insertBefore(hintsContainer, strengthContainer.nextSibling);
+    
+    // Update on input
+    input.addEventListener('input', function() {
+        updatePasswordStrength(this.value, strengthContainer, hintsContainer);
+    });
+}
+
+function updatePasswordStrength(password, strengthContainer, hintsContainer) {
+    const bar = strengthContainer.querySelector('.password-strength-bar');
+    const hints = hintsContainer.querySelectorAll('.password-hint');
+    
+    // Reset all hints
+    hints.forEach(hint => {
+        hint.className = 'password-hint invalid';
+    });
+    
+    let strength = 0;
+    
+    // Check length
+    if (password.length >= 8) {
+        strength += 20;
+        hints[0].className = 'password-hint valid';
+    }
+    
+    // Check uppercase
+    if (/[A-Z]/.test(password)) {
+        strength += 20;
+        hints[1].className = 'password-hint valid';
+    }
+    
+    // Check lowercase
+    if (/[a-z]/.test(password)) {
+        strength += 20;
+        hints[2].className = 'password-hint valid';
+    }
+    
+    // Check number
+    if (/[0-9]/.test(password)) {
+        strength += 20;
+        hints[3].className = 'password-hint valid';
+    }
+    
+    // Check special character
+    if (/[^A-Za-z0-9]/.test(password)) {
+        strength += 20;
+        hints[4].className = 'password-hint valid';
+    }
+    
+    // Update bar
+    bar.style.width = `${strength}%`;
+    
+    // Update bar color based on strength
+    if (strength < 40) {
+        bar.style.background = 'linear-gradient(90deg, #ff6b6b, #ff6b6b)';
+    } else if (strength < 80) {
+        bar.style.background = 'linear-gradient(90deg, #ff6b6b, #f7b731)';
+    } else {
+        bar.style.background = 'linear-gradient(90deg, #f7b731, #2bc6b0)';
+    }
+}
+
+function initSignupAnimations() {
+    const formGroups = document.querySelectorAll('.form-group-artistic-signup');
+    
+    formGroups.forEach((group, index) => {
+        // Staggered entrance animation
+        group.style.opacity = '0';
+        group.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            group.style.opacity = '1';
+            group.style.transform = 'translateX(0)';
+            group.style.transition = 'all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+        }, index * 100);
+        
+        // Label animation on focus
+        const input = group.querySelector('input');
+        const label = group.querySelector('label');
+        
+        if (input && label) {
+            input.addEventListener('focus', () => {
+                label.style.transform = 'translateX(10px) scale(0.9)';
+                label.style.color = '#2bc6b0';
+            });
+            
+            input.addEventListener('blur', () => {
+                if (!input.value) {
+                    label.style.transform = 'translateX(0) scale(1)';
+                    label.style.color = '#2c3e50';
+                }
+            });
+            
+            // Real-time validation animation
+            input.addEventListener('input', function() {
+                if (this.value) {
+                    group.classList.add('has-value');
+                } else {
+                    group.classList.remove('has-value');
+                }
+            });
+        }
+    });
+}
+
+function initProgressSteps() {
+    const steps = document.querySelectorAll('.step');
+    let currentStep = 0;
+    
+    // Update steps based on form interaction
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach((input, index) => {
+        input.addEventListener('focus', function() {
+            const stepIndex = Math.min(Math.floor(index / 2), steps.length - 1);
+            updateSteps(stepIndex);
+        });
+        
+        input.addEventListener('blur', function() {
+            if (this.value) {
+                const stepIndex = Math.min(Math.floor(index / 2) + 1, steps.length - 1);
+                updateSteps(stepIndex);
+            }
+        });
+    });
+    
+    function updateSteps(stepIndex) {
+        steps.forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            
+            if (index < stepIndex) {
+                step.classList.add('completed');
+            } else if (index === stepIndex) {
+                step.classList.add('active');
+            }
+        });
+    }
+}
+
+function createFloatingCreatives() {
+    const container = document.querySelector('.signup-container');
+    if (!container) return;
+    
+    const creativesContainer = document.createElement('div');
+    creativesContainer.className = 'floating-creatives';
+    container.appendChild(creativesContainer);
+    
+    // Create creative shapes
+    const shapes = ['⭐', '✨', '🎨', '💡', '🔥', '🌈', '🌟', '💫'];
+    
+    for (let i = 0; i < 8; i++) {
+        const creative = document.createElement('div');
+        creative.className = 'floating-creative';
+        creative.textContent = shapes[i];
+        
+        // Random properties
+        const size = 20 + Math.random() * 40;
+        const left = Math.random() * 100;
+        const top = Math.random() * 100;
+        const duration = 15 + Math.random() * 20;
+        const delay = Math.random() * 10;
+        const fontSize = 16 + Math.random() * 24;
+        const hue = Math.random() * 360;
+        
+        creative.style.cssText = `
+            font-size: ${fontSize}px;
+            left: ${left}%;
+            top: ${top}%;
+            animation-duration: ${duration}s;
+            animation-delay: ${delay}s;
+            color: hsla(${hue}, 100%, 60%, 0.3);
+        `;
+        
+        creativesContainer.appendChild(creative);
+    }
+}
+
+function enhanceSignupValidation() {
+    const form = document.querySelector('form');
+    const submitBtn = form?.querySelector('button[type="submit"]');
+    
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            // Check if form is valid
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                
+                // Animate invalid fields
+                const invalidInputs = form.querySelectorAll(':invalid');
+                invalidInputs.forEach(input => {
+                    shakeElement(input);
+                });
+                return;
+            }
+            
+            // Check terms agreement
+            const termsCheck = document.getElementById('termsCheck');
+            if (!termsCheck.checked) {
+                e.preventDefault();
+                shakeElement(termsCheck);
+                showTermsAlert();
+                return;
+            }
+            
+            // Add submission animation
+            const originalHTML = submitBtn.innerHTML;
+            submitBtn.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Creating your creative space...
+            `;
+            submitBtn.disabled = true;
+            
+            // Create celebration particles
+            createCelebrationParticles(submitBtn);
+            
+            // Re-enable button after 5 seconds if still on page
+            setTimeout(() => {
+                submitBtn.innerHTML = originalHTML;
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+    }
+}
+
+function shakeElement(element) {
+    element.style.animation = 'shake 0.5s ease';
+    element.style.borderColor = '#ff6b6b';
+    
+    setTimeout(() => {
+        element.style.animation = '';
+        setTimeout(() => {
+            element.style.borderColor = '';
+        }, 1000);
+    }, 500);
+}
+
+function showTermsAlert() {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'creative-alert error';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <div>Please agree to the Terms of Service and Privacy Policy</div>
+        </div>
+        <button type="button" class="btn-close position-absolute end-0 me-2" 
+                onclick="this.parentElement.remove()" style="top: 1rem;"></button>
+    `;
+    
+    const form = document.querySelector('form');
+    form.parentNode.insertBefore(alertDiv, form);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => alertDiv.remove(), 300);
+        }
+    }, 3000);
+}
+
+function createCelebrationParticles(button) {
+    const rect = button.getBoundingClientRect();
+    const emojis = ['🎉', '✨', '🌟', '🎨', '💡', '🔥', '🌈', '💫'];
+    
+    for (let i = 0; i < 12; i++) {
+        const particle = document.createElement('div');
+        particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        particle.style.cssText = `
+            position: fixed;
+            font-size: ${20 + Math.random() * 15}px;
+            pointer-events: none;
+            z-index: 9999;
+            left: ${rect.left + rect.width / 2}px;
+            top: ${rect.top + rect.height / 2}px;
+            opacity: 1;
+            transform: translate(-50%, -50%);
+            transition: all 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        `;
+        
+        document.body.appendChild(particle);
+        
+        // Animation
+        setTimeout(() => {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 80 + Math.random() * 120;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            
+            particle.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(0)`;
+            particle.style.opacity = '0';
+            
+            setTimeout(() => particle.remove(), 1000);
+        }, 10);
+    }
+}
+
+function autoDismissAlerts() {
+    const alerts = document.querySelectorAll('.alert, .creative-alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.opacity = '1';
+            let opacity = 1;
+            const fadeOut = setInterval(() => {
+                opacity -= 0.05;
+                alert.style.opacity = opacity;
+                if (opacity <= 0) {
+                    clearInterval(fadeOut);
+                    alert.remove();
+                }
+            }, 50);
+        }, 5000);
+    });
+}
+
+// Add animation styles
+if (!document.querySelector('#signup-animations')) {
+    const style = document.createElement('style');
+    style.id = 'signup-animations';
+    style.textContent = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .form-group-artistic-signup.has-value label {
+            color: #2bc6b0 !important;
+            transform: translateX(10px) scale(0.9);
+        }
+        
+        .spinner-border {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            vertical-align: -0.125em;
+            border: 0.15em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spinner-border 0.75s linear infinite;
+        }
+        
+        @keyframes spinner-border {
+            100% { transform: rotate(360deg); }
+        }
+        
+        .form-check-input:focus {
+            border-color: #2bc6b0;
+            box-shadow: 0 0 0 0.25rem rgba(43, 198, 176, 0.25);
+        }
+    `;
+    document.head.appendChild(style);
+}
+</script>
+
+<div class="signup-container">
+    <!-- Floating creatives will be injected by JavaScript -->
+    
+    <div class="artistic-signup-card">
+        <div class="signup-header">
+            <div class="artistic-signup-logo">
+                <i class="fas fa-fire"></i>
+            </div>
+            <h4>Join TalentForge</h4>
+            <p class="signup-subtitle">Start your creative journey today</p>
+        </div>
+        
+        <div class="signup-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="creative-alert {% if message.tags %}{{ message.tags }}{% endif %}" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}info-circle{% endif %} me-2"></i>
+                            <div>{{ message }}</div>
+                        </div>
+                        <button type="button" class="btn-close position-absolute end-0 me-2" 
+                                onclick="this.parentElement.remove()" style="top: 1rem;"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% if form.errors %}
+                <div class="creative-alert error" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            <strong>Please fix the following errors:</strong>
+                            <ul class="mb-0 mt-1 ps-3" style="font-size: 0.9rem;">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close position-absolute end-0 me-2" 
+                            onclick="this.parentElement.remove()" style="top: 1rem;"></button>
+                </div>
+            {% endif %}
+            
+            <div class="progress-steps">
+                <div class="step">1</div>
+                <div class="step">2</div>
+                <div class="step">3</div>
+                <div class="step">4</div>
+            </div>
+            
+            <form method="post" id="signupForm" novalidate>
+                {% csrf_token %}
+                
+                <div class="form-row-artistic">
+                    <div class="form-group-artistic-signup">
+                        <label for="id_first_name">First Name</label>
+                        <input type="text" name="first_name" id="id_first_name" 
+                               class="input-artistic-signup"
+                               value="{{ form.first_name.value|default:'' }}"
+                               placeholder="Enter your first name"
+                               required>
+                    </div>
                     
-                    <a href="/accounts/google/login/" 
-                       class="btn btn-outline-dark d-flex align-items-center justify-content-center w-100"
-                       style="padding: 10px; text-decoration: none;">
-                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUxIDkuMjA0NTVWOS4wOTU0NUg5LjE4VjEwLjc3MjdIMTMuNDlDMTMuMTIgMTIuNjAwOSAxMS40OCAxMy45NTQ1IDkuMTggMTMuOTU0NUM2LjQzIDEzLjk1NDUgNC4xOCAxMS43MDQ1IDQuMTggOC45NTQ1NUM0LjE4IDYuMjA0NTUgNi40MyAzLjk1NDU1IDkuMTggMy45NTQ1NUMxMC42OSAzLjk1NDU1IDEyLjAzIDQuNjYzNjQgMTIuODkgNS43NzI3M0wxNC44MyAzLjgzMTgyQzEzLjI2IDIuMzQwOTEgMTEuMzEgMS40NTQ1NSA5LjE4IDEuNDU0NTVDNC42MiAxLjQ1NDU1IDEuMDEgNS4wNjM2NCAxLjAxIDkuNjM2MzZDMS4wMSAxNC4yMDkxIDQuNjIgMTcuODE4MiA5LjE4IDE3LjgxODJDMTMuMzMgMTcuODE4MiAxNi42NCAxNC43NzI3IDE2LjY0IDkuNjM2MzZDMTYuNjQgOC44NjM2NCAxNi41NiA4LjExODE4IDE2LjUxIDcuMzYzNjRMMTYuNTEgOS4yMDQ1NVoiIGZpbGw9IiM0Mjg1RjIiLz4KPC9zdmc+Cg==" 
-                             alt="Google" style="width: 20px; height: 20px; margin-right: 12px;">
-                        Sign up with Google
-                    </a>
+                    <div class="form-group-artistic-signup">
+                        <label for="id_last_name">Last Name</label>
+                        <input type="text" name="last_name" id="id_last_name" 
+                               class="input-artistic-signup"
+                               value="{{ form.last_name.value|default:'' }}"
+                               placeholder="Enter your last name"
+                               required>
+                    </div>
                 </div>
                 
-                <div class="text-center">
-                    <p class="mb-0">Already have an account? <a href="{% url 'base:login' %}" class="text-decoration-none">Login here</a></p>
+                <div class="form-group-artistic-signup">
+                    <label for="id_username">Username</label>
+                    <input type="text" name="username" id="id_username" 
+                           class="input-artistic-signup"
+                           value="{{ form.username.value|default:'' }}"
+                           placeholder="Choose a creative username"
+                           required>
+                    <small class="form-text text-muted d-block mt-1">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Choose a unique creative username
+                    </small>
                 </div>
+                
+                <div class="form-group-artistic-signup">
+                    <label for="id_email">Email Address</label>
+                    <input type="email" name="email" id="id_email" 
+                           class="input-artistic-signup"
+                           value="{{ form.email.value|default:'' }}"
+                           placeholder="Enter your email"
+                           required>
+                    <small class="form-text text-muted d-block mt-1">
+                        <i class="fas fa-envelope me-1"></i>
+                        We'll never share your email
+                    </small>
+                </div>
+                
+                <div class="form-group-artistic-signup">
+                    <label for="id_password1">Create Password</label>
+                    <input type="password" name="password1" id="id_password1" 
+                           class="input-artistic-signup"
+                           placeholder="Create a strong password"
+                           required>
+                    <!-- Password strength indicator will be added by JavaScript -->
+                </div>
+                
+                <div class="form-group-artistic-signup">
+                    <label for="id_password2">Confirm Password</label>
+                    <input type="password" name="password2" id="id_password2" 
+                           class="input-artistic-signup"
+                           placeholder="Confirm your password"
+                           required>
+                </div>
+                
+                <div class="form-check mt-4 mb-3">
+                    <input type="checkbox" class="form-check-input" id="termsCheck" required>
+                    <label class="form-check-label" for="termsCheck">
+                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn-artistic-signup">
+                    <i class="fas fa-magic me-2"></i>
+                    Create My Account
+                </button>
+            </form>
+            
+            <div class="divider-signup">
+                <span>Or sign up with</span>
+            </div>
+            
+            <a href="/accounts/google/login/" class="btn-google-signup">
+                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUxIDkuMjA0NTVWOS4wOTU0NUg5LjE4VjEwLjc3MjdIMTMuNDlDMTMuMTIgMTIuNjAwOSAxMS40OCAxMy45NTQ1IDkuMTggMTMuOTU0NUM2LjQzIDEzLjk1NDUgNC4xOCAxMS43MDQ1IDQuMTggOC45NTQ1NUM0LjE4IDYuMjA0NTUgNi40MyAzLjk1NDU1IDkuMTggMy45NTQ1NUMxMC42OSAzLjk1NDU1IDEyLjAzIDQuNjYzNjQgMTIuODkgNS43NzI3M0wxNC44MyAzLjgzMTgyQzEzLjI2IDIuMzQwOTEgMTEuMzEgMS40NTQ1NSA5LjE4IDEuNDU0NTVDNC42MiAxLjQ1NDU1IDEuMDEgNS4wNjM2NCAxLjAxIDkuNjM2MzZDMS4wMSAxNC4yMDkxIDQuNjIgMTcuODE4MiA5LjE4IDE3LjgxODJDMTMuMzMgMTcuODE4MiAxNi42NCAxNC43NzI3IDE2LjY0IDkuNjM2MzZDMTYuNjQgOC44NjM2NCAxNi41NiA4LjExODE4IDE2LjUxIDcuMzYzNjRMMTYuNTEgOS4yMDQ1NVoiIGZpbGw9IiM0Mjg1RjIiLz4KPC9zdmc+Cg==" 
+                     alt="Google" class="google-icon">
+                Sign up with Google
+            </a>
+            
+            <div class="signup-links">
+                <p class="mb-2">Already have an account?</p>
+                <a href="{% url 'base:login' %}" class="signup-link">
+                    <i class="fas fa-sign-in-alt me-1"></i>
+                    Login to Your Account
+                </a>
             </div>
         </div>
     </div>
 </div>
-
-
 {% endblock %}
