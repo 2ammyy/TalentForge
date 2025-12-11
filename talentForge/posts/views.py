@@ -859,6 +859,33 @@ def conversation_view(request, username):
 
 # ============ NOTIFICATIONS ============
 
+# @login_required
+# def notifications_view(request):
+#     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
+#     unread_count = notifications.filter(is_read=False).count()
+    
+#     # Mark as read when user views notifications
+#     if request.method == 'GET':
+#         notifications.update(is_read=True)
+    
+#     return render(request, 'posts/notifications.html', {
+#         'notifications': notifications,
+#         'unread_count': unread_count
+#     })
+
+
+# @login_required
+# def get_unread_counts(request):
+#     unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
+#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    
+#     return JsonResponse({
+#         'unread_messages': unread_messages,
+#         'unread_notifications': unread_notifications
+#     })
+
+# ============ NOTIFICATIONS ============
+
 @login_required
 def notifications_view(request):
     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
@@ -874,14 +901,32 @@ def notifications_view(request):
     })
 
 
+# @login_required
+# def get_unread_counts(request):
+#     unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
+#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    
+#     return JsonResponse({
+#         'unread_messages': unread_messages,
+#         'unread_notifications': unread_notifications
+#     })
 @login_required
 def get_unread_counts(request):
-    unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
-    unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    """API endpoint to get unread counts for navbar updates"""
+    unread_notifications = Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    ).count()
+    
+    # You can keep messages count too if you want
+    unread_messages = Message.objects.filter(
+        receiver=request.user, 
+        is_read=False
+    ).count()
     
     return JsonResponse({
-        'unread_messages': unread_messages,
-        'unread_notifications': unread_notifications
+        'unread_notifications': unread_notifications,
+        'unread_messages': unread_messages
     })
 
 

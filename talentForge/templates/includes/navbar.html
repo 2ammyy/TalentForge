@@ -94,10 +94,21 @@
                 </li>
 
                 <!-- Notifications -->
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a class="nav-link notifications-link" href="{% url 'posts:notifications' %}">
                         <div class="nav-icon">
                             <i class="fas fa-bell"></i>
+                        </div>
+                        <span class="nav-text">Notifications</span>
+                    </a>
+                </li> -->
+                <li class="nav-item">
+                    <a class="nav-link notifications-link" href="{% url 'posts:notifications' %}">
+                        <div class="nav-icon position-relative">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_notifications_count > 0 %}
+                            <span class="notification-badge">{{ unread_notifications_count }}</span>
+                            {% endif %}
                         </div>
                         <span class="nav-text">Notifications</span>
                     </a>

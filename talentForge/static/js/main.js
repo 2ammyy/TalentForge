@@ -876,16 +876,61 @@ function initCreativeNotifications() {
     animateNotificationBadge();
 }
 
-function checkNewNotifications() {
-    // Simuler la vérification des notifications
-    setInterval(() => {
-        const hasNewNotifications = Math.random() > 0.7; // Simulation
+// function checkNewNotifications() {
+//     // Simuler la vérification des notifications
+//     setInterval(() => {
+//         const hasNewNotifications = Math.random() > 0.7; // Simulation
         
-        if (hasNewNotifications) {
-            pulseNotificationIcon();
-        }
-    }, 30000); // Vérifier toutes les 30 secondes
+//         if (hasNewNotifications) {
+//             pulseNotificationIcon();
+//         }
+//     }, 30000); // Vérifier toutes les 30 secondes
+// }
+
+// Add to your navbar script section
+function checkNewNotifications() {
+    if (window.location.pathname.includes('/notifications/')) {
+        // Don't check if we're already on notifications page
+        return;
+    }
+    
+    fetch('/api/get-unread-counts/')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector('.notification-badge');
+            
+            if (data.unread_notifications > 0) {
+                if (badge) {
+                    // Update existing badge
+                    badge.textContent = data.unread_notifications > 99 ? '99+' : data.unread_notifications;
+                } else {
+                    // Create new badge
+                    const iconContainer = document.querySelector('.notifications-link .nav-icon');
+                    if (iconContainer) {
+                        const newBadge = document.createElement('span');
+                        newBadge.className = 'notification-badge';
+                        newBadge.textContent = data.unread_notifications > 99 ? '99+' : data.unread_notifications;
+                        iconContainer.appendChild(newBadge);
+                    }
+                }
+            } else {
+                // Remove badge if no unread notifications
+                if (badge) {
+                    badge.remove();
+                }
+            }
+        })
+        .catch(error => console.error('Error checking notifications:', error));
 }
+
+// Check for new notifications every 30 seconds
+setInterval(checkNewNotifications, 30000);
+
+// Also check when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(checkNewNotifications, 2000);
+});
+// ############################
 
 function pulseNotificationIcon() {
     const notificationIcon = document.querySelector('.fa-bell');
