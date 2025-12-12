@@ -4,34 +4,381 @@
 
 {% block content %}
 <div class="notifications-container">
-    <h2>🔔 Notifications</h2>
+    <!-- Header -->
+    <div class="notifications-header">
+        <h1 class="notifications-title">
+            <span class="notifications-icon">🔔</span>
+            Notifications
+        </h1>
+        {% if notifications %}
+        <div class="notifications-count">
+            <span class="count-badge">{{ notifications|length }}</span>
+            <span class="unread-count">
+                {% with unread_notifications=notifications|slice:":0" %}
+                    {% for notification in notifications %}
+                        {% if not notification.is_read %}
+                            {% with unread_count=forloop.counter0|add:1 %}
+                                {{ unread_count }} unread
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                {% endwith %}
+            </span>
+        </div>
+        {% endif %}
+    </div>
     
+    <!-- Notifications List -->
     {% if notifications %}
         <div class="notifications-list">
             {% for notification in notifications %}
                 <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
                     <div class="notification-content">
-                        <p>
-                            <strong>{{ notification.from_user.username }}</strong>
-                            {{ notification.get_notification_type_display }}
+                        <div class="notification-header">
+                            <div class="notification-user">
+                                <div class="user-avatar-small">
+                                    {{ notification.from_user.username|first|upper }}
+                                </div>
+                                <span class="username">{{ notification.from_user.username }}</span>
+                            </div>
+                            <span class="notification-time">{{ notification.timestamp|timesince }} ago</span>
+                        </div>
+                        
+                        <div class="notification-body">
+                            <p class="notification-text">
+                                {{ notification.get_notification_type_display|lower }}
+                                {% if notification.post %}
+                                <span class="post-title">"{{ notification.post.title }}"</span>
+                                {% endif %}
+                            </p>
+                            
                             {% if notification.post %}
-                                your post "{{ notification.post.title }}"
+                            <div class="notification-actions">
+                                <a href="{% url 'posts:post_detail' notification.post.pk %}" class="view-button">
+                                    View Post
+                                    <span class="button-icon">→</span>
+                                </a>
+                            </div>
                             {% endif %}
-                        </p>
-                        <span class="notification-time">{{ notification.timestamp|timesince }} ago</span>
+                        </div>
                     </div>
-                    {% if notification.post %}
-                        <a href="{% url 'posts:post_detail' notification.post.pk %}" class="nav-button">
-                            View
-                        </a>
-                    {% endif %}
                 </div>
             {% endfor %}
         </div>
     {% else %}
-        <p>No notifications yet.</p>
+        <!-- Empty State -->
+        <div class="empty-notifications">
+            <div class="empty-icon">✨</div>
+            <h3>No notifications yet</h3>
+            <p>When you receive likes, comments, or mentions, they'll appear here.</p>
+            <a href="{% url 'posts:post_list' %}" class="explore-button">
+                Explore Content
+            </a>
+        </div>
     {% endif %}
 </div>
 
+<style>
+/* Notifications Container */
+.notifications-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Header */
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.notifications-title {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notifications-icon {
+    font-size: 1.8rem;
+}
+
+.notifications-count {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.count-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.unread-count {
+    font-size: 0.8rem;
+    color: #e53e3e;
+    font-weight: 500;
+}
+
+/* Notifications List */
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Notification Item */
+.notification-item {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.notification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e0;
+}
+
+.notification-item.unread {
+    background: linear-gradient(to right, rgba(102, 126, 234, 0.03), white);
+    border-left: 4px solid #667eea;
+}
+
+.notification-item.unread::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+/* Notification Content */
+.notification-content {
+    flex: 1;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.notification-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-avatar-small {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.username {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.notification-time {
+    font-size: 0.8rem;
+    color: #a0aec0;
+    font-weight: 500;
+}
+
+/* Notification Body */
+.notification-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.notification-text {
+    margin: 0;
+    color: #4a5568;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.post-title {
+    color: #667eea;
+    font-weight: 500;
+    font-style: italic;
+}
+
+/* Actions */
+.notification-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.view-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.view-button:hover {
+    transform: translateX(4px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.button-icon {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.view-button:hover .button-icon {
+    transform: translateX(3px);
+}
+
+/* Empty State */
+.empty-notifications {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+    border: 2px dashed #e2e8f0;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.6;
+}
+
+.empty-notifications h3 {
+    font-size: 1.5rem;
+    color: #2d3748;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.empty-notifications p {
+    color: #718096;
+    margin-bottom: 2rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+}
+
+.explore-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.explore-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .notifications-container {
+        padding: 1rem;
+        margin: 1rem auto;
+    }
+    
+    .notifications-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .notifications-count {
+        align-items: flex-start;
+    }
+    
+    .notifications-title {
+        font-size: 1.75rem;
+    }
+    
+    .notification-item {
+        padding: 1.25rem;
+    }
+    
+    .notification-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+    
+    .notification-time {
+        align-self: flex-start;
+    }
+}
+
+/* Animation for new notifications */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.notification-item {
+    animation: slideIn 0.3s ease-out;
+}
+</style>
 
 {% endblock %}

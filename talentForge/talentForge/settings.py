@@ -43,15 +43,22 @@ INSTALLED_APPS = [
     'base',
     'posts',
     'creator',
+    'admin_app.apps.AdminAppConfig',
+    'word_prediction',  # Word Prediction app
 
     # Allauth apps
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',  # Google provider
+
+    #third-party apps
+    'corsheaders',
+
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,6 +68,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
 ]
+
+# CORS settings (development)
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'talentForge.urls'
 
@@ -74,6 +85,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'posts.context_processors.notifications_context',  # Custom context processor
             ],
         },
     },
@@ -85,13 +97,25 @@ WSGI_APPLICATION = 'talentForge.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'djangodb',
+        'USER': 'django_user',
+        'PASSWORD': 'DjangoSecurePass123!',
+        #'HOST': 'localhost',
+        'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
+        #'HOST': '10.209.202.115',  #ip address Tekup
+        'PORT': '5432',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -163,7 +187,7 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 # Google OAuth Configuration
 SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_LOGIN_ON_GET = False  # IMPORTANT: Must be False for our custom redirect to work
+SOCIALACCOUNT_LOGIN_ON_GET = True  # IMPORTANT: Must be False for our custom redirect to work
 SOCIALACCOUNT_STORE_TOKENS = True
 
 # Disable email verification for social accounts

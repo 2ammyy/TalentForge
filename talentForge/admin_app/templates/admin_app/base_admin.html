@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TalentForge Admin{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar-admin {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar {
+            background: white;
+            min-height: calc(100vh - 56px);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar .nav-link {
+            color: #333;
+            padding: 12px 20px;
+            border-left: 4px solid transparent;
+        }
+        .sidebar .nav-link:hover {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+        .sidebar .nav-link.active {
+            background-color: #e8f4fd;
+            border-left: 4px solid #007bff;
+            color: #007bff;
+            font-weight: 600;
+        }
+        .stat-card {
+            border-radius: 10px;
+            border: none;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .admin-content {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-admin">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'admin_app:dashboard' %}">
+                <i class="fas fa-crown"></i> TalentForge Admin
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-shield"></i> {{ request.user.username }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'base:home' %}">
+                            <i class="fas fa-home"></i> Back to Site
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'base:view_profile' %}">
+                            <i class="fas fa-user"></i> My Profile
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank">
+                            <i class="fas fa-database"></i> Django Admin
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'base:logout' %}">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 px-0">
+                <div class="sidebar">
+                    <div class="p-3">
+                        <h6 class="text-muted text-uppercase small mb-3">Main Menu</h6>
+                        <nav class="nav flex-column">
+                            <a href="{% url 'admin_app:dashboard' %}" 
+                               class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                            </a>
+                            <a href="{% url 'admin_app:users' %}" 
+                               class="nav-link {% if active_page == 'users' %}active{% endif %}">
+                                <i class="fas fa-users me-2"></i> Users
+                            </a>
+                            <a href="{% url 'admin_app:creators' %}" 
+                               class="nav-link {% if active_page == 'creators' %}active{% endif %}">
+                                <i class="fas fa-star me-2"></i> Creators
+                            </a>
+                            <a href="{% url 'admin_app:moderation' %}" 
+                               class="nav-link {% if active_page == 'moderation' %}active{% endif %}">
+                                <i class="fas fa-shield-alt me-2"></i> Moderation
+                            </a>
+                            <a href="{% url 'admin_app:analytics' %}" 
+                               class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
+                                <i class="fas fa-chart-bar me-2"></i> Analytics
+                            </a>
+                        </nav>
+                        
+                        <h6 class="text-muted text-uppercase small mt-4 mb-3">Tools</h6>
+                        <nav class="nav flex-column">
+                            <a href="{% url 'admin_app:reports' %}" class="nav-link">
+                                <i class="fas fa-file-alt me-2"></i> Reports
+                            </a>
+                            <a href="{% url 'admin_app:settings' %}" class="nav-link">
+                                <i class="fas fa-cog me-2"></i> Settings
+                            </a>
+                            <a href="{% url 'admin_app:export_users' %}" class="nav-link">
+                                <i class="fas fa-download me-2"></i> Export Users
+                            </a>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 mt-3">
+                <!-- Messages -->
+                {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="mb-0">
+                        {% block page_heading %}Dashboard{% endblock %}
+                    </h2>
+                    {% block page_actions %}{% endblock %}
+                </div>
+                
+                <!-- Main Content -->
+                <div class="admin-content">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+    // Auto-refresh stats every 30 seconds
+    function refreshStats() {
+        fetch('{% url "admin_app:api_stats" %}')
+            .then(response => response.json())
+            .then(data => {
+                // Update any stats displayed
+                document.querySelectorAll('[data-stat]').forEach(el => {
+                    const stat = el.dataset.stat;
+                    if (data[stat]) {
+                        el.textContent = data[stat];
+                        el.classList.add('text-success');
+                        setTimeout(() => el.classList.remove('text-success'), 1000);
+                    }
+                });
+            });
+    }
+    
+    // Refresh every 30 seconds if on dashboard
+    if (window.location.pathname.includes('dashboard')) {
+        setInterval(refreshStats, 30000);
+    }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

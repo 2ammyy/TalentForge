@@ -1,285 +1,482 @@
 {% extends 'base.html' %}
-{% load static %} 
+{% load static %}
 
-{% block subtitle %}All Posts{% endblock %}
+{% block subtitle %}Explore TalentForge{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root {
+        --creative-purple: #8A2BE2;
+        --creative-blue: #4169E1;
+        --creative-teal: #20B2AA;
+        --light-bg: #F8F7FF;
+        --card-shadow: 0 10px 30px rgba(138, 43, 226, 0.1);
+    }
+
+    .feed-container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .feed-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .feed-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Filters */
+    .filters-section {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 0.8rem 1.5rem;
+        border: 2px solid #E5E7EB;
+        border-radius: 25px;
+        background: white;
+        color: #555;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-btn.active {
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        color: white;
+        border-color: transparent;
+    }
+
+    /* Pinterest Grid */
+    .pinterest-grid {
+        column-count: 4;
+        column-gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    @media (max-width: 1200px) {
+        .pinterest-grid { column-count: 3; }
+    }
+    @media (max-width: 900px) {
+        .pinterest-grid { column-count: 2; }
+    }
+    @media (max-width: 600px) {
+        .pinterest-grid { column-count: 1; }
+    }
+
+    /* Pin Card */
+    .pin-card {
+        break-inside: avoid;
+        margin-bottom: 1.5rem;
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 1px solid #E5E7EB;
+    }
+
+    .pin-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(138, 43, 226, 0.2);
+    }
+
+    /* Media */
+    .pin-media {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .pin-media img, .pin-media video {
+        width: 100%;
+        height: auto;
+        display: block;
+        transition: transform 0.5s ease;
+    }
+
+    .pin-card:hover .pin-media img {
+        transform: scale(1.05);
+    }
+
+    /* Type Badge */
+    .type-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        z-index: 2;
+    }
+
+    .type-badge.visual-art { 
+        background: linear-gradient(135deg, #4169E1, #20B2AA);
+        color: white;
+    }
+    .type-badge.video { 
+        background: linear-gradient(135deg, #20B2AA, #8A2BE2);
+        color: white;
+    }
+    .type-badge.writing { 
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        color: white;
+    }
+    .type-badge.job { 
+        background: linear-gradient(135deg, #FF6B6B, #FFA726);
+        color: white;
+    }
+
+    /* Content */
+    .pin-content {
+        padding: 1.2rem;
+    }
+
+    .pin-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0.8rem;
+        color: #333;
+    }
+
+    .pin-description {
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    /* Footer */
+    .pin-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid #E5E7EB;
+    }
+
+    .pin-author {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .author-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid #E5E7EB;
+    }
+
+    .author-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .pin-stats {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+        color: #888;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="posts-container">
-    <div class="posts-header">
-        <h2>📝 All Posts</h2>
-        <a href="{% url 'posts:post_create' %}" class="create-post-btn">
-            <i class="fas fa-plus"></i> Create New Post
-        </a>
+<div class="feed-container">
+    <div class="feed-header">
+        <h1>✨ Discover Creative Inspiration</h1>
+        <p>Browse through amazing works from our creative community</p>
     </div>
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-        <div class="filter-buttons">
-            <button class="filter-btn active" data-filter="all">All Posts</button>
-            <button class="filter-btn" data-filter="text">Text</button>
-            <button class="filter-btn" data-filter="image">Images</button>
-            <button class="filter-btn" data-filter="video">Videos</button>
-            <button class="filter-btn" data-filter="job">Job Offers</button>
-        </div>
+    <!-- Filters -->
+    <div class="filters-section">
+        <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-th"></i> All Posts
+        </button>
+        <button class="filter-btn" data-filter="visual-art">
+            <i class="fas fa-palette"></i> Visual Arts
+        </button>
+        <button class="filter-btn" data-filter="video">
+            <i class="fas fa-video"></i> Videos
+        </button>
+        <button class="filter-btn" data-filter="writing">
+            <i class="fas fa-pen-nib"></i> Writings
+        </button>
+        <button class="filter-btn" data-filter="job">
+            <i class="fas fa-briefcase"></i> Jobs
+        </button>
     </div>
-
-    <!-- Debug Info -->
-    <div style="display: none;">
-        <!-- Debug: User info -->
-        <div data-user="{{ user.username }}" data-authenticated="{{ user.is_authenticated }}"></div>
-        <!-- Debug: Posts count -->
-        <div data-posts-count="{{ posts|length }}"></div>
-    </div>
-
+<!-- Pinterest Grid -->
+<div class="pinterest-grid" id="pinterestGrid">
     {% for post in posts %}
-    <!-- Debug: Post ID {{ post.id }} -->
-    <div class="post-card" data-post-type="{{ post.type }}" data-post-id="{{ post.id }}">
-        <div class="post-header">
-            <div class="post-author-info">
-                <div class="author-avatar">
-                    {% if post.author.profile.avatar %}
-                        <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
-                    {% else %}
-                        <div class="default-avatar">{{ post.author.username|first|upper }}</div>
+    {% comment %} FIRST check if it's a job post {% endcomment %}
+    {% if post.type == 'job' or post.job_details %}
+        {% comment %} Job Post - This should always show as job {% endcomment %}
+        <div class="pin-card" data-post-type="job" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge job"><i class="fas fa-briefcase"></i> Job</div>
+            
+            <!-- Media Section -->
+            {% if post.image %}
+            <div class="pin-media">
+                <img src="{{ post.image.url }}" alt="{{ post.title|default:'Job' }}" loading="lazy">
+            </div>
+            {% else %}
+            <div class="pin-media" style="background: linear-gradient(135deg, #FF6B6B, #FFA726); min-height: 200px; display: flex; align-items: center; justify-content: center; color: white; padding: 2rem;">
+                <div style="text-align: center;">
+                    {% if post.job_details and post.job_details.company %}
+                    <h3 style="margin-bottom: 1rem;">{{ post.job_details.company }}</h3>
+                    {% endif %}
+                    <h4 style="margin-bottom: 0.5rem;">{{ post.title|default:"Job Opportunity" }}</h4>
+                    {% if post.job_details and post.job_details.location %}
+                    <p><i class="fas fa-map-marker-alt"></i> {{ post.job_details.location }}</p>
                     {% endif %}
                 </div>
-                <div class="post-author">
-                    <strong>{{ post.author.username }}</strong>
-                    <span class="post-date">— {{ post.created_at|date:"M d, Y · H:i" }}</span>
-                    {% if post.updated_at != post.created_at %}
-                    <span class="post-edited">(edited)</span>
+            </div>
+            {% endif %}
+            
+            <!-- Content Section -->
+            <div class="pin-content">
+                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                
+                <!-- Job Specific Details -->
+                {% if post.job_details %}
+                <div style="margin-bottom: 1rem;">
+                    {% if post.job_details.company %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
+                        <i class="fas fa-building"></i> {{ post.job_details.company }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if post.job_details.location %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
+                        <i class="fas fa-map-marker-alt"></i> {{ post.job_details.location }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if post.job_details.employment_type %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
+                        <i class="fas fa-clock"></i> {{ post.job_details.get_employment_type_display }}
+                    </p>
+                    {% endif %}
+                    
+                    {% if post.job_details.salary_range %}
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 1rem;">
+                        <i class="fas fa-money-bill-wave"></i> {{ post.job_details.get_salary_range_display }}
+                    </p>
                     {% endif %}
                 </div>
-            </div>
-            
-            <!-- MENU DROPDOWN -->
-            <div class="post-actions-dropdown">
-                <div class="dropdown">
-                    <button class="dropdown-toggle" type="button" id="dropdownMenuButton-{{ post.id }}" 
-                            data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton-{{ post.id }}">
-                        <!-- Share Option - Pour tous les utilisateurs authentifiés -->
-                        {% if user.is_authenticated %}
-                        <li>
-                            <a class="dropdown-item share-option" href="{% url 'posts:share_post' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-share"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Share Post</span>
-                                        <small class="dropdown-desc">Share this post with others</small>
-                                    </div>
+                {% endif %}
+                
+                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #FF6B6B; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
                                 </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Edit Option (Author only) -->
-                        {% if user.is_authenticated and user == post.author %}
-                        <li>
-                            <a class="dropdown-item edit-option" href="{% url 'posts:post_edit' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-edit"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Edit Post</span>
-                                        <small class="dropdown-desc">Modify your post content</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Report Option (Not for author) -->
-                        {% if user.is_authenticated and user != post.author %}
-                        <li>
-                            <a class="dropdown-item report-option" href="{% url 'posts:report_post' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-flag"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Report Post</span>
-                                        <small class="dropdown-desc">Report inappropriate content</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Delete Option (Author only) -->
-                        {% if user.is_authenticated and user == post.author %}
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item delete-option text-danger" href="{% url 'posts:post_delete' post.id %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-trash"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Delete Post</span>
-                                        <small class="dropdown-desc">Permanently remove this post</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Si l'utilisateur n'est pas connecté -->
-                        {% if not user.is_authenticated %}
-                        <li>
-                            <a class="dropdown-item" href="{% url 'base:login' %}">
-                                <div class="dropdown-item-content">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                    <div class="dropdown-text">
-                                        <span class="dropdown-title">Login</span>
-                                        <small class="dropdown-desc">Sign in to access options</small>
-                                    </div>
-                                </div>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Post Type Badge -->
-        <div class="post-type-badge">
-            <span class="badge {{ post.type }}">{{ post.get_type_display }}</span>
-        </div>
-
-        <!-- Post Title -->
-        {% if post.title %}
-        <h4 class="post-title">{{ post.title }}</h4>
-        {% endif %}
-        
-        <!-- Post Content -->
-        <div class="post-content">
-            <p>{{ post.content|linebreaksbr }}</p>
-        </div>
-
-        <!-- Post Media -->
-        {% if post.image %}
-        <div class="post-media">
-            <img src="{{ post.image.url }}" class="post-image" alt="Post image">
-        </div>
-        {% endif %}
-        
-        {% if post.video %}
-        <div class="post-media">
-            <video controls class="post-video">
-                <source src="{{ post.video.url }}" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-        </div>
-        {% endif %}
-
-        <!-- Post Actions -->
-        <div class="post-actions">
-            <a href="{% url 'posts:post_detail' post.id %}" class="action-link">
-                <i class="fas fa-comment"></i> Comments ({{ post.comments.count }})
-            </a>
-            <span class="action-separator">|</span>
-            
-            <div class="reaction-section">
-                <button class="reaction-btn like-btn" data-post-id="{{ post.id }}" data-reaction-type="like">
-                    <i class="fas fa-heart"></i> Like
-                </button>
-                <span class="reaction-count" id="reaction-count-{{ post.id }}">{{ post.reactions.count }}</span>
+    
+    {% elif post.video %}
+        {% comment %} Video Post {% endcomment %}
+        <div class="pin-card" data-post-type="video" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge video"><i class="fas fa-video"></i> Video</div>
+            <div class="pin-media">
+                <video src="{{ post.video.url }}" 
+                       preload="metadata"
+                       muted
+                       loop
+                       poster="{% if post.image %}{{ post.image.url }}{% endif %}">
+                </video>
             </div>
-            
-            <span class="action-separator">|</span>
-            <a href="{% url 'posts:share_post' post.id %}" class="action-link">
-                <i class="fas fa-share"></i> Share ({{ post.post_shares.count }})
-            </a>
+            <div class="pin-content">
+                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #20B2AA; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <!-- Shares Section -->
-        {% if post.post_shares.exists %}
-        <div class="shares-section">
-            <small style="color: #666;">
-                <i class="fas fa-share"></i> Shared by: 
-                {% for share in post.post_shares.all|slice:":3" %}
-                    <strong>{{ share.user.username }}</strong>{% if share.caption %} - "{{ share.caption }}"{% endif %}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-                {% if post.post_shares.count > 3 %} and {{ post.post_shares.count|add:"-3" }} more{% endif %}
-            </small>
+    
+    {% elif post.image %}
+        {% comment %} Image Post (Visual Art) {% endcomment %}
+        <div class="pin-card" data-post-type="visual-art" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge visual-art"><i class="fas fa-palette"></i> Visual Art</div>
+            <div class="pin-media">
+                <img src="{{ post.image.url }}" alt="{{ post.title|default:'Visual Art' }}" loading="lazy">
+            </div>
+            <div class="pin-content">
+                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #4169E1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        {% endif %}
-        
-    </div>
+    
+    {% else %}
+        {% comment %} Text Post (Writing) {% endcomment %}
+        <div class="pin-card" data-post-type="writing" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+            <div class="type-badge writing"><i class="fas fa-pen-nib"></i> Writing</div>
+            <div class="pin-media" style="background: linear-gradient(135deg, #8A2BE2, #4169E1); min-height: 200px; display: flex; align-items: center; justify-content: center; color: white; padding: 2rem;">
+                <div style="text-align: center;">
+                    {% if post.title %}<h3>{{ post.title }}</h3>{% endif %}
+                    {% if post.content %}<p>{{ post.content|truncatechars:150 }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="pin-content">
+                <div class="pin-footer">
+                    <div class="pin-author">
+                        <div class="author-avatar">
+                            {% if post.author.userprofile.profile_picture %}
+                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                            {% else %}
+                                <div style="background: #8A2BE2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
+                                    {{ post.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                    <div class="pin-stats">
+                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
     {% empty %}
-    <div class="no-posts">
-        <div class="no-posts-icon">
-            <i class="fas fa-newspaper"></i>
-        </div>
+    <div style="text-align: center; padding: 4rem; grid-column: 1 / -1;">
         <h3>No posts yet</h3>
-        <p>Be the first to create a post and start the conversation!</p>
-        <a href="{% url 'posts:post_create' %}" class="create-first-post">
-            <i class="fas fa-plus"></i> Create First Post
-        </a>
+        <p>Be the first to share your creativity!</p>
     </div>
     {% endfor %}
-
-    <!-- Pagination -->
-    {% if is_paginated %}
-    <div class="pagination-container">
-        <nav aria-label="Posts pagination">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1" aria-label="First">
-                        <i class="fas fa-angle-double-left"></i>
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                        <i class="fas fa-angle-left"></i>
-                    </a>
-                </li>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
-                        <i class="fas fa-angle-right"></i>
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
-                        <i class="fas fa-angle-double-right"></i>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        <div class="pagination-info">
-            <small>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</small>
-        </div>
-    </div>
-    {% endif %}
+</div>
 </div>
 
-<!-- Test Bootstrap Dropdown -->
-<div style="position: fixed; top: 10px; right: 10px; z-index: 9999; display: none;">
-    <div class="dropdown">
-        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            Test Bootstrap
-        </button>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">Test Item 1</a></li>
-            <li><a class="dropdown-item" href="#">Test Item 2</a></li>
-        </ul>
-    </div>
-</div>
-
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter functionality
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const pinCards = document.querySelectorAll('.pin-card');
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const filter = this.dataset.filter;
+                
+                // Update active button
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Filter cards
+                pinCards.forEach(card => {
+                    const postType = card.dataset.postType;
+                    
+                    if (filter === 'all' || filter === postType) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // Video autoplay on hover
+        const videos = document.querySelectorAll('video');
+        videos.forEach(video => {
+            const card = video.closest('.pin-card');
+            
+            card.addEventListener('mouseenter', function() {
+                video.play();
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                video.pause();
+                video.currentTime = 0;
+            });
+            
+            card.addEventListener('click', function() {
+                video.pause();
+            });
+            
+            video.muted = true;
+        });
+    });
+</script>
 {% endblock %}

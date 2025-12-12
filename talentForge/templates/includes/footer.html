@@ -1,37 +1,613 @@
-<footer class="footer">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-6">
-                <h5><i class="fas fa-rocket"></i> TalentForge</h5>
-                <p>Empowering talent, building futures. Connect, learn, and grow with our community of professionals.</p>
-            </div>
-            <div class="col-md-3">
-                <h5>Quick Links</h5>
-                <ul class="list-unstyled">
-                    <li><a href="{% url 'base:home' %}" class="text-light">Home</a></li>
-                    {% if user.is_authenticated %}
-                    <li><a href="{% url 'base:view_profile' %}" class="text-light">Profile</a></li>
-                    <li><a href="{% url 'base:profile_settings' %}" class="text-light">Settings</a></li>
-                    {% else %}
-                    <li><a href="{% url 'base:login' %}" class="text-light">Login</a></li>
-                    <li><a href="{% url 'base:signup' %}" class="text-light">Sign Up</a></li>
-                    {% endif %}
-                </ul>
-            </div>
-            <div class="col-md-3">
-                <h5>Connect</h5>
-                <div class="social-links">
-                    <a href="#" class="text-light me-2"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="text-light me-2"><i class="fab fa-linkedin"></i></a>
-                    <a href="#" class="text-light me-2"><i class="fab fa-github"></i></a>
+<!-- talentForge\templates\includes\footer.html -->
+<footer class="footer mt-5">
+    <div class="footer-wave">
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="currentColor"></path>
+            <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" fill="currentColor"></path>
+            <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="currentColor"></path>
+        </svg>
+    </div>
+    
+    <div class="footer-content">
+        <div class="container">
+            <div class="row g-4">
+                <!-- Brand & About -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-brand mb-4">
+                        <div class="footer-logo d-flex align-items-center mb-3">
+                            <div class="footer-logo-icon me-2">
+                                <i class="fas fa-fire"></i>
+                            </div>
+                            <div>
+                                <h3 class="footer-brand-title">TalentForge</h3>
+                                <p class="footer-brand-subtitle">Ignite Your Talent</p>
+                            </div>
+                        </div>
+                        <p class="footer-about">
+                            Empowering creators and professionals to connect, collaborate, and build extraordinary careers. 
+                            Join our community to unleash your potential.
+                        </p>
+                        <div class="footer-newsletter mt-4">
+                            <h6 class="mb-2">Stay Updated</h6>
+                            <form class="newsletter-form">
+                                <div class="input-group">
+                                    <input type="email" class="form-control" placeholder="Your email">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="col-lg-2 col-md-6">
+                    <h5 class="footer-heading mb-4">Quick Links</h5>
+                    <ul class="footer-links list-unstyled">
+                        <li class="mb-2">
+                            <a href="{% url 'base:home' %}">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Home
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'posts:post_list' %}">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Explore
+                            </a>
+                        </li>
+                        {% if user.is_authenticated %}
+                        <li class="mb-2">
+                            <a href="/posts/profile/{{ user.username }}/">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                My Profile
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'posts:messages' %}">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Messages
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'posts:notifications' %}">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Notifications
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="mb-2">
+                            <a href="{% url 'base:login' %}">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Login
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'base:signup' %}">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Sign Up
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Resources -->
+                <div class="col-lg-2 col-md-6">
+                    <h5 class="footer-heading mb-4">Resources</h5>
+                    <ul class="footer-links list-unstyled">
+                        <li class="mb-2">
+                            <a href="#">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Help Center
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Community
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Blog
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Careers
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#">
+                                <i class="fas fa-chevron-right me-2"></i>
+                                Contact
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Connect & Social -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="footer-heading mb-4">Connect With Us</h5>
+                            <div class="social-icons mb-4">
+                                <a href="#" class="social-icon twitter">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                                <a href="#" class="social-icon linkedin">
+                                    <i class="fab fa-linkedin-in"></i>
+                                </a>
+                                <a href="#" class="social-icon github">
+                                    <i class="fab fa-github"></i>
+                                </a>
+                                <a href="#" class="social-icon instagram">
+                                    <i class="fab fa-instagram"></i>
+                                </a>
+                                <a href="#" class="social-icon youtube">
+                                    <i class="fab fa-youtube"></i>
+                                </a>
+                                <a href="#" class="social-icon discord">
+                                    <i class="fab fa-discord"></i>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="contact-info">
+                                <h6 class="mb-3">Contact Info</h6>
+                                <div class="contact-item mb-2">
+                                    <i class="fas fa-envelope me-2"></i>
+                                    <span>talentforge.app@gmail.com</span>
+                                </div>
+                                <div class="contact-item mb-2">
+                                    <i class="fas fa-phone me-2"></i>
+                                    <span>+216 99 999 999</span>
+                                </div>
+                                <div class="contact-item">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    <span>Tunisia</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <hr class="bg-light">
-        <div class="row">
-            <div class="col-md-12 text-center">
-                <p>&copy; 2025 TalentForge. All rights reserved.</p>
+
+            <!-- Copyright & Legal -->
+            <div class="footer-bottom mt-5 pt-4 border-top border-light">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="copyright mb-3 mb-md-0">
+                            &copy; 2025 <strong>TalentForge</strong>. All rights reserved.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="footer-legal list-unstyled d-flex justify-content-md-end mb-0">
+                            <li class="me-3">
+                                <a href="#">Privacy Policy</a>
+                            </li>
+                            <li class="me-3">
+                                <a href="#">Terms of Service</a>
+                            </li>
+                            <li>
+                                <a href="#">Cookie Policy</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </footer>
+
+<style>
+/* ========== FOOTER STYLES ========== */
+.footer {
+    position: relative;
+    background: linear-gradient(135deg, #1a2a6c 0%, #2d3748 100%);
+    color: white;
+    margin-top: auto;
+    overflow: hidden;
+}
+
+.footer-wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    transform: rotate(180deg);
+}
+
+.footer-wave svg {
+    position: relative;
+    display: block;
+    width: calc(100% + 1.3px);
+    height: 80px;
+    color: rgba(255, 255, 255, 0.1);
+}
+
+.footer-content {
+    padding-top: 100px;
+    padding-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* Footer Brand */
+.footer-brand {
+    padding-right: 2rem;
+}
+
+.footer-logo-icon {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #FF6B6B, #FFA726);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.footer-brand-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, #ffffff, #FFA726);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.footer-brand-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.footer-about {
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+/* Footer Newsletter */
+.footer-newsletter .form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 10px 0 0 10px;
+    border-right: none;
+}
+
+.footer-newsletter .form-control:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 107, 107, 0.5);
+    box-shadow: none;
+}
+
+.footer-newsletter .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-newsletter .btn {
+    border-radius: 0 10px 10px 0;
+    background: linear-gradient(135deg, #FF6B6B, #FFA726);
+    border: none;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.footer-newsletter .btn:hover {
+    background: linear-gradient(135deg, #FFA726, #FF6B6B);
+}
+
+/* Footer Headings */
+.footer-heading {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    position: relative;
+    padding-bottom: 0.75rem;
+}
+
+.footer-heading::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, #FF6B6B, #FFA726);
+    border-radius: 2px;
+}
+
+/* Footer Links */
+.footer-links a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.footer-links a:hover {
+    color: white;
+    transform: translateX(5px);
+}
+
+.footer-links a i {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.footer-links a:hover i {
+    transform: translateX(3px);
+}
+
+/* Social Icons */
+.social-icons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.social-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.social-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.social-icon i {
+    position: relative;
+    z-index: 1;
+}
+
+.social-icon:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.social-icon:hover::before {
+    opacity: 0.1;
+}
+
+.social-icon.twitter:hover { color: #1DA1F2; }
+.social-icon.linkedin:hover { color: #0077B5; }
+.social-icon.github:hover { color: #333; }
+.social-icon.instagram:hover { background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D); }
+.social-icon.youtube:hover { color: #FF0000; }
+.social-icon.discord:hover { color: #7289DA; }
+
+/* Contact Info */
+.contact-info h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.contact-item:hover {
+    color: white;
+}
+
+.contact-item i {
+    width: 20px;
+    color: #FFA726;
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    border-top-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.copyright {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+.copyright strong {
+    color: #FFA726;
+}
+
+.footer-legal {
+    display: flex;
+    gap: 1rem;
+}
+
+.footer-legal a {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.3s ease;
+}
+
+.footer-legal a:hover {
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .footer-wave svg {
+        height: 60px;
+    }
+    
+    .footer-content {
+        padding-top: 80px;
+    }
+    
+    .footer-brand {
+        padding-right: 0;
+        margin-bottom: 2rem;
+    }
+    
+    .footer-logo {
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .footer-about {
+        text-align: center;
+    }
+    
+    .footer-heading {
+        text-align: center;
+    }
+    
+    .footer-heading::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    
+    .footer-links {
+        text-align: center;
+    }
+    
+    .social-icons {
+        justify-content: center;
+    }
+    
+    .contact-info {
+        text-align: center;
+    }
+    
+    .footer-legal {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .footer-bottom .row {
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .footer-wave svg {
+        height: 50px;
+    }
+    
+    .footer-content {
+        padding-top: 70px;
+    }
+    
+    .footer-logo-icon {
+        font-size: 2rem;
+    }
+    
+    .footer-brand-title {
+        font-size: 1.5rem;
+    }
+    
+    .social-icons {
+        gap: 0.5rem;
+    }
+    
+    .social-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Newsletter form submission
+    const newsletterForm = document.querySelector('.newsletter-form');
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const emailInput = this.querySelector('input[type="email"]');
+            const email = emailInput.value;
+            
+            if (email) {
+                // Show success message
+                const submitBtn = this.querySelector('button');
+                const originalText = submitBtn.innerHTML;
+                
+                submitBtn.innerHTML = '<i class="fas fa-check"></i>';
+                submitBtn.classList.add('btn-success');
+                submitBtn.classList.remove('btn-primary');
+                
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.classList.remove('btn-success');
+                    submitBtn.classList.add('btn-primary');
+                    emailInput.value = '';
+                }, 2000);
+            }
+        });
+    }
+    
+    // Smooth scroll for footer links
+    const footerLinks = document.querySelectorAll('.footer-links a[href^="#"]');
+    footerLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href !== '#' && href.startsWith('#')) {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }
+        });
+    });
+    
+    // Social icon hover effect enhancement
+    const socialIcons = document.querySelectorAll('.social-icon');
+    socialIcons.forEach(icon => {
+        icon.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.1)';
+        });
+        
+        icon.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+});
+</script>

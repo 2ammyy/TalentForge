@@ -1,0 +1,107 @@
+<nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+    <div class="position-sticky pt-3 sidebar-sticky">
+        <!-- User Info -->
+        <div class="text-center mb-4">
+            <div class="mb-3">
+                <i class="bi bi-person-circle" style="font-size: 3rem; color: #6c757d;"></i>
+            </div>
+            <h6 class="fw-bold mb-1">{{ request.user.get_full_name|default:request.user.username }}</h6>
+            <small class="text-muted">{{ request.user.email }}</small>
+            <div class="mt-2">
+                <span class="badge {% if request.user.is_superuser %}bg-danger{% else %}bg-success{% endif %}">
+                    {% if request.user.is_superuser %}Super Admin{% else %}Staff{% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <hr class="mb-4">
+        
+        <!-- Navigation Menu -->
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" 
+                   href="{% url 'admin_app:dashboard' %}">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Dashboard
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'users' %}active{% endif %}" 
+                   href="{% url 'admin_app:users' %}">
+                    <i class="bi bi-people me-2"></i>
+                    User Management
+                    {% if stats.pending_creators %}
+                    <span class="badge bg-warning float-end">{{ stats.pending_creators }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'creators' %}active{% endif %}" 
+                   href="{% url 'admin_app:creators' %}">
+                    <i class="bi bi-star me-2"></i>
+                    Creator Management
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'moderation' %}active{% endif %}" 
+                   href="{% url 'admin_app:moderation' %}">
+                    <i class="bi bi-shield-check me-2"></i>
+                    Content Moderation
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'analytics' %}active{% endif %}" 
+                   href="{% url 'admin_app:analytics' %}">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Analytics
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'reports' %}active{% endif %}" 
+                   href="{% url 'admin_app:reports' %}">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    Reports
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link {% if active_page == 'settings' %}active{% endif %}" 
+                   href="{% url 'admin_app:settings' %}">
+                    <i class="bi bi-gear me-2"></i>
+                    Settings
+                </a>
+            </li>
+        </ul>
+        
+        <hr class="my-4">
+        
+        <!-- Quick Links -->
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link text-muted" href="{% url 'admin:index' %}" target="_blank">
+                    <i class="bi bi-box-arrow-up-right me-2"></i>
+                    Django Admin
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link text-muted" href="{% url 'base:home' %}">
+                    <i class="bi bi-house me-2"></i>
+                    Back to Site
+                </a>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link text-danger" href="{% url 'account_logout' %}">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    Logout
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>

@@ -1,147 +1,1284 @@
+<!-- talentForge\base\templates\base\home.html - VERSION CORRIGÉE -->
 {% extends 'base.html' %}
-{% load static %} 
+{% load static %}
 {% block title %}Home - TalentForge{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Pinterest/Instagram Style Layout */
+    .pinterest-grid {
+        column-count: 1;
+        column-gap: 1rem;
+        margin: 0 auto;
+        max-width: 1400px;
+        padding: 0 1rem;
+    }
+
+    .pin {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+    }
+
+    .pin:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .pin-image {
+        width: 100%;
+        height: auto;
+        display: block;
+        object-fit: cover;
+    }
+
+    .pin-content {
+        padding: 1rem;
+    }
+
+    .pin-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .pin-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 0.75rem;
+        object-fit: cover;
+        border: 2px solid #f0f2f5;
+    }
+
+    .pin-user-info {
+        flex: 1;
+    }
+
+    .pin-username {
+        font-weight: 600;
+        color: #262626;
+        margin-bottom: 2px;
+        font-size: 0.95rem;
+        text-decoration: none;
+    }
+
+    .pin-username:hover {
+        color: #007bff;
+        text-decoration: underline;
+    }
+
+    .pin-time {
+        font-size: 0.8rem;
+        color: #8e8e8e;
+    }
+
+    .pin-text {
+        color: #262626;
+        margin: 0.5rem 0;
+        line-height: 1.5;
+        font-size: 0.9rem;
+    }
+
+    .pin-text-content {
+        max-height: 3.6em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .pin-stats {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f0f2f5;
+        margin-top: 0.75rem;
+        font-size: 0.85rem;
+        color: #8e8e8e;
+    }
+
+    .pin-stat {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .pin-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+
+    .pin-action-btn {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        color: #262626;
+        text-decoration: none;
+    }
+
+    .pin-action-btn:hover {
+        background: #f8f9fa;
+        border-color: #d0d0d0;
+        text-decoration: none;
+    }
+
+    .pin-action-btn.active {
+        background: #f0f2f5;
+        border-color: #c0c0c0;
+    }
+
+    .pin-type-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        backdrop-filter: blur(4px);
+    }
+
+    /* Post Types Styling */
+    .post-type-text .pin-image-container {
+        min-height: 150px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .post-type-text .pin-text-content {
+        -webkit-line-clamp: 4;
+        max-height: 7.2em;
+    }
+
+    .post-type-job {
+        border-left: 4px solid #28a745;
+    }
+
+    .post-type-job .pin-type-badge {
+        background: #28a745;
+    }
+
+    .post-type-image .pin-type-badge {
+        background: #17a2b8;
+    }
+
+    .post-type-video .pin-type-badge {
+        background: #dc3545;
+    }
+
+    /* Welcome Section */
+    .welcome-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 1rem;
+        border-radius: 0 0 20px 20px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .welcome-section h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        font-weight: 800;
+    }
+
+    .welcome-section p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin: 0 auto 1.5rem;
+    }
+
+    /* Quick Stats */
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 1rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 1rem;
+        color: #666;
+        grid-column: 1 / -1;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    /* Responsive Grid */
+    @media (min-width: 640px) {
+        .pinterest-grid {
+            column-count: 2;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .pinterest-grid {
+            column-count: 3;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .pinterest-grid {
+            column-count: 4;
+        }
+    }
+
+    /* Animation */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .pin {
+        animation: fadeInUp 0.5s ease backwards;
+    }
+
+    /* User info section for authenticated users */
+    .user-info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .user-info-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .user-avatar-large {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-right: 1rem;
+        object-fit: cover;
+        border: 3px solid #f0f2f5;
+    }
+
+    .user-welcome h2 {
+        margin: 0 0 0.25rem 0;
+        color: #333;
+    }
+
+    .user-welcome p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .user-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .user-stat {
+        text-align: center;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .user-stat-number {
+        font-weight: 700;
+        color: #333;
+        font-size: 1.1rem;
+    }
+
+    .user-stat-label {
+        font-size: 0.75rem;
+        color: #666;
+        margin-top: 2px;
+    }
+
+    /* Guest Section */
+    .guest-section {
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+
+    .guest-features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .guest-feature-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+    }
+
+    .guest-feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .guest-feature-card i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .guest-feature-card h3 {
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .guest-feature-card p {
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    /* Loading Animation */
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+        grid-column: 1 / -1;
+    }
+
+    .loading-spinner i {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Image Container */
+    .pin-image-container {
+        position: relative;
+        width: 100%;
+        background: #f8f9fa;
+    }
+
+    .pin-image-container img {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .no-image-placeholder {
+        height: 200px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .no-image-placeholder i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .no-image-placeholder h4 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+
+    /* Job Details */
+    .job-details {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin: 0.75rem 0;
+    }
+
+    .job-detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .job-detail-item i {
+        width: 16px;
+        color: #28a745;
+    }
+
+    /* Like button styling */
+    .like-btn.liked {
+        background: #fff5f5;
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+
+    .like-btn.liked i {
+        color: #dc3545;
+    }
+    
+    /* Video styling */
+    video {
+        transition: opacity 0.3s ease;
+        background: #000;
+    }
+
+    video::-webkit-media-controls {
+        display: none !important;
+    }
+
+    .video-controls {
+        transition: opacity 0.3s ease;
+    }
+
+    .video-controls:hover {
+        opacity: 1 !important;
+    }
+
+    .video-play-btn, .video-mute-btn {
+        transition: all 0.2s ease;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .video-play-btn:hover, .video-mute-btn:hover {
+        opacity: 1 !important;
+        transform: scale(1.1);
+    }
+
+    /* Video thumbnail/loading */
+    video::poster {
+        object-fit: cover;
+    }
+
+    /* Mobile video adjustments */
+    @media (max-width: 768px) {
+        video {
+            max-height: 300px !important;
+        }
+        
+        .video-controls {
+            bottom: 10px !important;
+            right: 10px !important;
+        }
+        
+        .video-play-btn, .video-mute-btn {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+    }
+    
+    /* Video Styles */
+    .video-container {
+        position: relative;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .video-hover-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            to bottom, 
+            rgba(0,0,0,0.2) 0%,
+            rgba(0,0,0,0) 70%,
+            rgba(0,0,0,0.4) 100%
+        );
+        transition: background 0.3s ease;
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    .video-hover-overlay:hover {
+        background: linear-gradient(
+            to bottom, 
+            rgba(0,0,0,0.3) 0%,
+            rgba(0,0,0,0.1) 70%,
+            rgba(0,0,0,0.5) 100%
+        );
+    }
+
+    .video-controls {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 8px;
+        z-index: 3;
+        transition: opacity 0.3s ease;
+    }
+
+    .video-play-btn, .video-mute-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        border: none;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    .video-play-btn:hover, .video-mute-btn:hover {
+        background: rgba(0, 0, 0, 0.9);
+        transform: scale(1.1);
+    }
+
+    .post-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: opacity 0.3s ease;
+    }
+
+    /* Loading state */
+    .post-video.loading {
+        opacity: 0.5;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .video-controls {
+            bottom: 10px;
+            right: 10px;
+        }
+        
+        .video-play-btn, .video-mute-btn {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1 class="welcome text-center mb-4">🚀 Welcome to TalentForge</h1>
-
-{% if user.is_authenticated %}
-    <!-- Authenticated User Section -->
-    <div class="user-info">
-        <h2>Hello, {{ user.username }}! 👋</h2>
-        <p><strong>Welcome back to your TalentForge dashboard!</strong></p>
-        <p><strong>Email:</strong> {{ user.email }}</p>
-        <p><strong>Full Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
-        <p><strong>Last login:</strong> {{ user.last_login|date:"F j, Y, g:i a"|default:"First login" }}</p>
-        <p><strong>Account created:</strong> {{ user.date_joined|date:"F j, Y" }}</p>
-        <p><strong>Status:</strong> <span style="color: #28a745;">● Active</span></p>
-        <p><strong>Followers:</strong> {{ follower_count|default:"0" }}</p>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions text-center mb-4">
-        <a href="{% url 'base:view_profile' %}" class="btn btn-primary me-2">👤 View Profile</a>
-        <a href="{% url 'base:edit_profile' %}" class="btn btn-success me-2">✏️ Edit Profile</a>
-        <a href="{% url 'base:profile_settings' %}" class="btn btn-secondary me-2">⚙️ Settings</a>
-        <a href="{% url 'posts:post_create' %}" class="btn btn-secondary me-2">➕ Create Post</a>
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <h1>🚀 Welcome to TalentForge</h1>
+    <p>Discover amazing talent, showcase your skills, and connect with professionals</p>
+    
+    {% if user.is_authenticated %}
+    <div class="user-info-card" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+        <div class="user-info-header">
+            <div class="user-avatar-large" style="background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; color: #667eea;">
+                {{ user.username|first|upper }}
+            </div>
+            <div class="user-welcome">
+                <h2 style="color: white;">Hello, {{ user.username }}! 👋</h2>
+                <p style="color: rgba(255,255,255,0.9);">
+                    {% if posts|length > 0 %}
+                    Discover {{ posts|length }} posts from the community
+                    {% else %}
+                    Welcome to your creative space
+                    {% endif %}
+                </p>
+            </div>
+        </div>
         
-        {% if follower_count|default:0 >= 1 %}
-            <!-- User has at least 1 follower -->
-            <a href="{% url 'creator:dashboard' %}" class="btn btn-warning">📂 Creator Dashboard</a>
-            <a href="{% url 'creator:analytics' %}" class="btn btn-info ms-2">📈 Analytics</a>
-        {% else %}
-            <!-- User has no followers -->
-            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#creatorAdvertModal">
-                📂 Creator Dashboard
-            </button>
-            <button type="button" class="btn btn-info ms-2" data-bs-toggle="modal" data-bs-target="#creatorAdvertModal">
-                📈 Analytics
-            </button>
+        <!-- Quick Stats -->
+        <div class="quick-stats" style="background: transparent; box-shadow: none; padding: 0;">
+            <div class="stat-card" style="background: rgba(255,255,255,0.1); color: white;">
+                <div class="stat-number">{{ follower_count|default:"0" }}</div>
+                <div class="stat-label">Followers</div>
+            </div>
+            <div class="stat-card" style="background: rgba(255,255,255,0.1); color: white;">
+                <div class="stat-number">{{ user.user_following.count|default:"0" }}</div>
+                <div class="stat-label">Following</div>
+            </div>
+            <div class="stat-card" style="background: rgba(255,255,255,0.1); color: white;">
+                <div class="stat-number">{{ user.posts.count|default:"0" }}</div>
+                <div class="stat-label">Your Posts</div>
+            </div>
+            <div class="stat-card" style="background: rgba(255,255,255,0.1); color: white;">
+                <div class="stat-number">{{ posts|length }}</div>
+                <div class="stat-label">Total Posts</div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="d-flex flex-wrap justify-content-center gap-2 mt-3">
+            <a href="{% url 'posts:post_create' %}" class="btn btn-light">
+                <i class="fas fa-plus-circle"></i> Create Post
+            </a>
+            <a href="/posts/profile/{{ user.username }}/" class="btn btn-outline-light">
+                <i class="fas fa-user-circle"></i> View Profile
+            </a>
+            
+            {% if follower_count|default:0 >= 1 %}
+                <a href="{% url 'creator:dashboard' %}" class="btn btn-warning">
+                    <i class="fas fa-tachometer-alt"></i> Creator Dashboard
+                </a>
+            {% else %}
+                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#creatorAdvertModal">
+                    <i class="fas fa-tachometer-alt"></i> Creator Dashboard
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
 
-            <!-- Creator requirement modal -->
-            <div class="modal fade" id="creatorAdvertModal" tabindex="-1" aria-labelledby="creatorAdvertModalLabel" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title" id="creatorAdvertModalLabel">🔒 Creator Access Required</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                    <p>You need <strong>at least 1 follower</strong> to access Creator features.</p>
-                    <div class="alert alert-warning mt-3">
-                        <strong>Current followers:</strong> {{ follower_count|default:"0" }}
+<!-- Main Content -->
+<div class="container-fluid px-0">
+    {% if user.is_authenticated %}
+        <!-- Posts Grid -->
+        <div class="pinterest-grid" id="postsGrid">
+            {% if posts %}
+                {% for post in posts %}
+                <div class="pin post-type-{{ post.type }}" data-post-id="{{ post.id }}">
+                    <!-- Post Image/Video -->
+                    {% if post.type == 'image' and post.image %}
+                    <div class="pin-image-container">
+                        <img src="{{ post.image.url }}" alt="{{ post.title|default:'Post image' }}" class="pin-image">
                     </div>
-                    <p><strong>How to get followers:</strong></p>
-                    <ul>
-                        <li>Create interesting posts</li>
-                        <li>Follow other users</li>
-                        <li>Complete your profile with skills</li>
-                        <li>Engage with the community</li>
-                    </ul>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a href="{% url 'posts:post_create' %}" class="btn btn-primary">Create Post</a>
-                    <a href="{% url 'base:view_profile' %}" class="btn btn-success">Edit Profile</a>
-                  </div>
+                    {% elif post.type == 'video' and post.video %}
+                    <div class="pin-image-container">
+                        <div style="position: relative; padding-top: 56.25%; background: #000;">
+                            <video 
+                                class="post-video"
+                                autoplay
+                                muted
+                                loop
+                                playsinline
+                                preload="auto"
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
+                                poster="{% if post.image %}{{ post.image.url }}{% else %}{% static 'defaults/video_placeholder.jpg' %}{% endif %}"
+                            >
+                                <source src="{{ post.video.url }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            
+                            <!-- Video Controls Overlay -->
+                            <div class="video-hover-overlay" 
+                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; z-index: 2;"
+                                 onclick="toggleVideoPlayPause(this)">
+                                 
+                                <!-- Video Controls -->
+                                <div class="video-controls" style="position: absolute; bottom: 10px; right: 10px; z-index: 3; opacity: 0; transition: opacity 0.3s;">
+                                    <button class="btn btn-sm btn-dark video-play-btn" style="width: 32px; height: 32px; border-radius: 50%; padding: 0;">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif post.type == 'text' %}
+                    <div class="pin-image-container no-image-placeholder">
+                        <div style="color: white; text-align: center; padding: 2rem;">
+                            <i class="fas fa-file-alt" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <h4 style="margin: 0;">Text Post</h4>
+                        </div>
+                    </div>
+                    {% elif post.type == 'job' %}
+                    <div class="pin-image-container" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        <div style="color: white; text-align: center; padding: 2rem;">
+                            <i class="fas fa-briefcase" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <h4 style="margin: 0;">Job Opportunity</h4>
+                            {% if post.job_details %}
+                            <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">{{ post.job_details.company }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="pin-image-container no-image-placeholder">
+                        <div style="color: white; text-align: center; padding: 2rem;">
+                            <i class="fas fa-newspaper" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <h4 style="margin: 0;">{{ post.get_type_display }}</h4>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Type Badge -->
+                    <span class="pin-type-badge">
+                        {% if post.type == 'image' %}📷
+                        {% elif post.type == 'video' %}🎬
+                        {% elif post.type == 'text' %}📝
+                        {% elif post.type == 'job' %}💼
+                        {% endif %}
+                        {{ post.get_type_display }}
+                    </span>
+                    
+                    <!-- Post Content -->
+                    <div class="pin-content">
+                        <!-- Author Info -->
+                        <div class="pin-header">
+                            <a href="/posts/profile/{{ post.author.username }}/" style="text-decoration: none;">
+                                <img src="{{ post.author.userprofile.get_profile_picture }}" 
+                                     alt="{{ post.author.username }}" 
+                                     class="pin-avatar">
+                            </a>
+                            <div class="pin-user-info">
+                                <a href="/posts/profile/{{ post.author.username }}/" style="text-decoration: none; color: inherit;">
+                                    <div class="pin-username">{{ post.author.username }}</div>
+                                </a>
+                                <div class="pin-time">{{ post.created_at|timesince }} ago</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Post Title -->
+                        {% if post.title %}
+                        <h5 style="margin: 0.5rem 0; color: #262626; font-weight: 600;">
+                            <a href="{% url 'posts:post_detail' post.pk %}" style="text-decoration: none; color: inherit;">
+                                {{ post.title }}
+                            </a>
+                        </h5>
+                        {% endif %}
+                        
+                        <!-- Post Content -->
+                        {% if post.content %}
+                        <div class="pin-text">
+                            <a href="{% url 'posts:post_detail' post.pk %}" style="text-decoration: none; color: inherit;">
+                                <div class="pin-text-content">{{ post.content|truncatewords:30 }}</div>
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Job Details -->
+                        {% if post.type == 'job' and post.job_details %}
+                        <div class="job-details">
+                            <div class="job-detail-item">
+                                <i class="fas fa-building"></i>
+                                <strong>{{ post.job_details.company }}</strong>
+                            </div>
+                            <div class="job-detail-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ post.job_details.location }}</span>
+                            </div>
+                            <div class="job-detail-item">
+                                <i class="fas fa-briefcase"></i>
+                                <span>{{ post.job_details.get_work_mode_display }}</span>
+                            </div>
+                            {% if post.job_details.salary_range %}
+                            <div class="job-detail-item">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>{{ post.job_details.get_salary_range_display }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Post Stats -->
+                        <div class="pin-stats">
+                            <div class="pin-stat">
+                                <i class="fas fa-heart" style="color: #dc3545;"></i>
+                                <span class="like-count-{{ post.id }}">{{ post.reactions.count }} likes</span>
+                            </div>
+                            <div class="pin-stat">
+                                <i class="fas fa-comment" style="color: #17a2b8;"></i>
+                                <span>{{ post.comments.count }} comments</span>
+                            </div>
+                            <div class="pin-stat">
+                                <i class="fas fa-share" style="color: #28a745;"></i>
+                                <span>{{ post.post_shares.count }} shares</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Post Actions -->
+                        <div class="pin-actions">
+                            <button class="pin-action-btn like-btn" data-post-id="{{ post.id }}" id="like-btn-{{ post.id }}">
+                                <i class="far fa-heart"></i> Like
+                            </button>
+                            <a href="{% url 'posts:post_detail' post.pk %}#comments" class="pin-action-btn">
+                                <i class="fas fa-comment"></i> Comment
+                            </a>
+                            <a href="{% url 'posts:share_post' post.pk %}" class="pin-action-btn">
+                                <i class="fas fa-share"></i> Share
+                            </a>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-        {% endif %}
-    </div>
-
-    <!-- Quick Stats -->
-    <div class="stats">
-        <div class="stat-item">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Projects</div>
+                {% endfor %}
+            {% else %}
+                <!-- No Posts State -->
+                <div class="empty-state">
+                    <i class="fas fa-newspaper"></i>
+                    <h3>No posts in the community yet</h3>
+                    <p>Be the first to create a post and start the conversation!</p>
+                    <a href="{% url 'posts:post_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Create Your First Post
+                    </a>
+                </div>
+            {% endif %}
         </div>
-        <div class="stat-item">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Skills</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-number">{{ follower_count|default:"0" }}</div>
-            <div class="stat-label">Followers</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-number">{{ user.following.count|default:"0" }}</div>
-            <div class="stat-label">Following</div>
-        </div>
-    </div>
-
-    <!-- Features Grid -->
-    <div class="features">
-        <div class="feature-card">
-            <h3>📊 Dashboard</h3>
-            <p>Track your progress and achievements</p>
-        </div>
-        <div class="feature-card">
-            <h3>👤 Profile</h3>
-            <p>Manage your personal information</p>
-        </div>
-        <div class="feature-card">
-            <h3>🔧 Skills</h3>
-            <p>Showcase your talents and expertise</p>
-        </div>
-        <div class="feature-card">
-            <h3>💼 Projects</h3>
-            <p>Display your work portfolio</p>
-        </div>
-    </div>
-
-{% else %}
-    <!-- Guest User Section -->
-    <div class="guest-section">
-        <h2>🔐 You are not logged in</h2>
-        <p>Please log in to access your TalentForge account and unlock all features.</p>
         
-        <!-- Features for Guests -->
-        <div class="features">
-            <div class="feature-card">
-                <h3>🌟 Discover Talent</h3>
-                <p>Find skilled professionals and amazing projects</p>
-            </div>
-            <div class="feature-card">
-                <h3>🚀 Grow Your Skills</h3>
-                <p>Showcase your abilities and get recognized</p>
-            </div>
-            <div class="feature-card">
-                <h3>💼 Build Portfolio</h3>
-                <p>Create an impressive portfolio of your work</p>
-            </div>
-            <div class="feature-card">
-                <h3>🔗 Connect</h3>
-                <p>Network with professionals in your field</p>
+        <!-- Load More Button -->
+        {% if posts|length >= 50 %}
+        <div class="text-center mt-4 mb-5">
+            <button id="loadMoreBtn" class="btn btn-outline-primary">
+                <i class="fas fa-sync-alt"></i> Load More Posts
+            </button>
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- Guest Section -->
+        <div class="guest-section">
+            <div class="container">
+                <h2>Join the TalentForge Community</h2>
+                <p style="color: #666; max-width: 600px; margin: 0 auto 2rem;">Discover amazing talent, showcase your skills, and connect with professionals worldwide</p>
+                
+                <div class="guest-features">
+                    <div class="guest-feature-card">
+                        <i class="fas fa-search"></i>
+                        <h3>Discover Talent</h3>
+                        <p>Find skilled professionals and amazing projects from around the world</p>
+                    </div>
+                    
+                    <div class="guest-feature-card">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Showcase Skills</h3>
+                        <p>Display your abilities and get recognized by employers and peers</p>
+                    </div>
+                    
+                    <div class="guest-feature-card">
+                        <i class="fas fa-project-diagram"></i>
+                        <h3>Build Portfolio</h3>
+                        <p>Create an impressive portfolio of your work and achievements</p>
+                    </div>
+                    
+                    <div class="guest-feature-card">
+                        <i class="fas fa-users"></i>
+                        <h3>Connect & Network</h3>
+                        <p>Network with professionals and companies in your field</p>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-5">
+                    <h3 style="margin-bottom: 1.5rem;">Ready to join?</h3>
+                    <a href="{% url 'base:signup' %}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-user-plus"></i> Sign Up Free
+                    </a>
+                    <a href="{% url 'base:login' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
             </div>
         </div>
+    {% endif %}
+</div>
 
-        <!-- Action Buttons -->
-        <div class="text-center mt-4">
-            <a href="{% url 'base:login' %}" class="btn btn-primary btn-lg me-2">🔑 Login</a>
-            <a href="{% url 'base:signup' %}" class="btn btn-success btn-lg">📝 Sign Up</a>
+<!-- Creator requirement modal -->
+<div class="modal fade" id="creatorAdvertModal" tabindex="-1" aria-labelledby="creatorAdvertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="creatorAdvertModalLabel">🔒 Creator Access Required</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You need <strong>at least 1 follower</strong> to access Creator features.</p>
+                <div class="alert alert-warning mt-3">
+                    <strong>Current followers:</strong> {{ follower_count|default:"0" }}
+                </div>
+                <p><strong>How to get followers:</strong></p>
+                <ul>
+                    <li>Create interesting posts</li>
+                    <li>Follow other users</li>
+                    <li>Complete your profile with skills</li>
+                    <li>Engage with the community</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="{% url 'posts:post_create' %}" class="btn btn-primary">Create Post</a>
+                <a href="{% url 'base:view_profile' %}" class="btn btn-success">Edit Profile</a>
+            </div>
         </div>
     </div>
-{% endif %}
+</div>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+// Masonry-like Pinterest grid effect
+function arrangePinterestGrid() {
+    const grid = document.getElementById('postsGrid');
+    if (!grid) return;
+    
+    const containerWidth = grid.offsetWidth;
+    let columns = 1;
+    
+    if (containerWidth >= 1280) columns = 4;
+    else if (containerWidth >= 1024) columns = 3;
+    else if (containerWidth >= 640) columns = 2;
+    
+    grid.style.columnCount = columns;
+}
+
+// Handle post interactions
+document.addEventListener('DOMContentLoaded', function() {
+    arrangePinterestGrid();
+    window.addEventListener('resize', arrangePinterestGrid);
+    
+    // Initialize like buttons with current state
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        const postId = btn.getAttribute('data-post-id');
+        // Check if user has already liked this post
+        checkLikeStatus(postId, btn);
+        
+        // Add click event
+        btn.addEventListener('click', function() {
+            const postId = this.getAttribute('data-post-id');
+            toggleLike(postId, this);
+        });
+    });
+    
+    // Load More Button
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', function() {
+            loadMorePosts();
+        });
+    }
+    
+    // Hover effects for video controls
+    document.querySelectorAll('.video-hover-overlay').forEach(overlay => {
+        overlay.addEventListener('mouseenter', function() {
+            const controls = this.querySelector('.video-controls');
+            if (controls) {
+                controls.style.opacity = '0.8';
+            }
+        });
+        
+        overlay.addEventListener('mouseleave', function() {
+            const controls = this.querySelector('.video-controls');
+            if (controls) {
+                // Hide controls after delay
+                setTimeout(() => {
+                    if (!this.matches(':hover') && !controls.matches(':hover')) {
+                        controls.style.opacity = '0';
+                    }
+                }, 300);
+            }
+        });
+    });
+    
+    // Initialize all videos to autoplay
+    initializeVideos();
+});
+
+// Initialize videos to autoplay
+function initializeVideos() {
+    document.querySelectorAll('video').forEach(video => {
+        // Set attributes for autoplay
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', '');
+        
+        // Try to play the video
+        const playPromise = video.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Video autoplay failed:", error);
+                // Some browsers require user interaction first
+                // Add event listeners to play on user interaction
+                document.addEventListener('click', function playVideoOnInteraction() {
+                    video.play().catch(e => console.log("Still failed:", e));
+                    document.removeEventListener('click', playVideoOnInteraction);
+                }, { once: true });
+            });
+        }
+        
+        // Update play button icon
+        video.addEventListener('play', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-pause';
+            }
+        });
+        
+        video.addEventListener('pause', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-play';
+            }
+        });
+        
+        // Handle loading states
+        video.addEventListener('waiting', function() {
+            this.style.opacity = '0.7';
+        });
+        
+        video.addEventListener('playing', function() {
+            this.style.opacity = '1';
+        });
+        
+        // Handle video errors
+        video.addEventListener('error', function() {
+            console.error('Video error:', this.error);
+        });
+    });
+}
+
+// Check if user has liked the post
+function checkLikeStatus(postId, buttonElement) {
+    // In a real app, you would fetch this from your API
+    // For now, we'll assume not liked initially
+}
+
+// Toggle like/unlike
+function toggleLike(postId, buttonElement) {
+    const icon = buttonElement.querySelector('i');
+    const isLiked = buttonElement.classList.contains('liked');
+    
+    if (isLiked) {
+        // Unlike
+        buttonElement.classList.remove('liked');
+        icon.classList.remove('fas');
+        icon.classList.add('far');
+        buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
+        sendLikeRequest(postId, false, buttonElement);
+    } else {
+        // Like
+        buttonElement.classList.add('liked');
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
+        sendLikeRequest(postId, true, buttonElement);
+    }
+}
+
+// Send like/unlike request
+function sendLikeRequest(postId, like, buttonElement) {
+    const url = like ? `/posts/reaction/${postId}/` : `/posts/unreaction/${postId}/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'reaction_type': 'like'
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update like count in the UI
+            const likeCountElement = document.querySelector(`.like-count-${postId}`);
+            if (likeCountElement) {
+                const currentCount = parseInt(likeCountElement.textContent);
+                const newCount = like ? currentCount + 1 : currentCount - 1;
+                likeCountElement.textContent = `${newCount} likes`;
+                
+                // Add animation
+                likeCountElement.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    likeCountElement.style.transform = 'scale(1)';
+                }, 300);
+            }
+        } else {
+            // Revert button state if error
+            if (like) {
+                buttonElement.classList.remove('liked');
+                buttonElement.querySelector('i').classList.remove('fas');
+                buttonElement.querySelector('i').classList.add('far');
+                buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
+            } else {
+                buttonElement.classList.add('liked');
+                buttonElement.querySelector('i').classList.remove('far');
+                buttonElement.querySelector('i').classList.add('fas');
+                buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
+            }
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Revert button state
+        if (like) {
+            buttonElement.classList.remove('liked');
+            buttonElement.querySelector('i').classList.remove('fas');
+            buttonElement.querySelector('i').classList.add('far');
+            buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
+        } else {
+            buttonElement.classList.add('liked');
+            buttonElement.querySelector('i').classList.remove('far');
+            buttonElement.querySelector('i').classList.add('fas');
+            buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
+        }
+    });
+}
+
+// Load more posts
+function loadMorePosts() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (!loadMoreBtn) return;
+    
+    loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    loadMoreBtn.disabled = true;
+    
+    const currentCount = document.querySelectorAll('.pin').length;
+    
+    // In a real app, you would fetch from your API
+    // For now, just simulate loading
+    setTimeout(() => {
+        // Simulate no more posts
+        loadMoreBtn.style.display = 'none';
+        alert('No more posts to load');
+    }, 1000);
+}
+
+// Helper function to get CSRF token
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+
+// Toggle video play/pause
+function toggleVideoPlayPause(overlay) {
+    const video = overlay.previousElementSibling;
+    const playBtn = overlay.querySelector('.video-play-btn i');
+    
+    if (!video) return;
+    
+    if (video.paused) {
+        video.play();
+        if (playBtn) playBtn.className = 'fas fa-pause';
+    } else {
+        video.pause();
+        if (playBtn) playBtn.className = 'fas fa-play';
+    }
+    
+    // Keep controls visible after click
+    const controls = overlay.querySelector('.video-controls');
+    if (controls) {
+        controls.style.opacity = '0.8';
+        setTimeout(() => {
+            if (!overlay.matches(':hover') && !controls.matches(':hover')) {
+                controls.style.opacity = '0';
+            }
+        }, 2000);
+    }
+}
+
+// Intersection Observer for videos - play only when visible
+let videoObserver;
+if ('IntersectionObserver' in window) {
+    videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                // Video is visible - try to play
+                if (video.paused) {
+                    video.play().catch(e => console.log("Play failed:", e));
+                }
+            } else {
+                // Video is not visible - pause it
+                if (!video.paused) {
+                    video.pause();
+                }
+            }
+        });
+    }, { threshold: 0.1 }); // 10% visible
+    
+    // Observe all videos
+    document.querySelectorAll('video').forEach(video => {
+        videoObserver.observe(video);
+    });
+}
+
+// Cleanup observer on page unload
+window.addEventListener('beforeunload', function() {
+    if (videoObserver) {
+        document.querySelectorAll('video').forEach(video => {
+            videoObserver.unobserve(video);
+        });
+    }
+});
+</script>
 {% endblock %}

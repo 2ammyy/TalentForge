@@ -1,0 +1,74 @@
+/* static/css/word-prediction-enhanced.css */
+.word-prediction-hint {
+    position: absolute;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.2s ease;
+    z-index: 9999;
+    white-space: nowrap;
+}
+
+.word-prediction-hint.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Add some visual feedback for text inputs with prediction */
+.text-input-with-prediction {
+    position: relative;
+    background-image: linear-gradient(to right, #667eea 0%, #764ba2 100%);
+    background-size: 0% 2px;
+    background-repeat: no-repeat;
+    background-position: 0% 100%;
+    transition: background-size 0.3s ease;
+}
+
+.text-input-with-prediction:focus {
+    background-size: 100% 2px;
+    border-color: #667eea;
+}
+
+/* Loading indicator */
+.word-suggestions-loading {
+    padding: 20px;
+    text-align: center;
+}
+
+.word-suggestions-loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .word-suggestions-container {
+        max-width: 200px !important;
+        font-size: 13px !important;
+    }
+    
+    .word-suggestion {
+        padding: 8px 10px !important;
+    }
+    
+    .suggestion-shortcut {
+        display: none; /* Hide shortcuts on mobile */
+    }
+}

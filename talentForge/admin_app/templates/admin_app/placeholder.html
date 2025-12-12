@@ -1,0 +1,22 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-tools fa-4x text-muted mb-3"></i>
+        <h3>{{ page_title }}</h3>
+        <p class="text-muted">This feature is coming soon!</p>
+        <p>We're working hard to bring you this functionality.</p>
+        <div class="mt-4">
+            <a href="{% url 'admin_app:dashboard' %}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'admin_app:users' %}" class="btn btn-outline-primary ms-2">
+                <i class="fas fa-users"></i> Manage Users
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

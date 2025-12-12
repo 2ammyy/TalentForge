@@ -120,8 +120,40 @@ The TalentForge Team
         print(f"❌ Failed to send email to {email}: {e}")
         print(f"DEVELOPMENT MODE - Deletion code for {email}: {code}")
 
+# talentForge/base/views.py - Updated home function
+
 @login_required
 def home(request):
+    from posts.models import Post  # Import here to avoid circular imports
+    from creator.models import CreatorProfile
+    
+    # Get all posts from all users, ordered by newest first
+    all_posts = Post.objects.all().select_related(
+        'author', 
+        'author__userprofile',
+        'job_details'
+    ).prefetch_related(
+        'reactions',
+        'comments',
+        'shares'
+    ).order_by('-created_at')[:50]  # Limit to 50 most recent
+    
+    context = {
+        'posts': all_posts,  # Pass all posts to template
+    }
+    
+    if request.user.is_authenticated:
+        # Add user-specific context
+        context['follower_count'] = request.user.user_followers.count()
+        
+        # Get creator profile if exists
+        try:
+            creator_profile = CreatorProfile.objects.get(user=request.user)
+            context['creator_profile'] = creator_profile
+        except CreatorProfile.DoesNotExist:
+            context['creator_profile'] = None
+    
+    return render(request, 'base/home.html', context)
     context = {}
     if request.user.is_authenticated:
         # Obtenir le nombre de followers depuis le modèle Follow

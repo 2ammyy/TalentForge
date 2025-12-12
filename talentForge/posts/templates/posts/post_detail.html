@@ -1,463 +1,1020 @@
+<!-- talentForge\posts\templates\posts\post_detail.html - VERSION COMPLÈTE AMÉLIORÉE -->
 {% extends 'base.html' %}
-{% load static %} 
-{% block subtitle %}Post by {{ post.author.username }}{% endblock %}
+{% load static %}
+{% block subtitle %}Art by {{ post.author.username }}{% endblock %}
 
-{% block content %}
-<div class="post-detail-container">
-    <!-- Post principal -->
-    <div class="post-card">
-        <div class="post-header">
-            <div class="post-header-content">
-                <h3>{{ post.author.username }}'s Post</h3>
-                <span class="post-date">{{ post.created_at|date:"F j, Y, g:i a" }}</span>
-            </div>
-            
-            <!-- BOUTON DE SIGNALEMENT AJOUTÉ ICI -->
-            <div class="post-actions-dropdown">
-                <div class="dropdown">
-                    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item text-danger" href="{% url 'posts:report_post' post.id %}">
-                                <i class="fas fa-flag"></i> Report Post
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="post-content">
-            <p>{{ post.content }}</p>
-        </div>
-        
-        {% if post.image %}
-        <div class="post-media">
-            <img src="{{ post.image.url }}" class="post-image">
-        </div>
-        {% endif %}
-        
-        {% if post.video %}
-        <div class="post-media">
-            <video controls src="{{ post.video.url }}" class="post-video"></video>
-        </div>
-        {% endif %}
-
-        <!-- ACTIONS DU POST -->
-        <div class="post-actions" style="display: flex; align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid #e9ecef; margin-top: 1rem; flex-wrap: wrap;">
-            <a href="{% url 'posts:post_detail' post.pk %}" class="action-link" style="color: #007bff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s ease;">
-                💬 Comments ({{ post.comments.count }})
-            </a>
-            <span class="action-separator" style="color: #ddd;">|</span>
-            
-            <div class="reaction-section" style="display: flex; align-items: center; gap: 0.5rem;">
-                <button class="reaction-btn like-btn" data-post-id="{{ post.id }}" data-reaction-type="like" style="background: none; border: 1px solid #e9ecef; padding: 0.4rem 0.8rem; border-radius: 20px; cursor: pointer; transition: all 0.2s ease; font-size: 0.9rem;">
-                    ❤️ Like
-                </button>
-                <span class="reaction-count" id="reaction-count-{{ post.id }}" style="font-size: 0.9rem; font-weight: 500; color: #666;">{{ post.reactions.count }}</span>
-            </div>
-            
-            <span class="action-separator" style="color: #ddd;">|</span>
-            <a href="{% url 'posts:share_post' post.id %}" class="action-link" style="color: #007bff; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s ease;">
-                🔄 Share ({{ post.post_shares.count }})
-            </a>
-        </div>
-
-        <!-- SECTION DES PARTAGES -->
-        {% if post.post_shares.exists %}
-        <div class="shares-section" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
-            <h6 style="margin-bottom: 0.5rem; color: #333;">🔄 Shared by</h6>
-            {% for share in post.post_shares.all %}
-            <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: white; border-radius: 5px;">
-                <strong>{{ share.user.username }}</strong>
-                {% if share.caption %}
-                <p style="margin: 0.25rem 0 0 0; color: #555; font-style: italic;">"{{ share.caption }}"</p>
-                {% endif %}
-                <small style="color: #999;">{{ share.created_at|timesince }} ago</small>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-
-    <hr>
-
-    <!-- Section commentaires -->
-    <div class="comments-section">
-        <h4>Comments ({{ comments.count }})</h4>
-        
-        <div class="comments-list">
-            {% for comment in comments %}
-            <div class="comment-card">
-                <div class="comment-header">
-                    <strong>{{ comment.author.username }}</strong>
-                    <span class="comment-date">{{ comment.created_at|date:"M j, Y, g:i a" }}</span>
-                </div>
-                <p class="comment-text">{{ comment.text }}</p>
-            </div>
-            {% empty %}
-            <p class="no-comments">No comments yet. Be the first to comment!</p>
-            {% endfor %}
-        </div>
-
-        <!-- Formulaire de commentaire -->
-        {% if user.is_authenticated %}
-        <div class="comment-form">
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label for="{{ form.text.id_for_label }}">Add a comment:</label>
-                    {{ form.text }}
-                    {% if form.text.errors %}
-                        <div class="error">{{ form.text.errors }}</div>
-                    {% endif %}
-                </div>
-                <button type="submit" class="submit-button">Add Comment</button>
-            </form>
-        </div>
-        {% else %}
-        <div class="login-prompt">
-            <p><a href="{% url 'login' %}">Log in</a> to add a comment.</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
+{% block extra_css %}
 <style>
+    /* Styles spécifiques pour les détails de post */
     .post-detail-container {
-        max-width: 800px;
+        max-width: 900px;
         margin: 0 auto;
         padding: 2rem;
+        animation: fadeInUp 0.6s ease;
     }
 
-    .post-card {
-        background: white;
-        border-radius: 10px;
-        padding: 2rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
+    .art-post-card {
+        background: var(--glass-effect);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 2.5rem;
+        box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.1),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        margin-bottom: 3rem;
         position: relative;
+        overflow: hidden;
+        border: 1px solid transparent;
+        background-clip: padding-box;
     }
 
-    .post-header {
+    .art-post-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 24px;
+        padding: 3px;
+        background: var(--primary-gradient);
+        -webkit-mask: 
+            linear-gradient(#fff 0 0) content-box, 
+            linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.5;
+        animation: borderRotate 6s linear infinite;
+    }
+
+    .post-artist-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 1rem;
-    }
-
-    .post-header-content {
-        flex: 1;
-    }
-
-    .post-header h3 {
-        margin: 0 0 0.5rem 0;
-        color: #333;
-    }
-
-    .post-date {
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    /* STYLES POUR LE BOUTON DE SIGNALEMENT */
-    .post-actions-dropdown {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.1);
         position: relative;
     }
 
-    .dropdown-toggle {
-        background: none;
-        border: 1px solid #e9ecef;
+    .post-artist-header::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100px;
+        height: 2px;
+        background: var(--primary-gradient);
+        border-radius: 2px;
+    }
+
+    .artist-info {
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+    }
+
+    .artist-avatar-large {
+        width: 70px;
+        height: 70px;
         border-radius: 50%;
-        width: 36px;
-        height: 36px;
+        overflow: hidden;
+        position: relative;
+        border: 3px solid transparent;
+        background: var(--primary-gradient);
+        padding: 3px;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .artist-avatar-large img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .artist-details {
+        flex: 1;
+    }
+
+    .artist-name {
+        font-family: var(--heading-font);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 0.3rem;
+    }
+
+    .artist-title {
+        font-family: var(--creative-font);
+        font-size: 1.1rem;
+        color: var(--accent-primary);
+        opacity: 0.8;
+        margin-bottom: 0.5rem;
+    }
+
+    .post-art-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--text-color);
+        opacity: 0.7;
+    }
+
+    .post-art-date {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .art-actions-dropdown {
+        position: relative;
+    }
+
+    .art-dropdown-toggle {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        color: var(--accent-primary);
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.2s ease;
-        color: #666;
+        transition: all 0.3s ease;
+        font-size: 1.2rem;
     }
 
-    .dropdown-toggle:hover {
-        background: #f8f9fa;
-        border-color: #007bff;
-        color: #007bff;
+    .art-dropdown-toggle:hover {
+        background: var(--primary-gradient);
+        color: white;
+        transform: rotate(90deg) scale(1.1);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
     }
 
-    .dropdown-menu {
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e9ecef;
-        min-width: 160px;
+    /* Contenu artistique */
+    .art-content-section {
+        margin: 2.5rem 0;
     }
 
-    .dropdown-item {
-        padding: 0.6rem 1rem;
-        font-size: 0.9rem;
+    .art-title {
+        font-family: var(--heading-font);
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--text-color);
+        margin-bottom: 1.5rem;
+        line-height: 1.3;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .art-description {
+        font-size: 1.15rem;
+        line-height: 1.8;
+        color: var(--text-color);
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 16px;
+        border-left: 4px solid var(--accent-primary);
+    }
+
+    /* Galerie artistique */
+    .art-gallery {
+        position: relative;
+        margin: 2rem 0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .art-image {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 20px;
+        transition: transform 0.5s ease;
+    }
+
+    .art-image:hover {
+        transform: scale(1.02);
+    }
+
+    .art-image-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 2rem;
+        background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.8) 0%,
+            transparent 100%
+        );
+        color: white;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .art-gallery:hover .art-image-overlay {
+        opacity: 1;
+    }
+
+    /* Player vidéo artistique */
+    .art-video-container {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        margin: 2rem 0;
+        background: #000;
+    }
+
+    .art-video {
+        width: 100%;
+        height: 500px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .art-video-controls {
+        position: absolute;
+        bottom: 2rem;
+        right: 2rem;
+        display: flex;
+        gap: 1rem;
+        z-index: 10;
+    }
+
+    .art-video-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s ease;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1.2rem;
+        backdrop-filter: blur(10px);
     }
 
-    .dropdown-item.text-danger {
-        color: #dc3545;
+    .art-video-btn:hover {
+        background: var(--accent-primary);
+        transform: scale(1.1);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
 
-    .dropdown-item.text-danger:hover {
-        background-color: #fff5f5;
-        color: #dc3545;
+    /* Réactions artistiques */
+    .art-reactions-section {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        padding: 1.5rem 0;
+        border-top: 2px solid rgba(102, 126, 234, 0.1);
+        border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+        margin: 2rem 0;
     }
 
-    .post-content {
+    .art-reaction-btn {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid transparent;
+        padding: 0.8rem 1.8rem;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        color: var(--accent-primary);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .art-reaction-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--primary-gradient);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+    }
+
+    .art-reaction-btn:hover {
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .art-reaction-btn:hover::before {
+        opacity: 1;
+    }
+
+    .art-reaction-btn.active {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Commentaires artistiques */
+    .art-comments-section {
+        margin-top: 3rem;
+        padding: 2.5rem;
+        background: var(--glass-effect);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid var(--border-color);
+    }
+
+    .art-comments-header {
+        font-family: var(--heading-font);
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        color: var(--text-color);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .art-comments-header::before {
+        content: '💬';
+        font-size: 2rem;
+    }
+
+    .art-comment-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
+        padding: 1.5rem;
         margin-bottom: 1.5rem;
-        line-height: 1.6;
-        color: #333;
+        border-left: 4px solid var(--accent-primary);
+        transition: all 0.3s ease;
     }
 
-    .post-media {
-        margin-top: 1rem;
+    .art-comment-card:hover {
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateX(10px);
     }
 
-    .post-image {
-        max-width: 100%;
-        height: auto;
-        border-radius: 8px;
-    }
-
-    .post-video {
-        width: 100%;
-        max-height: 500px;
-        border-radius: 8px;
-    }
-
-    .comments-section {
-        background: white;
-        border-radius: 10px;
-        padding: 2rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    .comments-section h4 {
-        margin-bottom: 1.5rem;
-        color: #333;
-    }
-
-    .comment-card {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid #007bff;
-    }
-
-    .comment-header {
+    .art-comment-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.5rem;
-    }
-
-    .comment-header strong {
-        color: #333;
-    }
-
-    .comment-date {
-        color: #666;
-        font-size: 0.8rem;
-    }
-
-    .comment-text {
-        margin: 0;
-        color: #555;
-        line-height: 1.5;
-    }
-
-    .no-comments {
-        text-align: center;
-        color: #666;
-        font-style: italic;
-        padding: 2rem;
-    }
-
-    .comment-form {
-        margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 1px solid #eee;
-    }
-
-    .form-group {
         margin-bottom: 1rem;
     }
 
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: bold;
-        color: #333;
+    .art-comment-author {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
     }
 
-    .form-group textarea {
+    .art-comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+
+    .art-comment-avatar img {
         width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 14px;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .art-comment-info h5 {
+        margin: 0;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .art-comment-time {
+        font-size: 0.85rem;
+        color: var(--text-color);
+        opacity: 0.6;
+    }
+
+    .art-comment-text {
+        color: var(--text-color);
+        line-height: 1.7;
+        font-size: 1rem;
+        margin: 0;
+        padding-left: 0.5rem;
+    }
+
+    /* Formulaire de commentaire artistique */
+    .art-comment-form {
+        margin-top: 2.5rem;
+        padding: 2rem;
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 20px;
+        border: 2px dashed rgba(102, 126, 234, 0.2);
+    }
+
+    .art-form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .art-form-label {
+        display: block;
+        margin-bottom: 0.8rem;
+        font-weight: 600;
+        color: var(--text-color);
+        font-size: 1.1rem;
+    }
+
+    .art-form-textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 1.2rem;
+        border: 2px solid var(--border-color);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-color);
+        font-size: 1rem;
         resize: vertical;
-        min-height: 100px;
+        transition: all 0.3s ease;
     }
 
-    .submit-button {
-        background-color: #007bff;
+    .art-form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        background: rgba(102, 126, 234, 0.05);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .art-submit-btn {
+        background: var(--primary-gradient);
         color: white;
-        padding: 0.75rem 2rem;
         border: none;
-        border-radius: 5px;
+        padding: 1rem 2.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 1.1rem;
         cursor: pointer;
-        font-size: 16px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
     }
 
-    .submit-button:hover {
-        background-color: #0056b3;
+    .art-submit-btn:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
     }
 
-    .error {
-        color: #dc3545;
-        font-size: 12px;
-        margin-top: 0.25rem;
+    /* Partages artistiques */
+    .art-shares-section {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 18px;
+        border-left: 4px solid var(--accent-secondary);
     }
 
-    .login-prompt {
-        text-align: center;
+    .art-shares-header {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .art-share-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
         padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 5px;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
     }
 
-    .login-prompt a {
-        color: #007bff;
-        text-decoration: none;
+    .art-share-card:hover {
+        background: rgba(102, 126, 234, 0.1);
+        transform: translateX(5px);
     }
 
-    .login-prompt a:hover {
-        text-decoration: underline;
-    }
-
-    /* Styles pour les actions du post */
-    .action-link:hover {
-        color: #0056b3;
-        text-decoration: underline;
-    }
-
-    .reaction-btn:hover {
-        background: #f8f9fa;
-        border-color: #007bff;
-        transform: scale(1.05);
-    }
-
-    .reaction-btn.liked {
-        background: #fff5f5;
-        border-color: #dc3545;
-        color: #dc3545;
-    }
-
+    /* Responsive */
     @media (max-width: 768px) {
         .post-detail-container {
             padding: 1rem;
         }
         
-        .post-card {
+        .art-post-card {
             padding: 1.5rem;
         }
         
-        .post-header {
+        .post-artist-header {
             flex-direction: column;
-            gap: 1rem;
+            gap: 1.5rem;
         }
         
-        .post-actions-dropdown {
+        .artist-info {
+            width: 100%;
+        }
+        
+        .art-actions-dropdown {
             align-self: flex-end;
         }
         
-        .comments-section {
-            padding: 1.5rem;
+        .art-title {
+            font-size: 1.8rem;
+        }
+        
+        .art-video {
+            height: 300px;
+        }
+        
+        .art-reactions-section {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+        
+        .art-reaction-btn {
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .art-post-card {
+            padding: 1.2rem;
+        }
+        
+        .artist-avatar-large {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .artist-name {
+            font-size: 1.3rem;
+        }
+        
+        .art-title {
+            font-size: 1.5rem;
+        }
+        
+        .art-video-controls {
+            bottom: 1rem;
+            right: 1rem;
+        }
+        
+        .art-video-btn {
+            width: 40px;
+            height: 40px;
         }
     }
 </style>
+{% endblock %}
 
-<!-- Ajouter Bootstrap Icons si pas déjà inclus -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 Post reactions script loaded');
-    
-    document.querySelectorAll('.reaction-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const postId = this.dataset.postId;
-            const reactionType = this.dataset.reactionType;
-            addReaction(postId, reactionType, this);
-        });
-    });
-
-    function addReaction(postId, reactionType, buttonElement) {
-        console.log('❤️ Adding reaction for post:', postId);
-        buttonElement.classList.add('liked');
-        buttonElement.textContent = '❤️ Liked!';
-        buttonElement.disabled = true;
+{% block content %}
+<div class="post-detail-container">
+    <!-- Post artistique principal -->
+    <div class="art-post-card">
+        <!-- En-tête artistique -->
+        <div class="post-artist-header">
+            <div class="artist-info">
+                <div class="artist-avatar-large">
+                    {% if post.author.profile.avatar %}
+                        <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.username }}">
+                    {% else %}
+                        <div class="default-avatar" style="background: var(--primary-gradient); color: white; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem;">
+                            {{ post.author.username|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="artist-details">
+                    <h1 class="artist-name">{{ post.author.username }}</h1>
+                    <div class="artist-title">🎨 Creative Artist</div>
+                    <div class="post-art-meta">
+                        <span class="post-art-date">
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ post.created_at|date:"F j, Y · g:i a" }}
+                        </span>
+                        {% if post.updated_at != post.created_at %}
+                            <span class="art-edited">✏️ Edited</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Menu dropdown artistique -->
+            <div class="art-actions-dropdown">
+                <div class="dropdown">
+                    <button class="art-dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-palette"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'posts:report_post' post.id %}">
+                                <div class="dropdown-item-content">
+                                    <i class="fas fa-flag"></i>
+                                    <div class="dropdown-text">
+                                        <span class="dropdown-title">Report Art</span>
+                                        <small class="dropdown-desc">Report inappropriate content</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% if user == post.author %}
+                        <li>
+                            <a class="dropdown-item" href="{% url 'posts:post_edit' post.id %}">
+                                <div class="dropdown-item-content">
+                                    <i class="fas fa-edit"></i>
+                                    <div class="dropdown-text">
+                                        <span class="dropdown-title">Edit Art</span>
+                                        <small class="dropdown-desc">Modify your creative work</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
         
-        fetch(`/posts/reaction/${postId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                'reaction_type': reactionType
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                const reactionCount = document.querySelector(`#reaction-count-${postId}`);
-                if (reactionCount) {
-                    reactionCount.textContent = data.total_reactions;
-                    reactionCount.style.transform = 'scale(1.2)';
-                    setTimeout(() => {
-                        reactionCount.style.transform = 'scale(1)';
-                    }, 300);
-                }
-            } else {
-                resetReactionButton(buttonElement);
-                alert('Error adding reaction: ' + (data.error || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('💥 Reaction error:', error);
-            resetReactionButton(buttonElement);
-            alert('Error adding reaction. Please try again.');
+        <!-- Contenu artistique -->
+        <div class="art-content-section">
+            {% if post.title %}
+            <h2 class="art-title">{{ post.title }}</h2>
+            {% endif %}
+            
+            {% if post.content %}
+            <div class="art-description">
+                {{ post.content|linebreaks }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Médias artistiques -->
+        {% if post.image %}
+        <div class="art-gallery">
+            <img src="{{ post.image.url }}" class="art-image" alt="Artwork">
+            <div class="art-image-overlay">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="text-white mb-1">Artwork by {{ post.author.username }}</h4>
+                        <p class="text-white-50 mb-0">Click to view full size</p>
+                    </div>
+                    <a href="{{ post.image.url }}" target="_blank" class="btn btn-outline-light">
+                        <i class="fas fa-expand-alt"></i> Expand
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if post.video %}
+        <div class="art-video-container">
+            <video 
+                class="art-video"
+                playsinline 
+                loop 
+                muted
+                preload="metadata"
+                poster="{% if post.thumbnail %}{{ post.thumbnail.url }}{% endif %}"
+            >
+                <source src="{{ post.video.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            <div class="art-video-controls">
+                <button class="art-video-btn play-pause-btn" onclick="toggleArtVideo(this)">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="art-video-btn mute-btn" onclick="toggleArtVideoMute(this)">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="art-video-btn fullscreen-btn" onclick="toggleArtFullscreen(this)">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Réactions artistiques -->
+        <div class="art-reactions-section">
+            <button class="art-reaction-btn like-btn {% if user_reaction %}active{% endif %}" 
+                    onclick="toggleArtReaction(this, 'like')">
+                <i class="fas fa-heart"></i>
+                <span>Love</span>
+                <span class="reaction-count ms-2">{{ post.reactions.count }}</span>
+            </button>
+            
+            <button class="art-reaction-btn" onclick="toggleArtReaction(this, 'applause')">
+                <i class="fas fa-hands-clapping"></i>
+                <span>Applaud</span>
+            </button>
+            
+            <button class="art-reaction-btn" onclick="toggleArtReaction(this, 'star')">
+                <i class="fas fa-star"></i>
+                <span>Star</span>
+            </button>
+            
+            <a href="{% url 'posts:share_post' post.id %}" class="art-reaction-btn">
+                <i class="fas fa-share"></i>
+                <span>Share</span>
+                <span class="reaction-count ms-2">{{ post.post_shares.count }}</span>
+            </a>
+        </div>
+        
+        <!-- Partages artistiques -->
+        {% if post.post_shares.exists %}
+        <div class="art-shares-section">
+            <h5 class="art-shares-header">
+                <i class="fas fa-retweet"></i>
+                Shared by creative minds
+            </h5>
+            {% for share in post.post_shares.all|slice:":3" %}
+            <div class="art-share-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>@{{ share.user.username }}</strong>
+                        {% if share.caption %}
+                        <p class="mb-1 mt-1">"{{ share.caption }}"</p>
+                        {% endif %}
+                        <small class="text-muted">{{ share.created_at|timesince }} ago</small>
+                    </div>
+                    <span class="badge bg-primary">{{ share.user.profile.creative_field|default:"Artist" }}</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% if post.post_shares.count > 3 %}
+            <div class="text-center mt-2">
+                <small class="text-muted">and {{ post.post_shares.count|add:"-3" }} more shares</small>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Section des commentaires artistiques -->
+    <div class="art-comments-section">
+        <h3 class="art-comments-header">
+            Conversations ({{ comments.count }})
+        </h3>
+        
+        <!-- Liste des commentaires -->
+        <div class="art-comments-list">
+            {% for comment in comments %}
+            <div class="art-comment-card">
+                <div class="art-comment-header">
+                    <div class="art-comment-author">
+                        <div class="art-comment-avatar">
+                            {% if comment.author.profile.avatar %}
+                                <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.username }}">
+                            {% else %}
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-gradient); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                    {{ comment.author.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="art-comment-info">
+                            <h5>{{ comment.author.username }}</h5>
+                            <small class="art-comment-time">{{ comment.created_at|date:"M j, Y · g:i a" }}</small>
+                        </div>
+                    </div>
+                </div>
+                <p class="art-comment-text">{{ comment.text }}</p>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="fas fa-comments fa-3x mb-3 text-muted"></i>
+                <h4 class="text-muted">No conversations yet</h4>
+                <p class="text-muted">Start the conversation about this artwork!</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Formulaire de commentaire artistique -->
+        {% if user.is_authenticated %}
+        <div class="art-comment-form">
+            <form method="post">
+                {% csrf_token %}
+                <div class="art-form-group">
+                    <label for="{{ form.text.id_for_label }}" class="art-form-label">
+                        <i class="fas fa-pen-nib me-2"></i>Add your thoughts
+                    </label>
+                    {{ form.text }}
+                    {% if form.text.errors %}
+                        <div class="error mt-2">{{ form.text.errors }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="art-submit-btn">
+                    <i class="fas fa-paper-plane"></i> Share Thought
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <div class="art-comment-form">
+                <i class="fas fa-lock fa-2x mb-3 text-muted"></i>
+                <h5 class="mb-2">Join the conversation</h5>
+                <p class="text-muted mb-3">Sign in to share your thoughts about this artwork</p>
+                <a href="{% url 'login' %}" class="art-submit-btn">
+                    <i class="fas fa-sign-in-alt"></i> Sign In to Comment
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Scripts pour les fonctionnalités artistiques -->
+<script>
+// Fonctions pour la vidéo artistique
+function toggleArtVideo(button) {
+    const video = button.closest('.art-video-container').querySelector('.art-video');
+    const icon = button.querySelector('i');
+    
+    if (video.paused) {
+        video.play();
+        icon.className = 'fas fa-pause';
+    } else {
+        video.pause();
+        icon.className = 'fas fa-play';
+    }
+}
+
+function toggleArtVideoMute(button) {
+    const video = button.closest('.art-video-container').querySelector('.art-video');
+    const icon = button.querySelector('i');
+    
+    video.muted = !video.muted;
+    icon.className = video.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+}
+
+function toggleArtFullscreen(button) {
+    const videoContainer = button.closest('.art-video-container');
+    
+    if (!document.fullscreenElement) {
+        videoContainer.requestFullscreen().catch(err => {
+            console.log('Fullscreen error:', err);
         });
+    } else {
+        document.exitFullscreen();
     }
+}
 
-    function resetReactionButton(buttonElement) {
-        buttonElement.classList.remove('liked');
-        buttonElement.textContent = '❤️ Like';
-        buttonElement.disabled = false;
+// Fonctions pour les réactions artistiques
+function toggleArtReaction(button, reactionType) {
+    const postId = {{ post.id }};
+    const isActive = button.classList.contains('active');
+    
+    // Animation visuelle
+    if (!isActive) {
+        button.classList.add('active');
+        const icon = button.querySelector('i');
+        icon.style.transform = 'scale(1.3)';
+        setTimeout(() => {
+            icon.style.transform = 'scale(1)';
+        }, 300);
+        
+        // Animation de particules
+        createArtParticles(button);
+    } else {
+        button.classList.remove('active');
     }
+    
+    // Envoi AJAX
+    sendArtReaction(postId, reactionType, !isActive, button);
+}
 
-    function getCSRFToken() {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-        return csrfToken ? csrfToken.value : '';
+function createArtParticles(element) {
+    const rect = element.getBoundingClientRect();
+    const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
+    
+    for (let i = 0; i < 8; i++) {
+        const particle = document.createElement('div');
+        particle.style.cssText = `
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background-color: ${colors[Math.floor(Math.random() * colors.length)]};
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            left: ${rect.left + rect.width / 2}px;
+            top: ${rect.top + rect.height / 2}px;
+        `;
+        
+        document.body.appendChild(particle);
+        
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 2 + Math.random() * 2;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+        
+        let opacity = 1;
+        let scale = 1;
+        const animateParticle = () => {
+            opacity -= 0.02;
+            scale += 0.02;
+            particle.style.opacity = opacity;
+            particle.style.transform = `
+                translate(${vx * (1 - opacity) * 50}px, ${vy * (1 - opacity) * 50}px)
+                scale(${scale})
+            `;
+            
+            if (opacity > 0) {
+                requestAnimationFrame(animateParticle);
+            } else {
+                particle.remove();
+            }
+        };
+        
+        animateParticle();
     }
+}
+
+function sendArtReaction(postId, reactionType, add, buttonElement) {
+    const url = add ? `/posts/reaction/${postId}/` : `/posts/unreaction/${postId}/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'reaction_type': reactionType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mise à jour du compteur
+            const countElement = buttonElement.querySelector('.reaction-count');
+            if (countElement) {
+                const currentCount = parseInt(countElement.textContent) || 0;
+                countElement.textContent = add ? currentCount + 1 : Math.max(0, currentCount - 1);
+                
+                // Animation du compteur
+                countElement.style.transform = 'scale(1.5)';
+                setTimeout(() => {
+                    countElement.style.transform = 'scale(1)';
+                }, 300);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Revenir à l'état précédent en cas d'erreur
+        if (add) {
+            buttonElement.classList.remove('active');
+        } else {
+            buttonElement.classList.add('active');
+        }
+    });
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-play vidéo artistique avec contrôle
+    const artVideo = document.querySelector('.art-video');
+    if (artVideo) {
+        artVideo.muted = true;
+        artVideo.play().catch(e => {
+            console.log("Autoplay prevented:", e);
+        });
+        
+        // Observer pour auto-play/pause
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    artVideo.play();
+                } else {
+                    artVideo.pause();
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        observer.observe(artVideo);
+    }
+    
+    // Animation des éléments artistiques
+    const artCards = document.querySelectorAll('.art-comment-card, .art-share-card');
+    artCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.classList.add('animate__animated', 'animate__fadeInUp');
+    });
 });
 </script>
+
+<!-- Include Animate.css for animations -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
 {% endblock %}

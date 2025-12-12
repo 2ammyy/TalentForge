@@ -1,0 +1,278 @@
+{# Django template #}
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Dashboard{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="refreshStats()">
+    <i class="fas fa-sync-alt"></i> Refresh
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Users</h6>
+                        <h2 class="mb-0">{{ stats.total_users }}</h2>
+                        <small>+{{ stats.new_users_today }} today</small>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Active Users</h6>
+                        <h2 class="mb-0">{{ stats.active_users }}</h2>
+                        <small>Last 7 days</small>
+                    </div>
+                    <i class="fas fa-user-check fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Creators</h6>
+                        <h2 class="mb-0">{{ stats.total_creators }}</h2>
+                        <small>{{ stats.pending_creators }} pending</small>
+                    </div>
+                    <i class="fas fa-star fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Posts</h6>
+                        <h2 class="mb-0">{{ stats.total_posts }}</h2>
+                        <small>{{ stats.posts_today }} today</small>
+                    </div>
+                    <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">User Growth (Last 7 Days)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="growthChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>New Users (Week):</strong> {{ stats.new_users_week }}
+                </div>
+                <div class="mb-3">
+                    <strong>Active Today:</strong> 
+                    <span data-stat="active_today">0</span>
+                </div>
+                <div class="mb-3">
+                    <strong>System Status:</strong> 
+                    <span class="badge bg-success">Online</span>
+                </div>
+                <hr>
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i>
+                    Last updated: {% now "H:i:s" %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Users -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Users</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Joined</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in recent_users %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'admin_app:user_detail' user.id %}" class="text-decoration-none">
+                                {{ user.username }}
+                            </a>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                            {% if user.is_staff %}
+                            <span class="badge bg-primary">Staff</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<div id="chart-data" 
+     data-labels="{% for day in daily_signups %}{{ day.day }}{% if not forloop.last %},{% endif %}{% endfor %}"
+     data-values="{% for day in daily_signups %}{{ day.count }}{% if not forloop.last %},{% endif %}{% endfor %}">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize the growth chart using existing data
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('growthChart').getContext('2d');
+    
+    // Get data from hidden div attributes
+    const chartData = document.getElementById('chart-data');
+    const labels = chartData.dataset.labels.split(',');
+    const dataValues = chartData.dataset.values.split(',').map(Number);
+    
+    console.log('Chart labels:', labels);
+    console.log('Chart data:', dataValues);
+    
+    // Check if we have valid data
+    if (dataValues.length === 0 || labels.length === 0) {
+        console.error('No chart data available');
+        document.getElementById('growthChart').parentElement.innerHTML = 
+            '<div class="alert alert-warning">No chart data available. Please check if users have signed up in the last 7 days.</div>';
+        return;
+    }
+    
+    const growthChart = new Chart(ctx, {
+        type: 'line', // type: 'bar',
+
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'New Users',
+                data: dataValues,
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `New Users: ${context.parsed.y}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return Number.isInteger(value) ? value : '';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+    
+    // Store the chart instance for updates
+    window.growthChart = growthChart;
+});
+
+// Function to refresh stats
+function refreshStats() {
+    fetch('{% url "admin_app:api_stats" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Update any stats displayed
+            document.querySelectorAll('[data-stat]').forEach(el => {
+                const stat = el.dataset.stat;
+                if (data[stat]) {
+                    el.textContent = data[stat];
+                    el.classList.add('text-success');
+                    setTimeout(() => el.classList.remove('text-success'), 1000);
+                }
+            });
+            
+            // Update active today stat
+            const activeTodayEl = document.querySelector('[data-stat="active_today"]');
+            if (activeTodayEl && data.active_today !== undefined) {
+                activeTodayEl.textContent = data.active_today;
+                activeTodayEl.classList.add('text-success');
+                setTimeout(() => activeTodayEl.classList.remove('text-success'), 1000);
+            }
+        });
+}
+</script>
+{% endblock %}
