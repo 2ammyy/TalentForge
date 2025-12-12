@@ -9,9 +9,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 import json
 
-from .models import Post, Comment, Reaction, JobPost, Share, Report, UserProfile, Message, Notification
+from .models import Post, Comment, Reaction, JobPost, Share, Report, UserProfile, Message, Notification, Follow, Block
 from .forms import PostForm, CommentForm, ShareForm, ReportForm, UserProfileForm, MessageForm, SearchForm
 
+# ============ POSTS ============
 
 @login_required
 def post_create(request):
@@ -397,95 +398,214 @@ def post_update(request, pk):
 
 
 # ============ PROFILES & SOCIAL FEATURES ============
+
 @login_required
-def profile_view(request, username=None):
-    try:
-        if username:
-            user = User.objects.get(username=username)
-        else:
-            user = request.user
-        
-        # Créer le profil s'il n'existe pas
-        profile, created = UserProfile.objects.get_or_create(user=user)
-        
-        is_following = request.user in profile.followers.all() if request.user.is_authenticated else False
-        
-        # Get user's posts
-        user_posts = Post.objects.filter(author=user).order_by('-created_at')
-        
-        # Create notification for profile view (if viewing someone else's profile)
-        if request.user != user:
-            Notification.objects.create(
-                user=user,
-                from_user=request.user,
-                notification_type='view'
-            )
-        
-        context = {
-            'profile_user': user,
-            'profile': profile,
-            'is_following': is_following,
-            'followers_count': profile.followers_count(),
-            'following_count': profile.following_count(),
-            'user_posts': user_posts,
-        }
-        return render(request, 'posts/profile.html', context)
-        
-    except User.DoesNotExist:
-        messages.error(request, f"User '{username}' not found.")
-        return redirect('posts:post_list')
-    except Exception as e:
-        messages.error(request, "An error occurred while loading the profile.")
-        return redirect('posts:post_list')
+def my_profile(request):
+    """Profil de l'utilisateur connecté"""
+    user_posts = Post.objects.filter(author=request.user).order_by('-created_at')
+    
+    context = {
+        'profile_user': request.user,
+        'user_posts': user_posts,
+        'is_own_profile': True
+    }
+    
+    return render(request, 'posts/profile.html', context)
 
+def user_profile(request, username):
+    """Profil d'un autre utilisateur"""
+    profile_user = get_object_or_404(User, username=username)
+    user_posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+    
+    context = {
+        'profile_user': profile_user,
+        'user_posts': user_posts,
+        'is_own_profile': False
+    }
+    
+    # Vérifier les relations sociales seulement si l'utilisateur est connecté
+    if request.user.is_authenticated and request.user != profile_user:
+        # Vérifier si l'utilisateur suit ce profil
+        try:
+            context['is_following'] = Follow.objects.filter(
+                follower=request.user, 
+                following=profile_user
+            ).exists()
+        except:
+            context['is_following'] = False
+        
+        # Vérifier si l'utilisateur a bloqué ce profil
+        try:
+            context['is_blocked'] = Block.objects.filter(
+                blocker=request.user, 
+                blocked=profile_user
+            ).exists()
+        except:
+            context['is_blocked'] = False
+    
+    return render(request, 'posts/profile.html', context)
 
+# @login_required
+# def edit_profile(request):
+#     """Vue pour éditer le profil utilisateur"""
+#     try:
+#         profile = request.user.posts_profile
+#     except UserProfile.DoesNotExist:
+#         # Créer le profil s'il n'existe pas
+#         profile = UserProfile.objects.create(user=request.user)
+    
+#     if request.method == 'POST':
+#         form = UserProfileForm(request.POST, request.FILES, instance=profile)
+#         if form.is_valid():
+#             form.save()
+#             messages.success(request, 'Your profile has been updated successfully!')
+#             return redirect('posts:my_profile')
+#         else:
+#             messages.error(request, 'Please correct the errors below.')
+#     else:
+#         form = UserProfileForm(instance=profile)
+    
+#     return render(request, 'posts/edit_profile.html', {
+#         'form': form,
+#         'profile': profile
+#     })
 @login_required
 def edit_profile(request):
-    profile = request.user.userprofile
-    
-    if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES, instance=profile)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Profile updated successfully!')
-            return redirect('posts:profile')
-    else:
-        form = UserProfileForm(instance=profile)
-    
-    return render(request, 'posts/edit_profile.html', {'form': form})
-
+    """Redirige vers la page d'édition de profil dans l'app base"""
+    return redirect('base:edit_profile')  # Redirection vers l'app base
+# ============ SOCIAL ACTIONS ============
 
 @login_required
 def follow_user(request, username):
-    user_to_follow = get_object_or_404(User, username=username)
-    
-    if request.user != user_to_follow:
-        profile = user_to_follow.userprofile
-        if request.user in profile.followers.all():
-            profile.followers.remove(request.user)
-            messages.info(request, f'You unfollowed {user_to_follow.username}')
-            action = 'unfollowed'
-        else:
-            profile.followers.add(request.user)
-            messages.success(request, f'You are now following {user_to_follow.username}')
-            action = 'followed'
-            
-            # Create follow notification
+    """Suivre un utilisateur"""
+    if request.method == 'POST':
+        user_to_follow = get_object_or_404(User, username=username)
+        
+        if request.user == user_to_follow:
+            messages.error(request, "You cannot follow yourself.")
+            return redirect('posts:user_profile', username=username)
+        
+        # Vérifier si déjà suivi
+        if Follow.objects.filter(follower=request.user, following=user_to_follow).exists():
+            messages.info(request, f"You are already following {username}.")
+            return redirect('posts:user_profile', username=username)
+        
+        # Créer la relation de suivi
+        Follow.objects.create(follower=request.user, following=user_to_follow)
+        
+        # Créer une notification
+        try:
             Notification.objects.create(
                 user=user_to_follow,
-                from_user=request.user,
-                notification_type='follow'
+                message=f"{request.user.username} started following you",
+                notification_type='follow',
+                related_user=request.user
             )
+        except:
+            pass  # Ignorer si le modèle Notification n'existe pas encore
         
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'action': action,
-                'followers_count': profile.followers_count()
-            })
+        messages.success(request, f"You are now following {username}.")
+        return redirect('posts:user_profile', username=username)
     
-    return redirect('posts:profile', username=username)
+    return redirect('posts:user_profile', username=username)
 
+@login_required
+def unfollow_user(request, username):
+    """Ne plus suivre un utilisateur"""
+    if request.method == 'POST':
+        user_to_unfollow = get_object_or_404(User, username=username)
+        
+        follow_relationship = Follow.objects.filter(
+            follower=request.user, 
+            following=user_to_unfollow
+        )
+        
+        if follow_relationship.exists():
+            follow_relationship.delete()
+            messages.success(request, f"You have unfollowed {username}.")
+        else:
+            messages.info(request, f"You were not following {username}.")
+        
+        return redirect('posts:user_profile', username=username)
+    
+    return redirect('posts:user_profile', username=username)
+
+@login_required
+def block_user(request, username):
+    """Bloquer un utilisateur"""
+    if request.method == 'POST':
+        user_to_block = get_object_or_404(User, username=username)
+        
+        if request.user == user_to_block:
+            messages.error(request, "You cannot block yourself.")
+            return redirect('posts:user_profile', username=username)
+        
+        # Vérifier si déjà bloqué
+        if Block.objects.filter(blocker=request.user, blocked=user_to_block).exists():
+            messages.info(request, f"You have already blocked {username}.")
+            return redirect('posts:user_profile', username=username)
+        
+        # Créer la relation de blocage
+        Block.objects.create(blocker=request.user, blocked=user_to_block)
+        
+        # Supprimer les relations de suivi si elles existent
+        Follow.objects.filter(follower=request.user, following=user_to_block).delete()
+        Follow.objects.filter(follower=user_to_block, following=request.user).delete()
+        
+        messages.success(request, f"You have blocked {username}.")
+        return redirect('posts:user_profile', username=username)
+    
+    return redirect('posts:user_profile', username=username)
+
+@login_required
+def unblock_user(request, username):
+    """Débloquer un utilisateur"""
+    if request.method == 'POST':
+        user_to_unblock = get_object_or_404(User, username=username)
+        
+        block_relationship = Block.objects.filter(
+            blocker=request.user, 
+            blocked=user_to_unblock
+        )
+        
+        if block_relationship.exists():
+            block_relationship.delete()
+            messages.success(request, f"You have unblocked {username}.")
+        else:
+            messages.info(request, f"You had not blocked {username}.")
+        
+        return redirect('posts:user_profile', username=username)
+    
+    return redirect('posts:user_profile', username=username)
+
+@login_required
+def report_user(request, username):
+    """Signaler un utilisateur"""
+    if request.method == 'POST':
+        user_to_report = get_object_or_404(User, username=username)
+        
+        if request.user == user_to_report:
+            messages.error(request, "You cannot report yourself.")
+            return redirect('posts:user_profile', username=username)
+        
+        reason = request.POST.get('reason')
+        details = request.POST.get('details', '')
+        
+        # Créer le rapport avec les bons noms de champs
+        Report.objects.create(
+            reporter=request.user,
+            reported_user=user_to_report,  # Utilise reported_user au lieu de reported_user
+            reason=reason,
+            description=details,  # Utilise description au lieu de details
+            post=None  # Pas de post associé pour les rapports d'utilisateurs
+        )
+        
+        messages.success(request, f"Thank you for reporting {username}. We will review your report.")
+        return redirect('posts:user_profile', username=username)
+    
+    return redirect('posts:user_profile', username=username)
+
+# ============ SEARCH ============
 
 @login_required
 def search_view(request):
@@ -525,7 +645,6 @@ def search_view(request):
         'user_results': user_results,
         'job_results': job_results,
     })
-
 
 # ============ MESSAGING SYSTEM ============
 
@@ -597,7 +716,6 @@ def conversation_view(request, username):
         'message_list': message_list,
         'form': form
     })
-
 
 # ============ NOTIFICATIONS ============
 

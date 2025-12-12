@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
+# ============ MODÈLES EXISTANTS ============
+
 class Post(models.Model):
     POST_TYPES = [
         ('text', 'Text'),
@@ -152,10 +154,18 @@ class Report(models.Model):
         ('dismissed', 'Dismissed'),
     ]
     
-    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='reports')
+    # Champ pour les rapports de posts
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='reports', null=True, blank=True)
+    
+    # NOUVEAUX CHAMPS pour les rapports d'utilisateurs
+    reported_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_against', null=True, blank=True)
+    
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_made')
     reason = models.CharField(max_length=20, choices=REPORT_CHOICES)
+    
+    # Renommez 'description' en 'details' ou gardez 'description'
     description = models.TextField(blank=True, null=True, help_text="Additional details about the report")
+    
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -173,13 +183,21 @@ class Report(models.Model):
 
     def send_confirmation_email(self):
         subject = "Report Confirmation - TalentForge"
+        
+        if self.post:
+            report_type = "content"
+            target = f"Post ID: {self.post.id}"
+        else:
+            report_type = "user"
+            target = f"User: {self.reported_user.username}"
+            
         message = f"""
         Dear {self.reporter.username},
         
-        Thank you for reporting content on TalentForge. We have received your report and will review it shortly.
+        Thank you for reporting {report_type} on TalentForge. We have received your report and will review it shortly.
         
         Report Details:
-        - Post ID: {self.post.id}
+        - {target}
         - Reason: {self.get_reason_display()}
         - Date: {self.created_at.strftime('%Y-%m-%d %H:%M')}
         - Status: {self.get_status_display()}
@@ -196,20 +214,21 @@ class Report(models.Model):
             send_mail(
                 subject,
                 message,
-                'talentforge.app@gmail.com',  # From email
-                [self.reporter.email],        # To email
+                'talentforge.app@gmail.com',
+                [self.reporter.email],
                 fail_silently=False,
             )
         except Exception as e:
-            # Log the error but don't break the report creation
             print(f"Failed to send email: {e}")
     
     def __str__(self):
-        return f"Report #{self.id} - {self.post} by {self.reporter}"
+        if self.post:
+            return f"Report #{self.id} - {self.post} by {self.reporter}"
+        else:
+            return f"Report #{self.id} - {self.reported_user} by {self.reporter}"
     
     class Meta:
         ordering = ['-created_at']
-
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='posts_profile')
@@ -220,16 +239,20 @@ class UserProfile(models.Model):
     website = models.URLField(blank=True)
     github = models.URLField(blank=True)
     linkedin = models.URLField(blank=True)
-    followers = models.ManyToManyField(User, related_name='following', blank=True)
+    
+    # SUPPRIMEZ cette ligne car nous utilisons maintenant le modèle Follow
+    # followers = models.ManyToManyField(User, related_name='following', blank=True)
     
     def __str__(self):
         return f"{self.user.username}'s Profile"
     
     def followers_count(self):
-        return self.followers.count()
-    
+        """Utilise le modèle Follow pour compter les followers"""
+        return self.user.user_followers.count()  # user_followers au lieu de followers
+
     def following_count(self):
-        return self.user.following.count()
+        """Utilise le modèle Follow pour compter les suivis"""
+        return self.user.user_following.count()  # user_following au lieu de following
 
 
 class Message(models.Model):
@@ -270,7 +293,56 @@ class Notification(models.Model):
         return f"{self.from_user.username} {self.get_notification_type_display()}"
 
 
-# Signals pour les notifications automatiques
+# ============ MODÈLES DE RELATIONS SOCIALES ============
+
+class Follow(models.Model):
+    """Modèle pour gérer les relations de suivi entre utilisateurs"""
+    follower = models.ForeignKey(
+        User, 
+        related_name='user_following',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    following = models.ForeignKey(
+        User, 
+        related_name='user_followers',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('follower', 'following')
+        verbose_name = 'Follow'
+        verbose_name_plural = 'Follows'
+    
+    def __str__(self):
+        return f"{self.follower.username} follows {self.following.username}"
+
+
+class Block(models.Model):
+    """Modèle pour gérer les blocages entre utilisateurs"""
+    blocker = models.ForeignKey(
+        User, 
+        related_name='user_blocking',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    blocked = models.ForeignKey(
+        User, 
+        related_name='user_blocked_by',  # CHANGÉ: related_name unique
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('blocker', 'blocked')
+        verbose_name = 'Block'
+        verbose_name_plural = 'Blocks'
+    
+    def __str__(self):
+        return f"{self.blocker.username} blocks {self.blocked.username}"
+
+
+# ============ SIGNALS ============
+
 @receiver(post_save, sender=Comment)
 def create_comment_notification(sender, instance, created, **kwargs):
     if created and instance.author != instance.post.author:
@@ -318,6 +390,33 @@ def create_report_notification(sender, instance, created, **kwargs):
             )
 
 
+@receiver(post_save, sender=Follow)
+def create_follow_notification(sender, instance, created, **kwargs):
+    """Créer une notification lorsqu'un utilisateur en suit un autre"""
+    if created:
+        Notification.objects.create(
+            user=instance.following,
+            from_user=instance.follower,
+            notification_type='follow',
+            post=None  # Pas de post associé pour les follows
+        )
+
+
+@receiver(post_save, sender=Block)
+def handle_block_actions(sender, instance, created, **kwargs):
+    """Gérer les actions lors du blocage d'un utilisateur"""
+    if created:
+        # Supprimer les relations de suivi réciproques
+        Follow.objects.filter(
+            follower=instance.blocker, 
+            following=instance.blocked
+        ).delete()
+        Follow.objects.filter(
+            follower=instance.blocked, 
+            following=instance.blocker
+        ).delete()
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -326,5 +425,5 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'userprofile'):
-        instance.userprofile.save()
+    if hasattr(instance, 'posts_profile'):
+        instance.posts_profile.save()

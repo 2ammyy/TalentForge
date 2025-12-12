@@ -15,6 +15,7 @@
         <p><strong>Last login:</strong> {{ user.last_login|date:"F j, Y, g:i a"|default:"First login" }}</p>
         <p><strong>Account created:</strong> {{ user.date_joined|date:"F j, Y" }}</p>
         <p><strong>Status:</strong> <span style="color: #28a745;">● Active</span></p>
+        <p><strong>Followers:</strong> {{ follower_count|default:"0" }}</p>
     </div>
 
     <!-- Quick Actions -->
@@ -23,6 +24,50 @@
         <a href="{% url 'base:edit_profile' %}" class="btn btn-success me-2">✏️ Edit Profile</a>
         <a href="{% url 'base:profile_settings' %}" class="btn btn-secondary me-2">⚙️ Settings</a>
         <a href="{% url 'posts:post_create' %}" class="btn btn-secondary me-2">➕ Create Post</a>
+        
+        {% if follower_count|default:0 >= 1 %}
+            <!-- User has at least 1 follower -->
+            <a href="{% url 'creator:dashboard' %}" class="btn btn-warning">📂 Creator Dashboard</a>
+            <a href="{% url 'creator:analytics' %}" class="btn btn-info ms-2">📈 Analytics</a>
+        {% else %}
+            <!-- User has no followers -->
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#creatorAdvertModal">
+                📂 Creator Dashboard
+            </button>
+            <button type="button" class="btn btn-info ms-2" data-bs-toggle="modal" data-bs-target="#creatorAdvertModal">
+                📈 Analytics
+            </button>
+
+            <!-- Creator requirement modal -->
+            <div class="modal fade" id="creatorAdvertModal" tabindex="-1" aria-labelledby="creatorAdvertModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="creatorAdvertModalLabel">🔒 Creator Access Required</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>You need <strong>at least 1 follower</strong> to access Creator features.</p>
+                    <div class="alert alert-warning mt-3">
+                        <strong>Current followers:</strong> {{ follower_count|default:"0" }}
+                    </div>
+                    <p><strong>How to get followers:</strong></p>
+                    <ul>
+                        <li>Create interesting posts</li>
+                        <li>Follow other users</li>
+                        <li>Complete your profile with skills</li>
+                        <li>Engage with the community</li>
+                    </ul>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="{% url 'posts:post_create' %}" class="btn btn-primary">Create Post</a>
+                    <a href="{% url 'base:view_profile' %}" class="btn btn-success">Edit Profile</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+        {% endif %}
     </div>
 
     <!-- Quick Stats -->
@@ -36,8 +81,12 @@
             <div class="stat-label">Skills</div>
         </div>
         <div class="stat-item">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Connections</div>
+            <div class="stat-number">{{ follower_count|default:"0" }}</div>
+            <div class="stat-label">Followers</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ user.following.count|default:"0" }}</div>
+            <div class="stat-label">Following</div>
         </div>
     </div>
 

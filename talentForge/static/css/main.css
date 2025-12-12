@@ -804,3 +804,469 @@ body {
 .btn:hover {
     transform: translateY(-1px);
 }
+
+/* talentForge\static\css\main.css */
+
+/* ========== STYLES DE PROFIL ET FONCTIONNALITÉS SOCIALES ========== */
+
+/* Container du profil */
+.profile-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* En-tête du profil */
+.profile-header {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.profile-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+}
+
+.profile-avatar {
+    flex-shrink: 0;
+}
+
+.profile-avatar .author-avatar,
+.profile-avatar .default-avatar {
+    width: 120px;
+    height: 120px;
+    font-size: 2.5rem;
+}
+
+.profile-details {
+    flex: 1;
+}
+
+.profile-details h1 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+    font-size: 2rem;
+}
+
+.profile-username {
+    color: #6c757d;
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.profile-bio {
+    margin: 1rem 0;
+    line-height: 1.5;
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 1rem;
+}
+
+/* Statistiques utilisateur */
+.profile-stats {
+    display: flex;
+    gap: 2rem;
+    margin: 1.5rem 0;
+}
+
+.profile-stat-item {
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.profile-stat-item:hover {
+    transform: translateY(-2px);
+}
+
+.profile-stat-item strong {
+    display: block;
+    font-size: 1.5rem;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+.profile-stat-item span {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Actions du profil */
+.profile-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.inline-form {
+    display: inline;
+}
+
+/* Boutons spécifiques */
+.btn-warning {
+    background: var(--warning-color);
+    border: none;
+    color: black;
+    font-weight: 600;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+    transform: translateY(-1px);
+    color: black;
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    border: none;
+    color: white;
+    font-weight: 600;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    color: white;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.btn-outline:hover {
+    background: var(--border-color);
+    color: var(--text-color);
+    transform: translateY(-1px);
+}
+
+/* Section des posts utilisateur */
+.user-posts-section {
+    margin-top: 2rem;
+}
+
+.user-posts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 2px 10px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.user-posts-header h2 {
+    color: var(--text-color);
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+/* Badges de type de post */
+.post-type-badge {
+    margin: 0.5rem 0 1rem 0;
+}
+
+.badge {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge.text {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.badge.image {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.badge.video {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.badge.job {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+/* Modal de report */
+.modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 10px 30px var(--shadow-color);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border-radius: 16px 16px 0 0;
+}
+
+.modal-title {
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    background: var(--card-bg);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border-radius: 0 0 16px 16px;
+}
+
+/* Formulaires dans les modals */
+.form-label {
+    color: var(--text-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+}
+
+.form-control:focus {
+    background: var(--bg-color);
+    border-color: #007bff;
+    color: var(--text-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* États de suivi */
+.following-status {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.following-status.following {
+    background: var(--success-color);
+    color: white;
+}
+
+.following-status.not-following {
+    background: #6c757d;
+    color: white;
+}
+
+/* Indicateur de blocage */
+.blocked-indicator {
+    background: var(--danger-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 1rem;
+}
+
+/* Styles pour le dark mode */
+[data-bs-theme="dark"] .profile-header,
+[data-bs-theme="dark"] .user-posts-header,
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .modal-header,
+[data-bs-theme="dark"] .modal-body,
+[data-bs-theme="dark"] .modal-footer {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .btn-outline {
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-bs-theme="dark"] .btn-outline:hover {
+    background: var(--border-color);
+    color: var(--bg-color);
+}
+
+[data-bs-theme="dark"] .form-control {
+    background: var(--bg-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .profile-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .profile-avatar .author-avatar,
+    .profile-avatar .default-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 1.8rem;
+    }
+    
+    .profile-stats {
+        justify-content: center;
+        gap: 1.5rem;
+    }
+    
+    .profile-actions {
+        justify-content: center;
+    }
+    
+    .user-posts-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .profile-details h1 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-header {
+        padding: 1.5rem;
+    }
+    
+    .profile-stats {
+        gap: 1rem;
+    }
+    
+    .profile-stat-item strong {
+        font-size: 1.2rem;
+    }
+    
+    .profile-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .profile-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .user-posts-header {
+        padding: 1rem;
+    }
+    
+    .user-posts-header h2 {
+        font-size: 1.3rem;
+    }
+}
+
+/* Animation pour les nouveaux followers */
+@keyframes newFollower {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+.new-follower {
+    animation: newFollower 1s ease-in-out;
+}
+
+/* Styles pour les notifications */
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Loading states */
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* États désactivés pour les utilisateurs bloqués */
+.user-blocked {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.user-blocked-message {
+    background: var(--danger-color);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    text-align: center;
+    font-weight: 600;
+}

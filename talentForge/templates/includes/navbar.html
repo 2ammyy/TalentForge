@@ -1,4 +1,5 @@
 <!-- talentForge\templates\includes\navbar.html -->
+<!-- talentForge\templates\includes\navbar.html -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-2 fixed-top">
     <div class="container">
 
@@ -38,6 +39,13 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'posts:post_create' %}">
                         <i class="fas fa-plus-circle me-1"></i> Create
+                    </a>
+                </li>
+
+                <!-- Quick Profile Access - FIXED -->
+                <li class="nav-item">
+                    <a class="nav-link quick-profile-link" href="/posts/profile/{{ user.username }}/">
+                        <i class="fas fa-user-circle me-1"></i> My Profile
                     </a>
                 </li>
 
@@ -128,9 +136,9 @@
 
                         <!-- Menu Items -->
                         <li>
-                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'base:view_profile' %}">
+                            <a class="dropdown-item d-flex align-items-center py-2" href="/posts/profile/{{ user.username }}/">
                                 <i class="fas fa-user me-3 text-primary"></i>
-                                <span>Profile</span>
+                                <span>My Profile</span>
                             </a>
                         </li>
 
@@ -181,7 +189,6 @@
         </div>
     </div>
 </nav>
-
 <style>
 /* ========== NAVBAR STYLES ========== */
 .navbar {
@@ -200,6 +207,23 @@
 .navbar-nav .nav-item .nav-link:hover {
     background-color: rgba(255, 255, 255, 0.15);
     transform: translateY(-1px);
+}
+
+/* Quick Profile Link Styles */
+.quick-profile-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    margin: 0 8px;
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease !important;
+}
+
+.quick-profile-link:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 /* User Avatar Styles */
@@ -324,6 +348,11 @@
     .navbar-nav {
         gap: 0.5rem;
     }
+    
+    .quick-profile-link {
+        margin: 5px 0;
+        text-align: center;
+    }
 }
 
 @media (max-width: 768px) {
@@ -335,6 +364,11 @@
     .palestine-flag::after {
         display: none;
     }
+    
+    .quick-profile-link {
+        width: 100%;
+        margin: 8px 0;
+    }
 }
 
 @media (max-width: 576px) {
@@ -342,6 +376,11 @@
         width: 32px !important;
         height: 32px !important;
         font-size: 14px !important;
+    }
+    
+    .quick-profile-link {
+        font-size: 14px;
+        padding: 5px 10px !important;
     }
 }
 </style>
@@ -399,6 +438,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             animateParticle();
         }
+    }
+    
+    // Quick profile link animation
+    const quickProfileLink = document.querySelector('.quick-profile-link');
+    if (quickProfileLink) {
+        quickProfileLink.addEventListener('click', function(e) {
+            // Add click feedback
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
     }
 });
 </script>
