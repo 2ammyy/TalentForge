@@ -721,26 +721,27 @@
                         <div style="position: relative; padding-top: 56.25%; background: #000;">
                             <video 
                                 class="post-video"
-                                playsinline 
-                                loop 
-                                preload="metadata"
+                                autoplay
+                                muted
+                                loop
+                                playsinline
+                                preload="auto"
                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
+                                poster="{% if post.image %}{{ post.image.url }}{% else %}{% static 'defaults/video_placeholder.jpg' %}{% endif %}"
                             >
                                 <source src="{{ post.video.url }}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                             
-                            <!-- Hover Overlay with Controls -->
+                            <!-- Video Controls Overlay -->
                             <div class="video-hover-overlay" 
-                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;"
-                                 onmouseenter="handleVideoHover(this, 'enter')"
-                                 onmouseleave="handleVideoHover(this, 'leave')"
+                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; z-index: 2;"
                                  onclick="toggleVideoPlayPause(this)">
                                  
                                 <!-- Video Controls -->
-                                <div class="video-controls" style="position: absolute; bottom: 10px; right: 10px; z-index: 10; opacity: 0; transition: opacity 0.3s;">
+                                <div class="video-controls" style="position: absolute; bottom: 10px; right: 10px; z-index: 3; opacity: 0; transition: opacity 0.3s;">
                                     <button class="btn btn-sm btn-dark video-play-btn" style="width: 32px; height: 32px; border-radius: 50%; padding: 0;">
-                                        <i class="fas fa-play"></i>
+                                        <i class="fas fa-pause"></i>
                                     </button>
                                 </div>
                             </div>
@@ -1015,22 +1016,92 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Hover effects
-    document.querySelectorAll('.pin').forEach(pin => {
-        pin.addEventListener('mouseenter', function() {
-            this.style.zIndex = '10';
+    // Hover effects for video controls
+    document.querySelectorAll('.video-hover-overlay').forEach(overlay => {
+        overlay.addEventListener('mouseenter', function() {
+            const controls = this.querySelector('.video-controls');
+            if (controls) {
+                controls.style.opacity = '0.8';
+            }
         });
-        pin.addEventListener('mouseleave', function() {
-            this.style.zIndex = '';
+        
+        overlay.addEventListener('mouseleave', function() {
+            const controls = this.querySelector('.video-controls');
+            if (controls) {
+                // Hide controls after delay
+                setTimeout(() => {
+                    if (!this.matches(':hover') && !controls.matches(':hover')) {
+                        controls.style.opacity = '0';
+                    }
+                }, 300);
+            }
         });
     });
+    
+    // Initialize all videos to autoplay
+    initializeVideos();
 });
+
+// Initialize videos to autoplay
+function initializeVideos() {
+    document.querySelectorAll('video').forEach(video => {
+        // Set attributes for autoplay
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', '');
+        
+        // Try to play the video
+        const playPromise = video.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Video autoplay failed:", error);
+                // Some browsers require user interaction first
+                // Add event listeners to play on user interaction
+                document.addEventListener('click', function playVideoOnInteraction() {
+                    video.play().catch(e => console.log("Still failed:", e));
+                    document.removeEventListener('click', playVideoOnInteraction);
+                }, { once: true });
+            });
+        }
+        
+        // Update play button icon
+        video.addEventListener('play', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-pause';
+            }
+        });
+        
+        video.addEventListener('pause', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-play';
+            }
+        });
+        
+        // Handle loading states
+        video.addEventListener('waiting', function() {
+            this.style.opacity = '0.7';
+        });
+        
+        video.addEventListener('playing', function() {
+            this.style.opacity = '1';
+        });
+        
+        // Handle video errors
+        video.addEventListener('error', function() {
+            console.error('Video error:', this.error);
+        });
+    });
+}
 
 // Check if user has liked the post
 function checkLikeStatus(postId, buttonElement) {
     // In a real app, you would fetch this from your API
     // For now, we'll assume not liked initially
-    // You could implement this by checking localStorage or making an API call
 }
 
 // Toggle like/unlike
@@ -1120,7 +1191,6 @@ function sendLikeRequest(postId, like, buttonElement) {
             buttonElement.querySelector('i').classList.add('fas');
             buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
         }
-        //alert('Network error. Please try again.');
     });
 }
 
@@ -1149,59 +1219,7 @@ function getCSRFToken() {
     return csrfToken ? csrfToken.value : '';
 }
 
-// Infinite scroll
-let isLoading = false;
-window.addEventListener('scroll', function() {
-    if (isLoading) return;
-    
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const pageHeight = document.documentElement.offsetHeight;
-    
-    if (scrollPosition >= pageHeight - 500) {
-        isLoading = true;
-        
-        const loadingSpinner = document.createElement('div');
-        loadingSpinner.className = 'loading-spinner';
-        loadingSpinner.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading more posts...';
-        
-        const grid = document.getElementById('postsGrid');
-        if (grid) {
-            grid.appendChild(loadingSpinner);
-            
-            // Simulate loading
-            setTimeout(() => {
-                loadingSpinner.remove();
-                isLoading = false;
-            }, 1000);
-        }
-    }
-});
-
-// Video controls functions
-function handleVideoHover(overlay, action) {
-    const video = overlay.previousElementSibling;
-    const controls = overlay.querySelector('.video-controls');
-    
-    if (!video || !controls) return;
-    
-    if (action === 'enter') {
-        // Show controls on hover
-        controls.style.opacity = '0.8';
-        
-        // Play video if it's paused
-        if (video.paused) {
-            video.play();
-        }
-    } else if (action === 'leave') {
-        // Hide controls after delay
-        setTimeout(() => {
-            if (!overlay.matches(':hover') && !controls.matches(':hover')) {
-                controls.style.opacity = '0';
-            }
-        }, 300);
-    }
-}
-
+// Toggle video play/pause
 function toggleVideoPlayPause(overlay) {
     const video = overlay.previousElementSibling;
     const playBtn = overlay.querySelector('.video-play-btn i');
@@ -1228,38 +1246,39 @@ function toggleVideoPlayPause(overlay) {
     }
 }
 
-// Initialize all videos on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Set all videos to autoplay muted
+// Intersection Observer for videos - play only when visible
+let videoObserver;
+if ('IntersectionObserver' in window) {
+    videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                // Video is visible - try to play
+                if (video.paused) {
+                    video.play().catch(e => console.log("Play failed:", e));
+                }
+            } else {
+                // Video is not visible - pause it
+                if (!video.paused) {
+                    video.pause();
+                }
+            }
+        });
+    }, { threshold: 0.1 }); // 10% visible
+    
+    // Observe all videos
     document.querySelectorAll('video').forEach(video => {
-        // Ensure videos are muted for autoplay
-        video.muted = true;
-        video.playsInline = true;
-        
-        // Update play button state
-        video.addEventListener('play', function() {
-            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
-            if (playBtn) {
-                playBtn.className = 'fas fa-pause';
-            }
-        });
-        
-        video.addEventListener('pause', function() {
-            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
-            if (playBtn) {
-                playBtn.className = 'fas fa-play';
-            }
-        });
-        
-        // Add loading state
-        video.addEventListener('waiting', function() {
-            this.style.opacity = '0.7';
-        });
-        
-        video.addEventListener('playing', function() {
-            this.style.opacity = '1';
-        });
+        videoObserver.observe(video);
     });
+}
+
+// Cleanup observer on page unload
+window.addEventListener('beforeunload', function() {
+    if (videoObserver) {
+        document.querySelectorAll('video').forEach(video => {
+            videoObserver.unobserve(video);
+        });
+    }
 });
 </script>
 {% endblock %}
