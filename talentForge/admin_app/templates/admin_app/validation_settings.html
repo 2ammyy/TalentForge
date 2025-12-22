@@ -1,0 +1,232 @@
+<!-- talentForge/admin_app/templates/admin_app/validation_settings.html -->
+{% extends 'admin_app/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">Validation Settings</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Settings Form -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-4">Validation Thresholds</h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Approval Threshold</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" 
+                                               name="threshold_approve" 
+                                               value="{{ settings.threshold_approve }}" 
+                                               step="0.01" min="0" max="1" required>
+                                        <span class="input-group-text">0.0 - 1.0</span>
+                                    </div>
+                                    <div class="form-text">
+                                        Minimum score for automatic approval. 
+                                        <span class="text-primary">Current: {{ settings.threshold_approve }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Warning Threshold</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" 
+                                               name="threshold_warning" 
+                                               value="{{ settings.threshold_warning }}" 
+                                               step="0.01" min="0" max="1" required>
+                                        <span class="input-group-text">0.0 - 1.0</span>
+                                    </div>
+                                    <div class="form-text">
+                                        Scores below this require manual review.
+                                        <span class="text-primary">Current: {{ settings.threshold_warning }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mb-4">Validation Features</h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="enable_real_time" 
+                                           id="enable_real_time" 
+                                           {% if settings.enable_real_time %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_real_time">
+                                        Real-time Validation
+                                    </label>
+                                    <div class="form-text">
+                                        Validate content immediately when posted
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="enable_job_validation" 
+                                           id="enable_job_validation" 
+                                           {% if settings.enable_job_validation %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_job_validation">
+                                        Job Post Validation
+                                    </label>
+                                    <div class="form-text">
+                                        Validate job postings for completeness
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="enable_image_validation" 
+                                           id="enable_image_validation" 
+                                           {% if settings.enable_image_validation %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_image_validation">
+                                        Image Validation
+                                    </label>
+                                    <div class="form-text">
+                                        Validate image content and quality
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="enable_video_validation" 
+                                           id="enable_video_validation" 
+                                           {% if settings.enable_video_validation %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_video_validation">
+                                        Video Validation
+                                    </label>
+                                    <div class="form-text">
+                                        Validate video content and metadata
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mb-4">AI Model Configuration</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">AI Model</label>
+                            <select class="form-select" name="ai_model">
+                                <option value="facebook/bart-large-mnli" 
+                                        {% if settings.ai_model == 'facebook/bart-large-mnli' %}selected{% endif %}>
+                                    facebook/bart-large-mnli (Default)
+                                </option>
+                                <option value="microsoft/deberta-large-mnli" 
+                                        {% if settings.ai_model == 'microsoft/deberta-large-mnli' %}selected{% endif %}>
+                                    microsoft/deberta-large-mnli
+                                </option>
+                                <option value="roberta-large-mnli" 
+                                        {% if settings.ai_model == 'roberta-large-mnli' %}selected{% endif %}>
+                                    roberta-large-mnli
+                                </option>
+                                <option value="custom" disabled>Custom Model (Coming Soon)</option>
+                            </select>
+                            <div class="form-text">
+                                Select the AI model for content classification
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'admin_app:validation_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Info Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">About Validation Settings</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Threshold Guidelines:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <span class="badge bg-success me-2">≥ {{ settings.threshold_approve }}</span>
+                            <small>Automatic Approval</small>
+                        </li>
+                        <li class="mb-2">
+                            <span class="badge bg-warning me-2">{{ settings.threshold_warning }} - {{ settings.threshold_approve|add:"-0.01" }}</span>
+                            <small>Manual Review</small>
+                        </li>
+                        <li class="mb-2">
+                            <span class="badge bg-danger me-2">&lt; {{ settings.threshold_warning }}</span>
+                            <small>Likely Rejection</small>
+                        </li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Current Configuration:</h6>
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Real-time Validation:</span>
+                            <span class="badge {% if settings.enable_real_time %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ settings.enable_real_time|yesno:"Enabled,Disabled" }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Job Validation:</span>
+                            <span class="badge {% if settings.enable_job_validation %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ settings.enable_job_validation|yesno:"Enabled,Disabled" }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Image Validation:</span>
+                            <span class="badge {% if settings.enable_image_validation %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ settings.enable_image_validation|yesno:"Enabled,Disabled" }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Video Validation:</span>
+                            <span class="badge {% if settings.enable_video_validation %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ settings.enable_video_validation|yesno:"Enabled,Disabled" }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info small">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Changes to these settings will affect all future validations. 
+                        Existing validation logs will not be modified.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3">Quick Actions</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin_app:test_validation' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-vial me-2"></i>Test Validation
+                        </a>
+                        <a href="{% url 'admin_app:creative_categories' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-tags me-2"></i>Manage Categories
+                        </a>
+                        <a href="{% url 'admin_app:validation_logs' %}" class="btn btn-outline-info">
+                            <i class="fas fa-clipboard-list me-2"></i>View Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

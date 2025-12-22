@@ -1,0 +1,187 @@
+<!-- talentForge/admin_app/templates/admin_app/creative_categories.html -->
+{% extends 'admin_app/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Creative Categories</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="fas fa-plus me-2"></i>Add Category
+        </button>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if categories %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Keywords</th>
+                                <th>Weight</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                            <tr>
+                                <td>
+                                    <strong>{{ category.name }}</strong>
+                                    {% if category.description %}
+                                        <p class="text-muted mb-0 small">{{ category.description|truncatechars:100 }}</p>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ category.keywords|truncatechars:100 }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ category.weight }}</span>
+                                </td>
+                                <td>
+                                    {% if category.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editCategoryModal{{ category.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form method="post" class="d-inline" onsubmit="return confirm('Delete this category?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="category_id" value="{{ category.id }}">
+                                        <button type="submit" name="delete_category" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            
+                            <!-- Edit Modal for each category -->
+                            <div class="modal fade" id="editCategoryModal{{ category.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="category_id" value="{{ category.id }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Edit Category</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Name</label>
+                                                    <input type="text" class="form-control" 
+                                                           name="name_{{ category.id }}" 
+                                                           value="{{ category.name }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Keywords (comma-separated)</label>
+                                                    <textarea class="form-control" 
+                                                              name="keywords_{{ category.id }}" 
+                                                              rows="3" required>{{ category.keywords }}</textarea>
+                                                    <div class="form-text">Enter keywords separated by commas</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea class="form-control" 
+                                                              name="description_{{ category.id }}" 
+                                                              rows="2">{{ category.description }}</textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Weight</label>
+                                                    <input type="number" class="form-control" 
+                                                           name="weight_{{ category.id }}" 
+                                                           value="{{ category.weight }}" step="0.1" min="0.1" max="5">
+                                                    <div class="form-text">Higher weight = more important in validation</div>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="active_{{ category.id }}" 
+                                                           id="active_{{ category.id }}" 
+                                                           {% if category.is_active %}checked{% endif %}>
+                                                    <label class="form-check-label" for="active_{{ category.id }}">
+                                                        Active Category
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" name="update_category" class="btn btn-primary">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                    <h5>No categories found</h5>
+                    <p class="text-muted">Add your first creative category to get started with AI validation.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Keywords *</label>
+                        <textarea class="form-control" name="keywords" rows="3" required></textarea>
+                        <div class="form-text">Enter keywords separated by commas (e.g., "art, painting, drawing, creative")</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Weight</label>
+                        <input type="number" class="form-control" name="weight" value="1.0" step="0.1" min="0.1" max="5">
+                        <div class="form-text">Importance weight for validation (default: 1.0)</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="add_category" class="btn btn-primary">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-focus on first input in modals
+document.addEventListener('DOMContentLoaded', function() {
+    var addModal = document.getElementById('addCategoryModal');
+    addModal.addEventListener('shown.bs.modal', function () {
+        this.querySelector('input[name="name"]').focus();
+    });
+});
+</script>
+{% endblock %}

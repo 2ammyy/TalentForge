@@ -1,0 +1,298 @@
+<!-- talentForge/admin_app/templates/admin_app/validation_logs.html -->
+{% extends 'admin_app/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">Validation Logs</h1>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Date From</label>
+                    <input type="date" class="form-control" name="date_from" value="{{ filters.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date To</label>
+                    <input type="date" class="form-control" name="date_to" value="{{ filters.date_to }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Min Score</label>
+                    <input type="number" class="form-control" name="score_min" value="{{ filters.score_min }}" min="0" max="1" step="0.1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Max Score</label>
+                    <input type="number" class="form-control" name="score_max" value="{{ filters.score_max }}" min="0" max="1" step="0.1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status">
+                        <option value="">All</option>
+                        <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="rejected" {% if filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control" name="search" value="{{ filters.search }}" placeholder="Search posts, users, or notes...">
+                </div>
+                <div class="col-md-12">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                        <a href="{% url 'admin_app:validation_logs' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Logs Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Post/Content</th>
+                                <th>User</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Categories</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.id }}</td>
+                                <td>
+                                    {% if log.post %}
+                                        <strong>{{ log.post.title|truncatechars:30|default:"No Title" }}</strong><br>
+                                        <small class="text-muted">{{ log.content_type }}</small>
+                                    {% else %}
+                                        <span class="text-muted">No post linked</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.user %}
+                                        {{ log.user.username }}
+                                    {% else %}
+                                        <span class="text-muted">System</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if log.score >= 0.8 %}bg-success
+                                        {% elif log.score >= 0.6 %}bg-info
+                                        {% elif log.score >= 0.4 %}bg-warning
+                                        {% else %}bg-danger
+                                        {% endif %}">
+                                        {{ log.score|floatformat:2 }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if log.is_approved %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.detected_categories %}
+                                        {% for cat in log.detected_categories|slice:":3" %}
+                                            <span class="badge bg-secondary mb-1">{{ cat }}</span>
+                                        {% endfor %}
+                                        {% if log.detected_categories|length > 3 %}
+                                            <span class="badge bg-light text-dark">+{{ log.detected_categories|length|add:"-3" }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.created_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#logDetailsModal{{ log.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if log.post %}
+                                    <a href="{% url 'admin_app:manual_validation' log.post.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            
+                            <!-- Details Modal -->
+                            <div class="modal fade" id="logDetailsModal{{ log.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Validation Log Details #{{ log.id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6>Basic Info</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <th>ID:</th>
+                                                            <td>{{ log.id }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Content Type:</th>
+                                                            <td>{{ log.content_type }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Score:</th>
+                                                            <td>{{ log.score|floatformat:3 }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Status:</th>
+                                                            <td>
+                                                                {% if log.is_approved %}
+                                                                    <span class="badge bg-success">Approved</span>
+                                                                {% else %}
+                                                                    <span class="badge bg-danger">Rejected</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Created:</th>
+                                                            <td>{{ log.created_at }}</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Related Info</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <th>User:</th>
+                                                            <td>
+                                                                {% if log.user %}
+                                                                    {{ log.user.username }}
+                                                                {% else %}
+                                                                    <span class="text-muted">System</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Post:</th>
+                                                            <td>
+                                                                {% if log.post %}
+                                                                    {{ log.post.title|default:"No Title" }}<br>
+                                                                    <small class="text-muted">ID: {{ log.post.id }}</small>
+                                                                {% else %}
+                                                                    <span class="text-muted">No post linked</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            
+                                            <h6 class="mt-4">Categories</h6>
+                                            {% if log.detected_categories %}
+                                                <div class="d-flex flex-wrap gap-1 mb-3">
+                                                    {% for cat in log.detected_categories %}
+                                                        <span class="badge bg-secondary">{{ cat }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <p class="text-muted">No categories detected</p>
+                                            {% endif %}
+                                            
+                                            {% if log.suggestions %}
+                                                <h6>Suggestions</h6>
+                                                <ul class="list-group mb-3">
+                                                    {% for suggestion in log.suggestions %}
+                                                        <li class="list-group-item">{{ suggestion }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                            
+                                            {% if log.notes %}
+                                                <h6>Notes</h6>
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        {{ log.notes|linebreaks }}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            {% if log.post %}
+                                            <a href="{% url 'admin_app:manual_validation' log.post.id %}" 
+                                               class="btn btn-primary">
+                                                <i class="fas fa-edit me-2"></i>Edit Validation
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if logs.paginator.num_pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if logs.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ logs.previous_page_number }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in logs.paginator.page_range %}
+                            {% if logs.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > logs.number|add:'-3' and num < logs.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if logs.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ logs.next_page_number }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h5>No validation logs found</h5>
+                    <p class="text-muted">
+                        {% if filters.date_from or filters.date_to or filters.search %}
+                            Try adjusting your filters
+                        {% else %}
+                            No content has been validated yet
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

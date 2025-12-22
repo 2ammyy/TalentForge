@@ -1,0 +1,155 @@
+<!-- talentForge/admin_app/templates/admin_app/validation_overview.html -->
+{% extends 'admin_app/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">Validation Overview</h1>
+    
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Posts</h5>
+                    <h2>{{ total_posts }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Validated Posts</h5>
+                    <h2>{{ validated_posts }}</h2>
+                    <small>{{ validation_rate|floatformat:1 }}% of total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Validation</h5>
+                    <h2>{{ pending_validation }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Last 24 Hours</h5>
+                    <h2>{{ recent_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Validation Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary text-white rounded p-3">
+                                <i class="fas fa-chart-pie fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h4>{{ validation_rate|floatformat:1 }}%</h4>
+                            <p class="text-muted mb-0">Validation Coverage</p>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mb-4" style="height: 20px;">
+                        <div class="progress-bar bg-success" style="width: {{ validation_rate }}%">
+                            {{ validation_rate|floatformat:1 }}%
+                        </div>
+                    </div>
+                    
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Total Posts:</td>
+                            <td class="text-end">{{ total_posts }}</td>
+                        </tr>
+                        <tr>
+                            <td>Validated:</td>
+                            <td class="text-end">{{ validated_posts }}</td>
+                        </tr>
+                        <tr>
+                            <td>Pending:</td>
+                            <td class="text-end">{{ pending_validation }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quality Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="bg-danger text-white rounded p-3">
+                                <i class="fas fa-exclamation-triangle fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h4>{{ low_score_count }}</h4>
+                            <p class="text-muted mb-0">Low Quality Posts</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>{{ low_score_count }}</strong> posts scored below 0.4 and may require attention.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin_app:validation_logs' %}?score_max=0.4" 
+                           class="btn btn-outline-danger">
+                            <i class="fas fa-filter me-2"></i>View Low Quality Posts
+                        </a>
+                        <a href="{% url 'admin_app:validation_dashboard' %}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-chart-bar me-2"></i>View Full Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-3">Quick Actions</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <a href="{% url 'admin_app:validation_dashboard' %}" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-chart-bar me-2"></i>Dashboard
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'admin_app:validation_logs' %}" class="btn btn-info w-100 mb-2">
+                        <i class="fas fa-clipboard-list me-2"></i>Validation Logs
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'admin_app:creative_categories' %}" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-tags me-2"></i>Categories
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'admin_app:test_validation' %}" class="btn btn-warning w-100 mb-2">
+                        <i class="fas fa-vial me-2"></i>Test Validation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

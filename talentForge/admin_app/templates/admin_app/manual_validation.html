@@ -1,0 +1,239 @@
+<!-- talentForge/admin_app/templates/admin_app/manual_validation.html -->
+{% extends 'admin_app/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Manual Validation</h1>
+        <div>
+            <a href="{% url 'admin_app:validation_logs' %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back to Logs
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Post Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Post Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4>{{ post.title|default:"No Title" }}</h4>
+                            <p class="text-muted mb-3">
+                                <i class="fas fa-user me-2"></i>{{ post.author.username }}
+                                <i class="fas fa-clock ms-3 me-2"></i>{{ post.created_at|date:"M d, Y H:i" }}
+                                <i class="fas fa-tag ms-3 me-2"></i>{{ post.type|title }}
+                            </p>
+                            
+                            {% if post.content %}
+                            <div class="mb-4">
+                                <h6>Content:</h6>
+                                <div class="border rounded p-3 bg-light">
+                                    {{ post.content|linebreaks }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if post.job_details %}
+                            <div class="mb-4">
+                                <h6>Job Details:</h6>
+                                <div class="border rounded p-3">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <th>Company:</th>
+                                            <td>{{ post.job_details.company }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Location:</th>
+                                            <td>{{ post.job_details.location }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Work Mode:</th>
+                                            <td>{{ post.job_details.get_work_mode_display }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Skills Required:</th>
+                                            <td>{{ post.job_details.skills_required|linebreaks }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            {% if post.image %}
+                            <div class="mb-4">
+                                <h6>Image:</h6>
+                                <img src="{{ post.image.url }}" class="img-fluid rounded" alt="Post image">
+                            </div>
+                            {% endif %}
+                            
+                            {% if post.video %}
+                            <div class="mb-4">
+                                <h6>Video:</h6>
+                                <video controls class="img-fluid rounded">
+                                    <source src="{{ post.video.url }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Validation Result -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">AI Validation Result</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <h3 class="mb-2">
+                                <span class="badge 
+                                    {% if validation_result.score >= 0.8 %}bg-success
+                                    {% elif validation_result.score >= 0.6 %}bg-info
+                                    {% elif validation_result.score >= 0.4 %}bg-warning
+                                    {% else %}bg-danger
+                                    {% endif %} fs-4">
+                                    Score: {{ validation_result.score|floatformat:3 }}
+                                </span>
+                            </h3>
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div class="progress-bar 
+                                    {% if validation_result.score >= 0.8 %}bg-success
+                                    {% elif validation_result.score >= 0.6 %}bg-info
+                                    {% elif validation_result.score >= 0.4 %}bg-warning
+                                    {% else %}bg-danger
+                                    {% endif %}" 
+                                    style="width: {{ validation_result.score|floatformat:0 }}%">
+                                </div>
+                            </div>
+                            <p class="small">
+                                {% if validation_result.is_approved %}
+                                    <span class="text-success">
+                                        <i class="fas fa-check-circle"></i> AI Recommendation: Approve
+                                    </span>
+                                {% else %}
+                                    <span class="text-danger">
+                                        <i class="fas fa-times-circle"></i> AI Recommendation: Reject
+                                    </span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            {% if validation_result.detected_categories %}
+                            <h6>Detected Categories:</h6>
+                            <div class="d-flex flex-wrap gap-1 mb-3">
+                                {% for category in validation_result.detected_categories %}
+                                    <span class="badge bg-secondary">{{ category }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if validation_result.suggestions %}
+                            <h6>AI Suggestions:</h6>
+                            <ul class="list-group">
+                                {% for suggestion in validation_result.suggestions %}
+                                    <li class="list-group-item">
+                                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                                        {{ suggestion }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Manual Validation Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Manual Validation</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Validation Score</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" 
+                                       name="score" 
+                                       value="{{ validation_result.score|floatformat:2 }}" 
+                                       step="0.01" min="0" max="1" required>
+                                <span class="input-group-text">0.0 - 1.0</span>
+                            </div>
+                            <div class="form-text">Adjust the AI score if needed</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Detected Categories (JSON)</label>
+                            <textarea class="form-control" name="categories" rows="3" required>
+                                {{ validation_result.detected_categories|default:'[]' }}
+                            </textarea>
+                            <div class="form-text">Categories detected by AI</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Suggestions (JSON)</label>
+                            <textarea class="form-control" name="suggestions" rows="3">
+                                {{ validation_result.suggestions|default:'[]' }}
+                            </textarea>
+                            <div class="form-text">Suggestions for improvement</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="4" 
+                                      placeholder="Add any additional notes or comments..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="approve" 
+                                    class="btn btn-success btn-lg">
+                                <i class="fas fa-check me-2"></i>Approve Post
+                            </button>
+                            <button type="submit" name="action" value="reject" 
+                                    class="btn btn-danger btn-lg">
+                                <i class="fas fa-times me-2"></i>Reject Post
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Guidelines -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3">📋 Validation Guidelines</h6>
+                    <ul class="small">
+                        <li class="mb-2">
+                            <strong>Approve (≥ 0.6):</strong> High-quality, relevant content
+                        </li>
+                        <li class="mb-2">
+                            <strong>Review (0.4-0.6):</strong> Needs minor improvements
+                        </li>
+                        <li class="mb-2">
+                            <strong>Reject (&lt; 0.4):</strong> Low-quality or inappropriate
+                        </li>
+                        <li class="mb-2">Check for spam, misinformation, or inappropriate content</li>
+                        <li class="mb-2">Ensure job posts have complete information</li>
+                        <li class="mb-0">Creative content should be original and well-presented</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

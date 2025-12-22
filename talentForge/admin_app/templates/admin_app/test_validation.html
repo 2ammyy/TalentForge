@@ -1,0 +1,259 @@
+<!-- talentForge/admin_app/templates/admin_app/test_validation.html -->
+{% extends 'admin_app/base_admin.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Test Validation</h1>
+        <a href="{% url 'admin_app:validation_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- Test Form -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Content Type</label>
+                            <select class="form-select" name="test_type" id="testTypeSelect">
+                                <option value="text" selected>Text Post</option>
+                                <option value="image">Image Post</option>
+                                <option value="video">Video Post</option>
+                                <option value="job">Job Post</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Title (Optional)</label>
+                            <input type="text" class="form-control" name="test_title" 
+                                   placeholder="Enter post title...">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Content *</label>
+                            <textarea class="form-control" name="test_text" rows="6" 
+                                      placeholder="Enter content to validate..." required></textarea>
+                            <div class="form-text">
+                                Enter the text content you want to validate. For images/videos, describe the content.
+                            </div>
+                        </div>
+                        
+                        <!-- Job Fields (Hidden by default) -->
+                        <div id="jobFields" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">Company</label>
+                                <input type="text" class="form-control" name="test_company" 
+                                       placeholder="Company name...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="test_location" 
+                                       placeholder="Job location...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Required Skills</label>
+                                <textarea class="form-control" name="test_skills" rows="2" 
+                                          placeholder="List required skills..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-vial me-2"></i>Run Validation Test
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Sample Content -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Sample Content</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Try these examples:</p>
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action sample-text" 
+                                data-text="I just finished my latest digital painting! It's a fantasy landscape with dragons and mountains. Took me about 20 hours to complete. #art #digitalpainting">
+                            🎨 Creative Art Post
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action sample-text" 
+                                data-text="Hiring Senior Python Developer for remote position. Must have 5+ years experience with Django, React, and AWS. Competitive salary and benefits.">
+                            💼 Job Posting
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action sample-text" 
+                                data-text="Check out my new tutorial on web development! Learn how to build a full-stack application with Django and React.">
+                            📚 Educational Content
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <!-- Results -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Validation Results</h6>
+                </div>
+                <div class="card-body">
+                    {% if test_result %}
+                        <!-- Score Display -->
+                        <div class="text-center mb-4">
+                            <h3 class="mb-2">
+                                <span class="badge 
+                                    {% if test_result.score >= 0.8 %}bg-success
+                                    {% elif test_result.score >= 0.6 %}bg-info
+                                    {% elif test_result.score >= 0.4 %}bg-warning
+                                    {% else %}bg-danger
+                                    {% endif %} fs-4">
+                                    Score: {{ test_result.score|floatformat:3 }}
+                                </span>
+                            </h3>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar 
+                                    {% if test_result.score >= 0.8 %}bg-success
+                                    {% elif test_result.score >= 0.6 %}bg-info
+                                    {% elif test_result.score >= 0.4 %}bg-warning
+                                    {% else %}bg-danger
+                                    {% endif %}" 
+                                    style="width: {{ test_result.score|floatformat:0 }}%">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status -->
+                        <div class="mb-4">
+                            <h6>Status</h6>
+                            {% if test_result.is_approved %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Approved</strong> - This content meets validation criteria
+                                </div>
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-times-circle me-2"></i>
+                                    <strong>Rejected</strong> - This content requires review
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Detected Categories -->
+                        {% if test_result.detected_categories %}
+                        <div class="mb-4">
+                            <h6>Detected Categories</h6>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for category in test_result.detected_categories %}
+                                    <span class="badge bg-secondary">{{ category }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Suggestions -->
+                        {% if test_result.suggestions %}
+                        <div class="mb-4">
+                            <h6>Suggestions for Improvement</h6>
+                            <ul class="list-group">
+                                {% for suggestion in test_result.suggestions %}
+                                    <li class="list-group-item">
+                                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                                        {{ suggestion }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Detailed Breakdown -->
+                        <div class="mb-4">
+                            <h6>Validation Details</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        {% for key, value in test_result.items %}
+                                            {% if key not in 'score,is_approved,detected_categories,suggestions' %}
+                                            <tr>
+                                                <th>{{ key|title }}</th>
+                                                <td>
+                                                    {% if value is True %}
+                                                        <span class="badge bg-success">Yes</span>
+                                                    {% elif value is False %}
+                                                        <span class="badge bg-danger">No</span>
+                                                    {% else %}
+                                                        {{ value }}
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-vial fa-3x text-muted mb-3"></i>
+                            <h5>No Test Results</h5>
+                            <p class="text-muted">
+                                Enter content in the form and click "Run Validation Test" to see results here.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Tips -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3">💡 Tips for Better Validation</h6>
+                    <ul class="small">
+                        <li class="mb-2">Use clear, descriptive titles</li>
+                        <li class="mb-2">Include relevant keywords in your content</li>
+                        <li class="mb-2">For job posts, specify company, location, and required skills</li>
+                        <li class="mb-2">Creative content should demonstrate originality</li>
+                        <li class="mb-2">Avoid spammy or low-quality content</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Show/hide job fields based on content type
+document.getElementById('testTypeSelect').addEventListener('change', function() {
+    var jobFields = document.getElementById('jobFields');
+    if (this.value === 'job') {
+        jobFields.style.display = 'block';
+    } else {
+        jobFields.style.display = 'none';
+    }
+});
+
+// Sample text buttons
+document.querySelectorAll('.sample-text').forEach(button => {
+    button.addEventListener('click', function() {
+        var text = this.getAttribute('data-text');
+        document.querySelector('textarea[name="test_text"]').value = text;
+        
+        // Auto-select appropriate type based on content
+        if (text.includes('Hiring') || text.includes('Developer') || text.includes('position')) {
+            document.getElementById('testTypeSelect').value = 'job';
+            document.getElementById('jobFields').style.display = 'block';
+        } else if (text.includes('painting') || text.includes('art')) {
+            document.getElementById('testTypeSelect').value = 'text';
+        }
+    });
+});
+</script>
+{% endblock %}
