@@ -1,0 +1,165 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}AI Content Validation Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:test_validation' %}" class="btn btn-outline-info">
+        <i class="fas fa-flask"></i> Test Validation
+    </a>
+    <a href="{% url 'admin_app:creative_categories' %}" class="btn btn-outline-primary">
+        <i class="fas fa-tags"></i> Manage Categories
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Validations</h6>
+                        <h2 class="mb-0">{{ total_validations }}</h2>
+                    </div>
+                    <i class="fas fa-robot fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Approval Rate</h6>
+                        <h2 class="mb-0">{{ approval_rate }}%</h2>
+                        <small>{{ approved_count }} approved</small>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Rejection Rate</h6>
+                        <h2 class="mb-0">{{ rejection_rate }}%</h2>
+                        <small>{{ rejection_count }} rejected</small>
+                    </div>
+                    <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Score Distribution</h6>
+                        <div class="small">
+                            Excellent: {{ score_stats.excellent }}<br>
+                            Good: {{ score_stats.good }}
+                        </div>
+                    </div>
+                    <i class="fas fa-chart-bar fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Category Statistics -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Creative Categories</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Posts</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in category_stats %}
+                            <tr>
+                                <td>{{ cat.name }}</td>
+                                <td>{{ cat.count }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" 
+                                             style="width: {{ cat.percentage }}%">
+                                            {{ cat.percentage|floatformat:1 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Validations -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Validations</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for log in recent_validations %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                {% if log.post %}
+                                <a href="{% url 'posts:post_detail' log.post.id %}" target="_blank">
+                                    {{ log.post.title|truncatechars:40 }}
+                                </a>
+                                {% else %}
+                                Manual Validation
+                                {% endif %}
+                            </h6>
+                            <span class="badge {% if log.is_approved %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if log.is_approved %}Approved{% else %}Rejected{% endif %}
+                            </span>
+                        </div>
+                        <p class="mb-1 small">
+                            User: <strong>{{ log.user.username }}</strong><br>
+                            Score: <span class="badge bg-info">{{ log.score|floatformat:2 }}</span>
+                            Categories: 
+                            {% for cat in log.detected_categories|slice:":2" %}
+                            <span class="badge bg-secondary">{{ cat }}</span>
+                            {% endfor %}
+                        </p>
+                        <small class="text-muted">{{ log.created_at|timesince }} ago</small>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-inbox fa-2x text-muted"></i>
+                        <p class="text-muted mt-2">No validation logs yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

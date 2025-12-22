@@ -1,6 +1,7 @@
 from django import forms
 from .models import Post, Comment, JobPost, Share, Report, UserProfile, Message
 from django.core.validators import validate_email
+from utils.content_validator import validate_content
 
 class PostForm(forms.ModelForm):
     # Job-specific fields
@@ -158,11 +159,69 @@ class PostForm(forms.ModelForm):
                 except:
                     self.add_error('application_email', 'Enter a valid email address.')
         
+        # ============ ADD AI CONTENT VALIDATION ============
+        try:
+            # Prepare data for validation
+            validation_data = {
+                'type': cleaned_data.get('type', 'text'),
+                'title': cleaned_data.get('title', ''),
+                'content': cleaned_data.get('content', ''),
+                'image': cleaned_data.get('image'),
+                'video': cleaned_data.get('video'),
+            }
+            
+            # Add job fields if it's a job post
+            if cleaned_data.get('type') == 'job':
+                validation_data['job_fields'] = {
+                    'company': cleaned_data.get('company', ''),
+                    'location': cleaned_data.get('location', ''),
+                    'skills_required': cleaned_data.get('skills_required', ''),
+                    'employment_type': cleaned_data.get('employment_type', ''),
+                }
+            
+            # Validate content
+            validation_result = validate_content(validation_data)
+            
+            if not validation_result['is_valid']:
+                # Store validation result in cleaned_data for template access
+                cleaned_data['validation_result'] = validation_result
+                
+                # Create a user-friendly error message
+                error_msg = (
+                    f"🚫 Content not suitable for our creative community.\n"
+                    f"Reason: {validation_result['reason']}\n"
+                    f"Score: {validation_result['score']:.0%}\n\n"
+                )
+                
+                if validation_result['suggestions']:
+                    error_msg += "Suggestions:\n" + "\n".join(
+                        f"• {suggestion}" 
+                        for suggestion in validation_result['suggestions']
+                    )
+                
+                # Add error to the form
+                self.add_error(
+                    None,  # Non-field error
+                    forms.ValidationError(error_msg)
+                )
+            
+            # Store validation result for template even if valid
+            cleaned_data['validation_result'] = validation_result
+            
+        except Exception as e:
+            # If validation fails, log but don't block posting
+            print(f"Content validation error: {e}")
+        
         return cleaned_data
     
     def save(self, commit=True):
         post = super().save(commit=False)
         post_type = self.cleaned_data.get('type')
+        
+        # Store validation result in post metadata if available
+        if 'validation_result' in self.cleaned_data:
+            # You might want to store this in a JSONField or similar
+            pass
         
         if commit:
             post.save()
@@ -190,7 +249,6 @@ class PostForm(forms.ModelForm):
                     JobPost.objects.create(post=post, **job_data)
         
         return post
-
 
 class CommentForm(forms.ModelForm):
     class Meta:

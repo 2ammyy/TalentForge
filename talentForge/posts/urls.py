@@ -11,6 +11,8 @@ urlpatterns = [
     path('<int:pk>/edit/', views.post_edit, name='post_edit'),
     path('<int:pk>/update/', views.post_update, name='post_update'),
     path('<int:pk>/delete/', views.post_delete, name='post_delete'),
+    # Content validation API
+    path('check-creative-content/', views.check_creative_content, name='check_creative_content'),
 
     # ============ REACTIONS & INTERACTIONS ============
     path('reaction/<int:post_id>/', views.add_reaction, name='add_reaction'),

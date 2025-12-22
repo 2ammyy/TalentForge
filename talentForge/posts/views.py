@@ -14,6 +14,8 @@ from .models import Post, Comment, Reaction, JobPost, Share, Report, UserProfile
 from .forms import PostForm, CommentForm, ShareForm, ReportForm, UserProfileForm, MessageForm, SearchForm
 
 from utils.moderation import is_toxic_content
+from utils.content_validator import validate_content
+import json
 
 
 # ADD THIS NEW FUNCTION TO views.py (anywhere in the views file)
@@ -953,3 +955,51 @@ def clear_all_notifications(request):
     
     messages.success(request, 'All notifications marked as read!')
     return redirect('posts:notifications')
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import json
+from utils.content_validator import validate_content
+@csrf_exempt
+@require_POST
+def check_creative_content(request):
+    """API endpoint for real-time content validation"""
+    try:
+        import json
+        data = json.loads(request.body)
+        
+        from utils.content_validator import validate_content
+        
+        # Prepare validation data
+        validation_data = {
+            'type': data.get('type', 'text'),
+            'title': data.get('title', ''),
+            'content': data.get('content', ''),
+        }
+        
+        # Add job fields if job post
+        if validation_data['type'] == 'job':
+            validation_data['job_fields'] = {
+                'company': data.get('company', ''),
+                'location': data.get('location', ''),
+                'skills_required': data.get('skills_required', ''),
+            }
+        
+        # Validate content
+        result = validate_content(validation_data)
+        
+        return JsonResponse({
+            'success': True,
+            'data': result
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
