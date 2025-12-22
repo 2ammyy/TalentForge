@@ -165,12 +165,10 @@
                             <td>
                                 <span class="badge bg-secondary">{{ post.type|title }}</span>
                             </td>
-                            <td>{{ post.like_count|default:"0" }}</td>
-                            <td>{{ post.comment_count|default:"0" }}</td>
-                            <td>{{ post.share_count|default:"0" }}</td>
-                            <td>
-                                <span class="badge bg-success">{{ post.total_engagement|default:"0" }}</span>
-                            </td>
+                            <td>{{ post.like_count_db|default:"0" }}</td>
+<td>{{ post.comment_count_db|default:"0" }}</td>
+<td>{{ post.share_count_db|default:"0" }}</td>
+<td><span class="badge bg-success">{{ post.total_engagement|default:"0" }}</span></td>
                             <td>
                                 {% comment %} Would need to get validation score {% endcomment %}
                                 <span class="badge bg-info">0.8</span>

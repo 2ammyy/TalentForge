@@ -1085,19 +1085,30 @@ def engagement_analytics(request):
     from datetime import datetime, timedelta
     from django.db.models import Count, Avg
     
-    # Engagement metrics
+    # Engagement metrics - FIXED: Use actual model counts
     total_likes = Reaction.objects.count()
     total_comments = Comment.objects.count()
     total_shares = Share.objects.count()
     
-    # Average engagement per post
-    avg_likes_per_post = Post.objects.annotate(
-        like_count=Count('reactions')
-    ).aggregate(Avg('like_count'))['like_count__avg'] or 0
+    # Calculate averages correctly
+    # Get posts with their related counts
+    posts_with_counts = Post.objects.annotate(
+        like_count_db=Count('reactions'),
+        comment_count_db=Count('comments'),
+        share_count_db=Count('shares')
+    )
     
-    avg_comments_per_post = Post.objects.annotate(
-        comment_count=Count('comments')
-    ).aggregate(Avg('comment_count'))['comment_count__avg'] or 0
+    # Calculate averages
+    if posts_with_counts.exists():
+        avg_likes_per_post = posts_with_counts.aggregate(
+            avg_likes=Avg('like_count_db')
+        )['avg_likes'] or 0
+        avg_comments_per_post = posts_with_counts.aggregate(
+            avg_comments=Avg('comment_count_db')
+        )['avg_comments'] or 0
+    else:
+        avg_likes_per_post = 0
+        avg_comments_per_post = 0
     
     # Time-based engagement
     today = datetime.now().date()
@@ -1109,7 +1120,7 @@ def engagement_analytics(request):
     
     # Daily engagement trend
     daily_engagement = []
-    for i in range(6, -1, -1):
+    for i in range(6, -1, -1):  # Last 7 days
         day = today - timedelta(days=i)
         
         day_likes = Reaction.objects.filter(created_at__date=day).count()
@@ -1125,11 +1136,11 @@ def engagement_analytics(request):
             'total': day_likes + day_comments + day_shares
         })
     
-    # Most engaging posts
+    # Most engaging posts - FIXED: Use annotated fields
     engaging_posts = Post.objects.annotate(
-        like_count=Count('reactions'),
-        comment_count=Count('comments'),
-        share_count=Count('shares')
+        like_count_db=Count('reactions'),
+        comment_count_db=Count('comments'),
+        share_count_db=Count('shares')
     ).annotate(
         total_engagement=Count('reactions') + Count('comments') + Count('shares')
     ).order_by('-total_engagement')[:10]
@@ -1155,7 +1166,6 @@ def engagement_analytics(request):
     }
     
     return render(request, 'admin_app/engagement_analytics.html', context)
-
 
 @login_required
 @admin_required
