@@ -1,4 +1,5 @@
 from django.urls import path
+from . import views_ai_validation
 from . import views
 
 app_name = 'admin_app'
@@ -25,14 +26,16 @@ urlpatterns = [
     
     # Export
     path('export-users/', views.export_users_csv, name='export_users'),
-   # AI Content Validation
-   #path('validation/', views.validation_analytics, name='validation_dashboard'),
-    #path('validation/', views_ai_validation.validation_dashboard, name='validation_dashboard'),
-    # path('validation/categories/', views_ai_validation.creative_categories, name='creative_categories'),
-    # path('validation/logs/', views_ai_validation.validation_logs, name='validation_logs'),
-    # path('validation/settings/', views_ai_validation.validation_settings, name='validation_settings'),
-    # path('validation/manual/<int:post_id>/', views_ai_validation.manual_validation, name='manual_validation'),
-    # path('validation/test/', views_ai_validation.test_validation, name='test_validation'),
-    # path('validation/api/stats/', views_ai_validation.api_validation_stats, name='validation_api_stats'),
+   
 
+
+   # AI Validation URLs
+    path('ai-validation/', views_ai_validation.validation_dashboard, name='validation_dashboard'),
+    path('ai-validation/categories/', views_ai_validation.creative_categories, name='creative_categories'),
+    path('ai-validation/logs/', views_ai_validation.validation_logs, name='validation_logs'),
+    path('ai-validation/settings/', views_ai_validation.validation_settings, name='validation_settings'),
+    path('ai-validation/test/', views_ai_validation.test_validation, name='test_validation'),
+    path('ai-validation/manual/<int:post_id>/', views_ai_validation.manual_validation, name='manual_validation'),
+    path('ai-validation/overview/', views_ai_validation.validation_overview, name='validation_overview'),
+    path('ai-validation/api/stats/', views_ai_validation.api_validation_stats, name='api_validation_stats'),
 ]

@@ -1,5 +1,7 @@
+# talentForge/admin_app/views_ai_validation.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Q, Avg, F
@@ -7,6 +9,9 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
+
+# Get the active User model
+User = get_user_model()
 
 from .permissions import admin_required
 from posts.models import Post, ContentValidationLog, CreativeCategory
@@ -19,8 +24,6 @@ def validation_dashboard(request):
     
     # Get date ranges
     today = timezone.now().date()
-    week_ago = today - timedelta(days=7)
-    month_ago = today - timedelta(days=30)
     
     # Overall validation stats
     total_validations = ContentValidationLog.objects.count()
@@ -58,11 +61,17 @@ def validation_dashboard(request):
     # Sort by count
     category_stats.sort(key=lambda x: x['count'], reverse=True)
     
-    # User statistics
-    top_creators = User.objects.annotate(
-        post_count=Count('posts'),
-        avg_score=Avg('posts__contentvalidationlog__score')
-    ).filter(post_count__gt=0, avg_score__isnull=False).order_by('-avg_score')[:5]
+    # User statistics - Get users with highest average validation scores
+    # Using direct ContentValidationLog relationship
+    top_creators = User.objects.filter(
+        contentvalidationlog__isnull=False
+    ).annotate(
+        validation_count=Count('contentvalidationlog'),
+        avg_score=Avg('contentvalidationlog__score')
+    ).filter(
+        validation_count__gt=0,
+        avg_score__isnull=False
+    ).order_by('-avg_score')[:5]
     
     # Weekly trends
     daily_stats = []
@@ -76,8 +85,22 @@ def validation_dashboard(request):
             'day': day.strftime('%a'),
             'date': day.strftime('%m/%d'),
             'count': day_count,
-            'avg_score': day_avg
+            'avg_score': round(day_avg, 2)
         })
+    
+    # Top performing categories by average score
+    category_performance = []
+    for category in CreativeCategory.objects.filter(is_active=True)[:5]:
+        logs = ContentValidationLog.objects.filter(
+            detected_categories__contains=[category.name]
+        )
+        if logs.exists():
+            avg_score = logs.aggregate(avg=Avg('score'))['avg'] or 0
+            category_performance.append({
+                'name': category.name,
+                'avg_score': round(avg_score, 2),
+                'count': logs.count()
+            })
     
     context = {
         'active_page': 'validation_dashboard',
@@ -91,6 +114,7 @@ def validation_dashboard(request):
         'category_stats': category_stats[:10],  # Top 10 categories
         'top_creators': top_creators,
         'daily_stats': daily_stats,
+        'category_performance': category_performance,
     }
     
     return render(request, 'admin_app/validation_dashboard.html', context)
@@ -166,9 +190,15 @@ def validation_logs(request):
     if date_to:
         logs = logs.filter(created_at__date__lte=date_to)
     if score_min:
-        logs = logs.filter(score__gte=float(score_min))
+        try:
+            logs = logs.filter(score__gte=float(score_min))
+        except ValueError:
+            pass
     if score_max:
-        logs = logs.filter(score__lte=float(score_max))
+        try:
+            logs = logs.filter(score__lte=float(score_max))
+        except ValueError:
+            pass
     if status == 'approved':
         logs = logs.filter(is_approved=True)
     elif status == 'rejected':
@@ -178,7 +208,8 @@ def validation_logs(request):
         logs = logs.filter(
             Q(post__title__icontains=search) |
             Q(post__content__icontains=search) |
-            Q(user__username__icontains=search)
+            Q(user__username__icontains=search) |
+            Q(notes__icontains=search)
         )
     
     # Pagination
@@ -218,15 +249,36 @@ def validation_settings(request):
     }
     
     if request.method == 'POST':
-        # Save settings (you could store in a model or JSON file)
-        threshold_approve = float(request.POST.get('threshold_approve', 0.5))
-        threshold_warning = float(request.POST.get('threshold_warning', 0.3))
-        enable_real_time = request.POST.get('enable_real_time') == 'on'
+        # Save settings
+        try:
+            threshold_approve = float(request.POST.get('threshold_approve', 0.5))
+            threshold_warning = float(request.POST.get('threshold_warning', 0.3))
+        except ValueError:
+            messages.error(request, 'Please enter valid numbers for thresholds')
+            return redirect('admin_app:validation_settings')
         
-        # Update validator instance
-        validator = get_validator()
-        validator.threshold_approve = threshold_approve
-        validator.threshold_warning = threshold_warning
+        enable_real_time = request.POST.get('enable_real_time') == 'on'
+        enable_job_validation = request.POST.get('enable_job_validation') == 'on'
+        enable_image_validation = request.POST.get('enable_image_validation') == 'on'
+        enable_video_validation = request.POST.get('enable_video_validation') == 'on'
+        
+        # Update settings (in a real app, you'd save these to a database)
+        default_settings['threshold_approve'] = threshold_approve
+        default_settings['threshold_warning'] = threshold_warning
+        default_settings['enable_real_time'] = enable_real_time
+        default_settings['enable_job_validation'] = enable_job_validation
+        default_settings['enable_image_validation'] = enable_image_validation
+        default_settings['enable_video_validation'] = enable_video_validation
+        
+        # Update validator instance if available
+        try:
+            validator = get_validator()
+            if hasattr(validator, 'threshold_approve'):
+                validator.threshold_approve = threshold_approve
+            if hasattr(validator, 'threshold_warning'):
+                validator.threshold_warning = threshold_warning
+        except:
+            pass  # Validator might not be available yet
         
         messages.success(request, 'Validation settings updated!')
         return redirect('admin_app:validation_settings')
@@ -248,15 +300,24 @@ def manual_validation(request, post_id):
         action = request.POST.get('action')
         notes = request.POST.get('notes', '')
         
+        try:
+            score = float(request.POST.get('score', 0))
+            categories = json.loads(request.POST.get('categories', '[]'))
+            suggestions = json.loads(request.POST.get('suggestions', '[]'))
+        except (ValueError, json.JSONDecodeError):
+            messages.error(request, 'Invalid data provided')
+            return redirect('admin_app:validation_logs')
+        
         # Create or update validation log
         log, created = ContentValidationLog.objects.update_or_create(
             post=post,
             defaults={
                 'user': request.user,
-                'score': float(request.POST.get('score', 0)),
+                'content_type': post.type,
+                'score': score,
                 'is_approved': action == 'approve',
-                'detected_categories': json.loads(request.POST.get('categories', '[]')),
-                'suggestions': json.loads(request.POST.get('suggestions', '[]')),
+                'detected_categories': categories,
+                'suggestions': suggestions,
                 'notes': notes,
             }
         )
@@ -268,28 +329,38 @@ def manual_validation(request, post_id):
         
         return redirect('admin_app:validation_logs')
     
-    # Get AI validation result
-    validator = get_validator()
-    validation_data = {
-        'type': post.type,
-        'title': post.title or '',
-        'content': post.content or '',
-        'image': post.image if post.image else None,
-        'video': post.video if post.video else None,
-    }
-    
-    if hasattr(post, 'job_details'):
-        validation_data['job_fields'] = {
-            'company': post.job_details.company,
-            'location': post.job_details.location,
-            'skills_required': post.job_details.skills_required or '',
+    # Get AI validation result if validator is available
+    validation_result = None
+    try:
+        validator = get_validator()
+        validation_data = {
+            'type': post.type,
+            'title': post.title or '',
+            'content': post.content or '',
+            'image': post.image if post.image else None,
+            'video': post.video if post.video else None,
         }
-    
-    result = validator.validate_post(validation_data)
+        
+        if hasattr(post, 'job_details') and post.job_details:
+            validation_data['job_fields'] = {
+                'company': post.job_details.company,
+                'location': post.job_details.location,
+                'skills_required': post.job_details.skills_required or '',
+            }
+        
+        validation_result = validator.validate_post(validation_data)
+    except:
+        # Validator not available, use default values
+        validation_result = {
+            'score': 0.5,
+            'is_approved': True,
+            'detected_categories': [],
+            'suggestions': []
+        }
     
     context = {
         'post': post,
-        'validation_result': result,
+        'validation_result': validation_result,
     }
     
     return render(request, 'admin_app/manual_validation.html', context)
@@ -305,22 +376,25 @@ def test_validation(request):
         test_type = request.POST.get('test_type', 'text')
         
         if test_text:
-            validator = get_validator()
-            
-            validation_data = {
-                'type': test_type,
-                'title': request.POST.get('test_title', ''),
-                'content': test_text,
-            }
-            
-            if test_type == 'job':
-                validation_data['job_fields'] = {
-                    'company': request.POST.get('test_company', ''),
-                    'location': request.POST.get('test_location', ''),
-                    'skills_required': request.POST.get('test_skills', ''),
+            try:
+                validator = get_validator()
+                
+                validation_data = {
+                    'type': test_type,
+                    'title': request.POST.get('test_title', ''),
+                    'content': test_text,
                 }
-            
-            result = validator.validate_post(validation_data)
+                
+                if test_type == 'job':
+                    validation_data['job_fields'] = {
+                        'company': request.POST.get('test_company', ''),
+                        'location': request.POST.get('test_location', ''),
+                        'skills_required': request.POST.get('test_skills', ''),
+                    }
+                
+                result = validator.validate_post(validation_data)
+            except Exception as e:
+                messages.error(request, f'Validation error: {str(e)}')
     
     context = {
         'active_page': 'validation_dashboard',
@@ -337,13 +411,43 @@ def api_validation_stats(request):
     
     # Real-time stats
     today_validations = ContentValidationLog.objects.filter(created_at__date=today)
+    today_count = today_validations.count()
     today_approved = today_validations.filter(is_approved=True).count()
     
     stats = {
-        'validations_today': today_validations.count(),
+        'validations_today': today_count,
         'approved_today': today_approved,
-        'approval_rate_today': (today_approved / today_validations.count() * 100) if today_validations.count() > 0 else 0,
+        'approval_rate_today': (today_approved / today_count * 100) if today_count > 0 else 0,
         'avg_score_today': today_validations.aggregate(avg=Avg('score'))['avg'] or 0,
     }
     
     return JsonResponse(stats)
+
+@login_required
+@admin_required
+def validation_overview(request):
+    """Quick overview of validation statistics"""
+    
+    # Quick stats
+    total_posts = Post.objects.count()
+    validated_posts = ContentValidationLog.objects.values('post').distinct().count()
+    pending_validation = total_posts - validated_posts
+    
+    # Recent validations (last 24 hours)
+    yesterday = timezone.now() - timedelta(hours=24)
+    recent_count = ContentValidationLog.objects.filter(created_at__gte=yesterday).count()
+    
+    # Top issues
+    low_score_count = ContentValidationLog.objects.filter(score__lt=0.4).count()
+    
+    context = {
+        'active_page': 'validation_dashboard',
+        'total_posts': total_posts,
+        'validated_posts': validated_posts,
+        'pending_validation': pending_validation,
+        'recent_count': recent_count,
+        'low_score_count': low_score_count,
+        'validation_rate': (validated_posts / total_posts * 100) if total_posts > 0 else 0,
+    }
+    
+    return render(request, 'admin_app/validation_overview.html', context)
