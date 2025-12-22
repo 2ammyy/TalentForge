@@ -1,0 +1,345 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Site Analytics{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:analytics_reports' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-chart-bar"></i> Reports
+    </a>
+    <button class="btn btn-primary" onclick="refreshCharts()">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Users</h6>
+                        <h2 class="mb-0">{{ total_users }}</h2>
+                        <small>+{{ new_users_today }} today</small>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Posts</h6>
+                        <h2 class="mb-0">{{ total_posts }}</h2>
+                        <small>+{{ posts_today }} today</small>
+                    </div>
+                    <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Engagement</h6>
+                        <h2 class="mb-0">{{ total_likes|add:total_comments|add:total_shares }}</h2>
+                        <small>{{ total_likes }} likes, {{ total_comments }} comments</small>
+                    </div>
+                    <i class="fas fa-heart fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Pending Reports</h6>
+                        <h2 class="mb-0">{{ pending_reports }}</h2>
+                        <small>Require attention</small>
+                    </div>
+                    <i class="fas fa-flag fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Weekly Activity Overview</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="weeklyActivityChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">This Week vs Last Week</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>New Users:</strong>
+                    <span class="float-end">{{ new_users_week }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>New Posts:</strong>
+                    <span class="float-end">{{ posts_week }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Engagement:</strong>
+                    <span class="float-end">{{ total_likes|add:total_comments|add:total_shares }}</span>
+                </div>
+                <hr>
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Week-over-week comparison
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Performing Content -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Top Performing Content</h5>
+    </div>
+    <div class="card-body">
+        {% if top_posts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Post</th>
+                            <th>Author</th>
+                            <th>Type</th>
+                            <th>Likes</th>
+                            <th>Comments</th>
+                            <th>Engagement</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+{% for post in top_posts %}
+<tr>
+    <td>
+        <strong>{{ post.title|truncatechars:50|default:"No Title" }}</strong>
+        {% if post.content %}
+            <p class="mb-0 small text-muted">{{ post.content|truncatechars:100 }}</p>
+        {% endif %}
+    </td>
+    <td>{{ post.author.username }}</td>
+    <td>
+        <span class="badge bg-secondary">{{ post.type|title }}</span>
+    </td>
+    <td>{{ post.like_count_val|default:"0" }}</td>
+    <td>{{ post.comment_count_val|default:"0" }}</td>
+    <td>
+        <span class="badge bg-info">
+            {{ post.like_count_val|add:post.comment_count_val|default:"0" }}
+        </span>
+    </td>
+    <td>{{ post.created_at|date:"M d" }}</td>
+</tr>
+{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-chart-line fa-2x text-muted mb-3"></i>
+                <h6>No Performance Data</h6>
+                <p class="text-muted small">Not enough engagement data available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Daily Metrics Table -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Daily Metrics (Last 7 Days)</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Date</th>
+                        <th>New Users</th>
+                        <th>New Posts</th>
+                        <th>Likes</th>
+                        <th>Comments</th>
+                        <th>Total Engagement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in daily_metrics %}
+                    <tr>
+                        <td>{{ day.day }}</td>
+                        <td>{{ day.date }}</td>
+                        <td>{{ day.users }}</td>
+                        <td>{{ day.posts }}</td>
+                        <td>{{ day.likes }}</td>
+                        <td>{{ day.comments }}</td>
+                        <td>
+                            <span class="badge bg-{% if day.likes|add:day.comments > 50 %}success{% elif day.likes|add:day.comments > 20 %}info{% else %}secondary{% endif %}">
+                                {{ day.likes|add:day.comments }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="mb-3">Detailed Analytics</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:user_analytics' %}" class="btn btn-outline-primary w-100 mb-2">
+                    <i class="fas fa-users me-2"></i>User Analytics
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:content_analytics' %}" class="btn btn-outline-success w-100 mb-2">
+                    <i class="fas fa-file-alt me-2"></i>Content Analytics
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:engagement_analytics' %}" class="btn btn-outline-info w-100 mb-2">
+                    <i class="fas fa-heart me-2"></i>Engagement Analytics
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:analytics_reports' %}" class="btn btn-outline-warning w-100 mb-2">
+                    <i class="fas fa-chart-bar me-2"></i>Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let weeklyChart;
+
+function initCharts() {
+    const ctx = document.getElementById('weeklyActivityChart').getContext('2d');
+    
+    const labels = JSON.parse('{{ daily_labels_json|safe }}');
+    const usersData = JSON.parse('{{ users_data_json|safe }}');
+    const postsData = JSON.parse('{{ posts_data_json|safe }}');
+    const engagementData = JSON.parse('{{ engagement_data_json|safe }}');
+    
+    weeklyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'New Users',
+                    data: usersData,
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'New Posts',
+                    data: postsData,
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Engagement',
+                    data: engagementData,
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false,
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function refreshCharts() {
+    if (weeklyChart) {
+        weeklyChart.destroy();
+    }
+    initCharts();
+    
+    // Show refresh notification
+    const refreshBtn = document.querySelector('[onclick="refreshCharts()"]');
+    const originalHtml = refreshBtn.innerHTML;
+    refreshBtn.innerHTML = '<i class="fas fa-check"></i> Refreshed';
+    refreshBtn.classList.add('btn-success');
+    refreshBtn.classList.remove('btn-primary');
+    
+    setTimeout(() => {
+        refreshBtn.innerHTML = originalHtml;
+        refreshBtn.classList.remove('btn-success');
+        refreshBtn.classList.add('btn-primary');
+    }, 2000);
+}
+
+document.addEventListener('DOMContentLoaded', initCharts);
+</script>
+{% endblock %}
+{% endblock %}

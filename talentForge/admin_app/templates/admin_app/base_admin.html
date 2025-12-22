@@ -112,17 +112,18 @@
                                class="nav-link {% if active_page == 'moderation' %}active{% endif %}">
                                 <i class="fas fa-shield-alt me-2"></i> Moderation
                             </a>
-                            <a href="{% url 'admin_app:analytics' %}" 
-                               class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
-                                <i class="fas fa-chart-bar me-2"></i> Analytics
-                            </a>
+                           <a href="{% url 'admin_app:analytics' %}" 
+   class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
+    <i class="fas fa-chart-bar me-2"></i> Analytics
+</a>
                         </nav>
                         
                         <h6 class="text-muted text-uppercase small mt-4 mb-3">Tools</h6>
                         <nav class="nav flex-column">
                             <a href="{% url 'admin_app:reports' %}" class="nav-link">
-                                <i class="fas fa-file-alt me-2"></i> Reports
-                            </a>
+    <i class="fas fa-file-alt me-2"></i> Reports
+</a>
+
                             <a href="{% url 'admin_app:settings' %}" class="nav-link">
                                 <i class="fas fa-cog me-2"></i> Settings
                             </a>

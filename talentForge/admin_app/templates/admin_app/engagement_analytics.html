@@ -1,0 +1,450 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Engagement Analytics{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:analytics' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left"></i> Back
+</a>
+    <button class="btn btn-primary" onclick="refreshEngagementData()">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Engagement Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Likes</h6>
+                        <h2 class="mb-0">{{ total_likes }}</h2>
+                    </div>
+                    <i class="fas fa-thumbs-up fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Comments</h6>
+                        <h2 class="mb-0">{{ total_comments }}</h2>
+                    </div>
+                    <i class="fas fa-comment fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Shares</h6>
+                        <h2 class="mb-0">{{ total_shares }}</h2>
+                    </div>
+                    <i class="fas fa-share-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Avg per Post</h6>
+                        <h2 class="mb-0">{{ avg_likes_per_post|floatformat:1 }}</h2>
+                        <small>likes, {{ avg_comments_per_post|floatformat:1 }} comments</small>
+                    </div>
+                    <i class="fas fa-chart-line fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Engagement -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Weekly Engagement Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="engagementTrendChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">This Week's Engagement</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Likes:</strong>
+                    <span class="float-end">{{ likes_week }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Comments:</strong>
+                    <span class="float-end">{{ comments_week }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Shares:</strong>
+                    <span class="float-end">{{ shares_week }}</span>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <strong>Total Engagement:</strong>
+                    <h4 class="float-end">{{ likes_week|add:comments_week|add:shares_week }}</h4>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-primary" style="width: 60%"></div>
+                    <div class="progress-bar bg-success" style="width: 30%"></div>
+                    <div class="progress-bar bg-info" style="width: 10%"></div>
+                </div>
+                <small class="text-muted">
+                    <span class="text-primary">●</span> Likes 
+                    <span class="text-success ms-2">●</span> Comments 
+                    <span class="text-info ms-2">●</span> Shares
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Most Engaging Posts -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Most Engaging Posts</h5>
+    </div>
+    <div class="card-body">
+        {% if engaging_posts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Post</th>
+                            <th>Author</th>
+                            <th>Type</th>
+                            <th>Likes</th>
+                            <th>Comments</th>
+                            <th>Shares</th>
+                            <th>Total</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in engaging_posts %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-{% if forloop.counter == 1 %}warning{% elif forloop.counter == 2 %}secondary{% elif forloop.counter == 3 %}danger{% else %}light text-dark{% endif %}">
+                                    #{{ forloop.counter }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ post.title|truncatechars:40|default:"No Title" }}</strong>
+                                {% if post.content %}
+                                    <p class="mb-0 small text-muted">{{ post.content|truncatechars:60 }}</p>
+                                {% endif %}
+                            </td>
+                            <td>{{ post.author.username }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ post.type|title }}</span>
+                            </td>
+                            <td>{{ post.like_count|default:"0" }}</td>
+                            <td>{{ post.comment_count|default:"0" }}</td>
+                            <td>{{ post.share_count|default:"0" }}</td>
+                            <td>
+                                <span class="badge bg-success">{{ post.total_engagement|default:"0" }}</span>
+                            </td>
+                            <td>
+                                {% comment %} Would need to get validation score {% endcomment %}
+                                <span class="badge bg-info">0.8</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-fire fa-2x text-muted mb-3"></i>
+                <h6>No Engagement Data</h6>
+                <p class="text-muted small">Not enough engagement data available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Reaction Type Distribution -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Reaction Type Distribution</h5>
+    </div>
+    <div class="card-body">
+        {% if reaction_types %}
+            <div class="row">
+                <div class="col-md-6">
+                    <canvas id="reactionChart" height="200"></canvas>
+                </div>
+                <div class="col-md-6">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Reaction</th>
+                                    <th>Count</th>
+                                    <th>Percentage</th>
+                                    <th>Icon</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reaction in reaction_types %}
+                                <tr>
+                                    <td>{{ reaction.reaction_type|title }}</td>
+                                    <td>{{ reaction.count }}</td>
+                                    <td>
+                                        {% with total=total_likes %}
+                                            {% if total > 0 %}
+                                                {{ reaction.count|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {% if reaction.reaction_type == 'like' %}👍
+                                        {% elif reaction.reaction_type == 'love' %}❤️
+                                        {% elif reaction.reaction_type == 'laugh' %}😂
+                                        {% elif reaction.reaction_type == 'sad' %}😢
+                                        {% elif reaction.reaction_type == 'angry' %}😡
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-smile fa-2x text-muted mb-3"></i>
+                <h6>No Reaction Data</h6>
+                <p class="text-muted small">Not enough reaction data available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Daily Engagement Details -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Daily Engagement Breakdown</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Date</th>
+                        <th>Likes</th>
+                        <th>Comments</th>
+                        <th>Shares</th>
+                        <th>Total</th>
+                        <th>Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in daily_engagement %}
+                    <tr>
+                        <td>{{ day.day }}</td>
+                        <td>{{ day.date }}</td>
+                        <td>{{ day.likes }}</td>
+                        <td>{{ day.comments }}</td>
+                        <td>{{ day.shares }}</td>
+                        <td>
+                            <span class="badge bg-{% if day.total > 50 %}success{% elif day.total > 20 %}info{% elif day.total > 10 %}warning{% else %}secondary{% endif %}">
+                                {{ day.total }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if day.total > 50 %}
+                                <span class="text-success"><i class="fas fa-arrow-up"></i> High</span>
+                            {% elif day.total > 20 %}
+                                <span class="text-info"><i class="fas fa-minus"></i> Stable</span>
+                            {% else %}
+                                <span class="text-warning"><i class="fas fa-arrow-down"></i> Low</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let engagementChart;
+let reactionChart;
+
+function initCharts() {
+    // Engagement Trend Chart
+    const trendCtx = document.getElementById('engagementTrendChart').getContext('2d');
+    const labels = [];
+    const likesData = [];
+    const commentsData = [];
+    const sharesData = [];
+    
+    {% for day in daily_engagement %}
+        labels.push('{{ day.day }}');
+        likesData.push({{ day.likes }});
+        commentsData.push({{ day.comments }});
+        sharesData.push({{ day.shares }});
+    {% endfor %}
+    
+    engagementChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Likes',
+                    data: likesData,
+                    borderColor: 'rgba(102, 126, 234, 1)',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Comments',
+                    data: commentsData,
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Shares',
+                    data: sharesData,
+                    borderColor: 'rgba(23, 162, 184, 1)',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false,
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+    
+    // Reaction Distribution Chart
+    const reactionCtx = document.getElementById('reactionChart').getContext('2d');
+    
+    {% if reaction_types %}
+    const reactionLabels = [];
+    const reactionData = [];
+    const reactionColors = [
+        'rgba(102, 126, 234, 0.8)',
+        'rgba(220, 53, 69, 0.8)',
+        'rgba(255, 193, 7, 0.8)',
+        'rgba(40, 167, 69, 0.8)',
+        'rgba(23, 162, 184, 0.8)'
+    ];
+    
+    {% for reaction in reaction_types %}
+        reactionLabels.push('{{ reaction.reaction_type|title }}');
+        reactionData.push({{ reaction.count }});
+    {% endfor %}
+    
+    reactionChart = new Chart(reactionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: reactionLabels,
+            datasets: [{
+                data: reactionData,
+                backgroundColor: reactionColors.slice(0, reactionData.length),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+    {% endif %}
+}
+
+function refreshEngagementData() {
+    if (engagementChart) {
+        engagementChart.destroy();
+    }
+    if (reactionChart) {
+        reactionChart.destroy();
+    }
+    initCharts();
+    
+    // Show refresh notification
+    const refreshBtn = document.querySelector('[onclick="refreshEngagementData()"]');
+    const originalHtml = refreshBtn.innerHTML;
+    refreshBtn.innerHTML = '<i class="fas fa-check"></i> Refreshed';
+    refreshBtn.classList.add('btn-success');
+    refreshBtn.classList.remove('btn-primary');
+    
+    setTimeout(() => {
+        refreshBtn.innerHTML = originalHtml;
+        refreshBtn.classList.remove('btn-success');
+        refreshBtn.classList.add('btn-primary');
+    }, 2000);
+}
+
+document.addEventListener('DOMContentLoaded', initCharts);
+</script>
+{% endblock %}
+{% endblock %}

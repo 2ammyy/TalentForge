@@ -1,0 +1,241 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}General Settings{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:settings' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <button type="submit" form="generalSettingsForm" class="btn btn-primary">
+        <i class="fas fa-save"></i> Save Changes
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<form id="generalSettingsForm" method="post">
+    {% csrf_token %}
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="mb-4">Site Configuration</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Site Name</label>
+                        <input type="text" class="form-control" name="site_name" 
+                               value="{{ settings.SITE_NAME|default:'TalentForge' }}" required>
+                        <div class="form-text">The name displayed throughout the site</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Site URL</label>
+                        <input type="url" class="form-control" name="site_url" 
+                               value="{{ settings.SITE_URL|default:'http://localhost:8000' }}" required>
+                        <div class="form-text">Base URL for your site</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Admin Email</label>
+                        <input type="email" class="form-control" name="admin_email" 
+                               value="{{ settings.ADMIN_EMAIL|default:'admin@talentforge.com' }}" required>
+                        <div class="form-text">Primary admin contact email</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Support Email</label>
+                        <input type="email" class="form-control" name="support_email" 
+                               value="{{ settings.SUPPORT_EMAIL|default:'support@talentforge.com' }}" required>
+                        <div class="form-text">Support contact email for users</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label">Site Description</label>
+                <textarea class="form-control" name="site_description" rows="3">{{ settings.SITE_DESCRIPTION|default:'A platform for creative professionals to showcase their work and connect with opportunities.' }}</textarea>
+                <div class="form-text">Brief description of your site for SEO and social media</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Display Settings</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Posts per Page</label>
+                        <input type="number" class="form-control" name="posts_per_page" 
+                               value="{{ settings.POSTS_PER_PAGE|default:20 }}" min="5" max="100">
+                        <div class="form-text">Number of posts to display per page in feeds</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Users per Page (Admin)</label>
+                        <input type="number" class="form-control" name="users_per_page" 
+                               value="{{ settings.USERS_PER_PAGE|default:25 }}" min="10" max="100">
+                        <div class="form-text">Number of users to display per page in admin</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Default Timezone</label>
+                        <select class="form-select" name="timezone">
+                            <option value="UTC" {% if settings.TIME_ZONE == 'UTC' %}selected{% endif %}>UTC</option>
+                            <option value="America/New_York" {% if settings.TIME_ZONE == 'America/New_York' %}selected{% endif %}>Eastern Time</option>
+                            <option value="America/Chicago" {% if settings.TIME_ZONE == 'America/Chicago' %}selected{% endif %}>Central Time</option>
+                            <option value="America/Denver" {% if settings.TIME_ZONE == 'America/Denver' %}selected{% endif %}>Mountain Time</option>
+                            <option value="America/Los_Angeles" {% if settings.TIME_ZONE == 'America/Los_Angeles' %}selected{% endif %}>Pacific Time</option>
+                            <option value="Europe/London" {% if settings.TIME_ZONE == 'Europe/London' %}selected{% endif %}>London</option>
+                            <option value="Europe/Paris" {% if settings.TIME_ZONE == 'Europe/Paris' %}selected{% endif %}>Paris</option>
+                            <option value="Asia/Tokyo" {% if settings.TIME_ZONE == 'Asia/Tokyo' %}selected{% endif %}>Tokyo</option>
+                        </select>
+                        <div class="form-text">Default timezone for the site</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Default Language</label>
+                        <select class="form-select" name="language">
+                            <option value="en" {% if settings.LANGUAGE_CODE == 'en' %}selected{% endif %}>English</option>
+                            <option value="fr" {% if settings.LANGUAGE_CODE == 'fr' %}selected{% endif %}>French</option>
+                            <option value="es" {% if settings.LANGUAGE_CODE == 'es' %}selected{% endif %}>Spanish</option>
+                            <option value="de" {% if settings.LANGUAGE_CODE == 'de' %}selected{% endif %}>German</option>
+                            <option value="ja" {% if settings.LANGUAGE_CODE == 'ja' %}selected{% endif %}>Japanese</option>
+                        </select>
+                        <div class="form-text">Default language for the site</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Security Settings</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="enable_registration" 
+                               id="enable_registration" {% if settings.ENABLE_REGISTRATION|default:True %}checked{% endif %}>
+                        <label class="form-check-label" for="enable_registration">
+                            Enable User Registration
+                        </label>
+                        <div class="form-text">Allow new users to register accounts</div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="email_verification" 
+                               id="email_verification" {% if settings.EMAIL_VERIFICATION|default:False %}checked{% endif %}>
+                        <label class="form-check-label" for="email_verification">
+                            Require Email Verification
+                        </label>
+                        <div class="form-text">Users must verify their email before posting</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="maintenance_mode" 
+                               id="maintenance_mode" {% if settings.MAINTENANCE_MODE|default:False %}checked{% endif %}>
+                        <label class="form-check-label" for="maintenance_mode">
+                            Maintenance Mode
+                        </label>
+                        <div class="form-text">Show maintenance page to non-admin users</div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="debug_mode" 
+                               id="debug_mode" {% if settings.DEBUG|default:False %}checked{% endif %}>
+                        <label class="form-check-label" for="debug_mode">
+                            Debug Mode
+                        </label>
+                        <div class="form-text">Show detailed error messages (disable in production)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Allowed Hosts</label>
+                <textarea class="form-control" name="allowed_hosts" rows="2">{{ settings.ALLOWED_HOSTS|join:", "|default:"localhost,127.0.0.1" }}</textarea>
+                <div class="form-text">Comma-separated list of allowed hostnames</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Media Settings</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Max Image Size (MB)</label>
+                        <input type="number" class="form-control" name="max_image_size" 
+                               value="{{ settings.MAX_IMAGE_SIZE|default:5 }}" min="1" max="50">
+                        <div class="form-text">Maximum allowed image upload size</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Max Video Size (MB)</label>
+                        <input type="number" class="form-control" name="max_video_size" 
+                               value="{{ settings.MAX_VIDEO_SIZE|default:100 }}" min="10" max="1000">
+                        <div class="form-text">Maximum allowed video upload size</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Allowed Image Formats</label>
+                        <input type="text" class="form-control" name="allowed_image_formats" 
+                               value="{{ settings.ALLOWED_IMAGE_FORMATS|default:"jpg,jpeg,png,gif,webp" }}">
+                        <div class="form-text">Comma-separated list (jpg, png, gif, webp)</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Allowed Video Formats</label>
+                        <input type="text" class="form-control" name="allowed_video_formats" 
+                               value="{{ settings.ALLOWED_VIDEO_FORMATS|default:"mp4,avi,mov,wmv" }}">
+                        <div class="form-text">Comma-separated list (mp4, avi, mov, wmv)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'admin_app:settings' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save All Changes
+            </button>
+        </div>
+    </div>
+</form>
+
+<div class="alert alert-warning mt-4">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Warning:</strong> Changing these settings may affect site functionality. 
+    Some changes may require a server restart to take effect.
+</div>
+{% endblock %}

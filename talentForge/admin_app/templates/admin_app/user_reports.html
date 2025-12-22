@@ -1,0 +1,359 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}User Reports{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:reports' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <a href="{% url 'admin_app:content_reports' %}" class="btn btn-outline-primary">
+        <i class="fas fa-flag"></i> Content Reports
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="under_review" {% if filters.status == 'under_review' %}selected{% endif %}>Under Review</option>
+                    <option value="resolved" {% if filters.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="dismissed" {% if filters.status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Reason</label>
+                <select name="reason" class="form-select">
+                    <option value="">All Reasons</option>
+                    <option value="spam" {% if filters.reason == 'spam' %}selected{% endif %}>Spam</option>
+                    <option value="harassment" {% if filters.reason == 'harassment' %}selected{% endif %}>Harassment</option>
+                    <option value="inappropriate" {% if filters.reason == 'inappropriate' %}selected{% endif %}>Inappropriate</option>
+                    <option value="violence" {% if filters.reason == 'violence' %}selected{% endif %}>Violence</option>
+                    <option value="hate_speech" {% if filters.reason == 'hate_speech' %}selected{% endif %}>Hate Speech</option>
+                    <option value="other" {% if filters.reason == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" name="search" 
+                       value="{{ filters.search }}" placeholder="Search users or descriptions...">
+            </div>
+            <div class="col-md-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Apply Filters
+                    </button>
+                    <a href="{% url 'admin_app:user_reports' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear Filters
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Reports Table -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Report ID</th>
+                                    <th>Reported User</th>
+                                    <th>Reporter</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                <tr>
+                                    <td>#{{ report.id }}</td>
+                                    <td>
+                                        <a href="{% url 'admin_app:user_detail' report.reported_user.id %}" 
+                                           class="text-decoration-none">
+                                            {{ report.reported_user.username }}
+                                        </a>
+                                    </td>
+                                    <td>{{ report.reporter.username }}</td>
+                                    <td>{{ report.get_reason_display }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if report.status == 'pending' %}warning{% elif report.status == 'under_review' %}info{% elif report.status == 'resolved' %}success{% else %}secondary{% endif %}">
+                                            {{ report.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ report.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-info" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#reportDetailsModal{{ report.id }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="{% url 'admin_app:user_detail' report.reported_user.id %}" 
+                                               class="btn btn-outline-primary">
+                                                <i class="fas fa-user"></i>
+                                            </a>
+                                            {% if report.status == 'pending' %}
+                                            <button type="button" class="btn btn-outline-success"
+                                                    onclick="updateReportStatus({{ report.id }}, 'resolved')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                    onclick="updateReportStatus({{ report.id }}, 'dismissed')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Report Details Modal -->
+                                <div class="modal fade" id="reportDetailsModal{{ report.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Report Details #{{ report.id }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>Report Information</h6>
+                                                        <table class="table table-sm">
+                                                            <tr>
+                                                                <th>Report ID:</th>
+                                                                <td>#{{ report.id }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Status:</th>
+                                                                <td>
+                                                                    <span class="badge bg-{% if report.status == 'pending' %}warning{% elif report.status == 'under_review' %}info{% elif report.status == 'resolved' %}success{% else %}secondary{% endif %}">
+                                                                        {{ report.get_status_display }}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Reason:</th>
+                                                                <td>{{ report.get_reason_display }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Created:</th>
+                                                                <td>{{ report.created_at }}</td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>User Information</h6>
+                                                        <table class="table table-sm">
+                                                            <tr>
+                                                                <th>Reported User:</th>
+                                                                <td>
+                                                                    <a href="{% url 'admin_app:user_detail' report.reported_user.id %}" 
+                                                                       class="text-decoration-none">
+                                                                        {{ report.reported_user.username }}
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Email:</th>
+                                                                <td>{{ report.reported_user.email }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Reporter:</th>
+                                                                <td>{{ report.reporter.username }}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Reporter Email:</th>
+                                                                <td>{{ report.reporter.email }}</td>
+                                                            </tr>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                
+                                                {% if report.description %}
+                                                <h6 class="mt-4">Report Description</h6>
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        {{ report.description|linebreaks }}
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                {% if report.status == 'pending' %}
+                                                <button type="button" class="btn btn-success" 
+                                                        onclick="updateReportStatus({{ report.id }}, 'resolved');">
+                                                    Mark as Resolved
+                                                </button>
+                                                <button type="button" class="btn btn-secondary" 
+                                                        onclick="updateReportStatus({{ report.id }}, 'dismissed');">
+                                                    Dismiss Report
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if reports.paginator.num_pages > 1 %}
+                    <nav class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if reports.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reports.previous_page_number }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    &laquo; Previous
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in reports.paginator.page_range %}
+                                {% if reports.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > reports.number|add:'-3' and num < reports.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if reports.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ reports.next_page_number }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    Next &raquo;
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <h5>No User Reports Found</h5>
+                        <p class="text-muted">
+                            {% if filters.status or filters.reason or filters.search %}
+                                Try adjusting your filters
+                            {% else %}
+                                No user reports have been submitted yet.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Reported Users -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Reported Users</h5>
+            </div>
+            <div class="card-body">
+                {% if top_reported_users %}
+                    <div class="list-group">
+                        {% for user in top_reported_users %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ user.reported_user__username }}</strong><br>
+                                <small class="text-muted">ID: {{ user.reported_user__id }}</small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ user.report_count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                        <h6>No Data</h6>
+                        <p class="text-muted small">No users have been reported yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Report Stats -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="mb-3">Report Statistics</h6>
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total User Reports:</span>
+                        <span class="badge bg-primary">{{ reports.paginator.count }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Pending:</span>
+                        <span class="badge bg-warning">
+                            {{ reports|dictsort:"status"|length|default:"0" }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Resolved:</span>
+                        <span class="badge bg-success">
+                            {{ reports|dictsort:"status"|length|default:"0" }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Average Response Time:</span>
+                        <span>N/A</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function updateReportStatus(reportId, status) {
+    if (confirm('Update report status to ' + status + '?')) {
+        fetch(`/admin/reports/${reportId}/update-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating report status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating report status');
+        });
+    }
+}
+</script>
+{% endblock %}
+{% endblock %}

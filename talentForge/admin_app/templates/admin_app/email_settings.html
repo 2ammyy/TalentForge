@@ -1,0 +1,283 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Email Settings{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:settings' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <button type="submit" form="emailSettingsForm" class="btn btn-primary">
+        <i class="fas fa-save"></i> Save Changes
+    </button>
+    <button type="button" class="btn btn-outline-info" onclick="testEmailConnection()">
+        <i class="fas fa-vial"></i> Test Connection
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<form id="emailSettingsForm" method="post">
+    {% csrf_token %}
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="mb-4">SMTP Configuration</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Email Backend</label>
+                        <select class="form-select" name="email_backend">
+                            <option value="django.core.mail.backends.smtp.EmailBackend" 
+                                    {% if email_config.email_backend == 'django.core.mail.backends.smtp.EmailBackend' %}selected{% endif %}>
+                                SMTP
+                            </option>
+                            <option value="django.core.mail.backends.console.EmailBackend"
+                                    {% if email_config.email_backend == 'django.core.mail.backends.console.EmailBackend' %}selected{% endif %}>
+                                Console (Development)
+                            </option>
+                            <option value="django.core.mail.backends.filebased.EmailBackend"
+                                    {% if email_config.email_backend == 'django.core.mail.backends.filebased.EmailBackend' %}selected{% endif %}>
+                                File-based (Development)
+                            </option>
+                        </select>
+                        <div class="form-text">Email backend for sending emails</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Email Host</label>
+                        <input type="text" class="form-control" name="email_host" 
+                               value="{{ email_config.email_host }}" required>
+                        <div class="form-text">SMTP server address (e.g., smtp.gmail.com)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Email Port</label>
+                        <input type="number" class="form-control" name="email_port" 
+                               value="{{ email_config.email_port }}" required>
+                        <div class="form-text">SMTP port (usually 587 for TLS, 465 for SSL)</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Email Username</label>
+                        <input type="text" class="form-control" name="email_host_user" 
+                               value="{{ email_config.email_host_user }}" required>
+                        <div class="form-text">SMTP username (usually email address)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Email Password</label>
+                        <input type="password" class="form-control" name="email_host_password" 
+                               placeholder="Enter SMTP password">
+                        <div class="form-text">Leave blank to keep current password</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Use TLS</label>
+                        <select class="form-select" name="email_use_tls">
+                            <option value="true" {% if email_config.email_use_tls %}selected{% endif %}>Yes</option>
+                            <option value="false" {% if not email_config.email_use_tls %}selected{% endif %}>No</option>
+                        </select>
+                        <div class="form-text">Use TLS encryption for email</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Email Settings</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Default From Email</label>
+                        <input type="email" class="form-control" name="default_from_email" 
+                               value="{{ email_config.default_from_email }}" required>
+                        <div class="form-text">Default sender email address</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Support Email</label>
+                        <input type="email" class="form-control" name="support_email" 
+                               value="{{ email_config.support_email|default:'support@talentforge.com' }}" required>
+                        <div class="form-text">Support contact email</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Server Email</label>
+                        <input type="email" class="form-control" name="server_email" 
+                               value="{{ email_config.server_email|default:'noreply@talentforge.com' }}" required>
+                        <div class="form-text">Server/automated email address</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Email Timeout (seconds)</label>
+                        <input type="number" class="form-control" name="email_timeout" 
+                               value="{{ email_config.email_timeout|default:30 }}" min="5" max="120">
+                        <div class="form-text">Timeout for email sending operations</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Email Templates & Notifications</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="send_welcome_email" 
+                               id="send_welcome_email" checked>
+                        <label class="form-check-label" for="send_welcome_email">
+                            Send Welcome Email
+                        </label>
+                        <div class="form-text">Send welcome email to new users</div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="send_password_reset" 
+                               id="send_password_reset" checked>
+                        <label class="form-check-label" for="send_password_reset">
+                            Send Password Reset Emails
+                        </label>
+                        <div class="form-text">Allow users to reset passwords via email</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="send_notifications" 
+                               id="send_notifications" checked>
+                        <label class="form-check-label" for="send_notifications">
+                            Send Notification Emails
+                        </label>
+                        <div class="form-text">Send email notifications for likes, comments, etc.</div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="send_report_confirmation" 
+                               id="send_report_confirmation" checked>
+                        <label class="form-check-label" for="send_report_confirmation">
+                            Send Report Confirmations
+                        </label>
+                        <div class="form-text">Send confirmation emails when reports are submitted</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Email Subject Prefix</label>
+                <input type="text" class="form-control" name="email_subject_prefix" 
+                       value="{{ email_config.email_subject_prefix|default:'[TalentForge]' }}">
+                <div class="form-text">Prefix added to all email subjects</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'admin_app:settings' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save Email Settings
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Test Email Connection Modal -->
+<div class="modal fade" id="testEmailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Test Email Connection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Test Email Address</label>
+                    <input type="email" class="form-control" id="testEmailAddress" 
+                           placeholder="Enter email to send test message">
+                </div>
+                <div id="testResult" class="mt-3" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendTestEmail()">
+                    <i class="fas fa-paper-plane me-2"></i>Send Test Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Note:</strong> For Gmail, you may need to enable "Less secure app access" or use an App Password.
+</div>
+
+{% block extra_js %}
+<script>
+function testEmailConnection() {
+    const modal = new bootstrap.Modal(document.getElementById('testEmailModal'));
+    modal.show();
+}
+
+function sendTestEmail() {
+    const email = document.getElementById('testEmailAddress').value;
+    const resultDiv = document.getElementById('testResult');
+    
+    if (!email) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">Please enter an email address</div>';
+        resultDiv.style.display = 'block';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="alert alert-info">Sending test email...</div>';
+    resultDiv.style.display = 'block';
+    
+    fetch('{% url "admin_app:test_email_connection" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            resultDiv.innerHTML = '<div class="alert alert-success">Test email sent successfully!</div>';
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        resultDiv.innerHTML = '<div class="alert alert-danger">Connection error</div>';
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

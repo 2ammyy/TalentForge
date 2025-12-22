@@ -1,0 +1,360 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}{{ post.title|default:"Post" }} - Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:post_moderation' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    {% if latest_validation %}
+        {% if latest_validation.is_approved %}
+            <a href="{% url 'admin_app:reject_post' post.id %}" 
+               class="btn btn-outline-danger"
+               onclick="return confirm('Reject this post?')">
+                <i class="fas fa-times"></i> Reject
+            </a>
+        {% else %}
+            <a href="{% url 'admin_app:approve_post' post.id %}" 
+               class="btn btn-outline-success"
+               onclick="return confirm('Approve this post?')">
+                <i class="fas fa-check"></i> Approve
+            </a>
+        {% endif %}
+    {% else %}
+        <a href="{% url 'admin_app:manual_validation' post.id %}" 
+           class="btn btn-primary">
+            <i class="fas fa-edit"></i> Validate
+        </a>
+    {% endif %}
+    <a href="{% url 'admin_app:delete_post' post.id %}" 
+       class="btn btn-outline-danger"
+       onclick="return confirm('Delete this post? This action cannot be undone.')">
+        <i class="fas fa-trash"></i> Delete
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Post Details -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4>{{ post.title|default:"No Title" }}</h4>
+                <p class="text-muted mb-3">
+                    <i class="fas fa-user me-2"></i>
+                    <a href="{% url 'admin_app:user_detail' post.author.id %}" class="text-decoration-none">
+                        {{ post.author.username }}
+                    </a>
+                    <i class="fas fa-clock ms-3 me-2"></i>{{ post.created_at|date:"M d, Y H:i" }}
+                    <i class="fas fa-tag ms-3 me-2"></i>{{ post.type|title }}
+                </p>
+                
+                {% if post.content %}
+                <div class="mb-4">
+                    <h6>Content:</h6>
+                    <div class="border rounded p-3 bg-light">
+                        {{ post.content|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if post.type == 'job' and post.job_details %}
+                <div class="mb-4">
+                    <h6>Job Details:</h6>
+                    <div class="border rounded p-3">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Company:</th>
+                                <td>{{ post.job_details.company }}</td>
+                            </tr>
+                            <tr>
+                                <th>Location:</th>
+                                <td>{{ post.job_details.location }}</td>
+                            </tr>
+                            <tr>
+                                <th>Work Mode:</th>
+                                <td>{{ post.job_details.get_work_mode_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Employment Type:</th>
+                                <td>{{ post.job_details.get_employment_type_display }}</td>
+                            </tr>
+                            {% if post.job_details.skills_required %}
+                            <tr>
+                                <th>Skills Required:</th>
+                                <td>{{ post.job_details.skills_required|linebreaks }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if post.job_details.benefits %}
+                            <tr>
+                                <th>Benefits:</th>
+                                <td>{{ post.job_details.benefits|linebreaks }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Media -->
+                <div class="row">
+                    {% if post.image %}
+                    <div class="col-md-6">
+                        <h6>Image:</h6>
+                        <img src="{{ post.image.url }}" class="img-fluid rounded" alt="Post image">
+                    </div>
+                    {% endif %}
+                    
+                    {% if post.video %}
+                    <div class="col-md-6">
+                        <h6>Video:</h6>
+                        <video controls class="img-fluid rounded">
+                            <source src="{{ post.video.url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Post Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-3">
+                        <h4>{{ stats.likes }}</h4>
+                        <small class="text-muted">Likes</small>
+                    </div>
+                    <div class="col-3">
+                        <h4>{{ stats.comments }}</h4>
+                        <small class="text-muted">Comments</small>
+                    </div>
+                    <div class="col-3">
+                        <h4>{{ stats.shares }}</h4>
+                        <small class="text-muted">Shares</small>
+                    </div>
+                    <div class="col-3">
+                        <h4>{{ stats.reports }}</h4>
+                        <small class="text-muted">Reports</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Validation & Reports -->
+    <div class="col-lg-4">
+        <!-- Validation Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Validation Status</h5>
+            </div>
+            <div class="card-body">
+                {% if latest_validation %}
+                    <div class="text-center mb-3">
+                        <h3 class="mb-2">
+                            <span class="badge {% if latest_validation.score >= 0.8 %}bg-success{% elif latest_validation.score >= 0.6 %}bg-info{% elif latest_validation.score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %} fs-4">
+                                Score: {{ latest_validation.score|floatformat:2 }}
+                            </span>
+                        </h3>
+                        <div class="progress mb-3" style="height: 10px;">
+                            <div class="progress-bar {% if latest_validation.score >= 0.8 %}bg-success{% elif latest_validation.score >= 0.6 %}bg-info{% elif latest_validation.score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                 style="width: {{ latest_validation.score|floatformat:0 }}%">
+                            </div>
+                        </div>
+                        <p>
+                            {% if latest_validation.is_approved %}
+                                <span class="text-success">
+                                    <i class="fas fa-check-circle"></i> Approved
+                                </span>
+                            {% else %}
+                                <span class="text-danger">
+                                    <i class="fas fa-times-circle"></i> Rejected
+                                </span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    {% if latest_validation.detected_categories %}
+                    <h6>Detected Categories:</h6>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        {% for category in latest_validation.detected_categories %}
+                            <span class="badge bg-secondary">{{ category }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if latest_validation.suggestions %}
+                    <h6>Suggestions:</h6>
+                    <ul class="list-group mb-3">
+                        {% for suggestion in latest_validation.suggestions %}
+                            <li class="list-group-item">
+                                <i class="fas fa-lightbulb text-warning me-2"></i>
+                                {{ suggestion }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if latest_validation.notes %}
+                    <h6>Notes:</h6>
+                    <div class="border rounded p-2 bg-light">
+                        {{ latest_validation.notes|linebreaks }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            Validated by: 
+                            {% if latest_validation.user %}
+                                {{ latest_validation.user.username }}
+                            {% else %}
+                                System
+                            {% endif %}
+                            on {{ latest_validation.created_at|date:"M d, Y H:i" }}
+                        </small>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-hourglass-half fa-2x text-warning mb-3"></i>
+                        <h6>Pending Validation</h6>
+                        <p class="text-muted small">This post hasn't been validated yet.</p>
+                        <a href="{% url 'admin_app:manual_validation' post.id %}" 
+                           class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit me-2"></i>Validate Now
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Reports -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Reports ({{ reports|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if reports %}
+                    <div class="list-group">
+                        {% for report in reports|slice:":5" %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ report.get_reason_display }}</h6>
+                                <small>{{ report.created_at|date:"M d" }}</small>
+                            </div>
+                            <p class="mb-1 small">
+                                By: {{ report.reporter.username }}<br>
+                                {% if report.description %}
+                                    {{ report.description|truncatechars:50 }}
+                                {% endif %}
+                            </p>
+                            <span class="badge bg-{% if report.status == 'pending' %}warning{% elif report.status == 'resolved' %}success{% else %}secondary{% endif %}">
+                                {{ report.get_status_display }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if reports|length > 5 %}
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">+{{ reports|length|add:"-5" }} more reports</small>
+                    </div>
+                    {% endif %}
+                    
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <h6>No Reports</h6>
+                        <p class="text-muted small">This post has no reports.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="mb-3">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin_app:manual_validation' post.id %}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Re-validate
+                    </a>
+                    <a href="{% url 'admin_app:delete_post' post.id %}" 
+                       class="btn btn-outline-danger"
+                       onclick="return confirm('Delete this post? This action cannot be undone.')">
+                        <i class="fas fa-trash me-2"></i>Delete Post
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Validation History -->
+{% if validation_logs %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Validation History</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                        <th>Categories</th>
+                        <th>Validator</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in validation_logs %}
+                    <tr>
+                        <td>{{ log.created_at|date:"M d, H:i" }}</td>
+                        <td>
+                            <span class="badge {% if log.score >= 0.8 %}bg-success{% elif log.score >= 0.6 %}bg-info{% elif log.score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ log.score|floatformat:2 }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if log.is_approved %}
+                                <span class="badge bg-success">Approved</span>
+                            {% else %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% for cat in log.detected_categories|slice:":2" %}
+                                <span class="badge bg-secondary mb-1">{{ cat }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if log.user %}
+                                {{ log.user.username }}
+                            {% else %}
+                                System
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.notes %}
+                                {{ log.notes|truncatechars:30 }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

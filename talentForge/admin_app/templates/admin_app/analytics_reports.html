@@ -1,0 +1,285 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Analytics Reports{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:reports' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Print Report
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- User Analytics -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">User Analytics</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 text-center">
+                <h2>{{ user_stats.total }}</h2>
+                <small class="text-muted">Total Users</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ user_stats.new_today }}</h2>
+                <small class="text-muted">New Today</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ user_stats.new_week }}</h2>
+                <small class="text-muted">New This Week</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ user_stats.new_month }}</h2>
+                <small class="text-muted">New This Month</small>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <h4>{{ user_stats.active_today }}</h4>
+                <small class="text-muted">Active Today</small>
+            </div>
+            <div class="col-md-4 text-center">
+                <h4>{{ user_stats.active_week }}</h4>
+                <small class="text-muted">Active This Week</small>
+            </div>
+            <div class="col-md-4 text-center">
+                <h4>{{ user_stats.active_month }}</h4>
+                <small class="text-muted">Active This Month</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Analytics -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Content Analytics</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 text-center">
+                <h2>{{ content_stats.total_posts }}</h2>
+                <small class="text-muted">Total Posts</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ content_stats.posts_today }}</h2>
+                <small class="text-muted">Posts Today</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ content_stats.posts_week }}</h2>
+                <small class="text-muted">Posts This Week</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ content_stats.posts_month }}</h2>
+                <small class="text-muted">Posts This Month</small>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-3 text-center">
+                <h4>{{ content_stats.text_posts }}</h4>
+                <small class="text-muted">Text Posts</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h4>{{ content_stats.image_posts }}</h4>
+                <small class="text-muted">Image Posts</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h4>{{ content_stats.video_posts }}</h4>
+                <small class="text-muted">Video Posts</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h4>{{ content_stats.job_posts }}</h4>
+                <small class="text-muted">Job Posts</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Analytics -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Report Analytics</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 text-center">
+                <h2>{{ report_stats.total }}</h2>
+                <small class="text-muted">Total Reports</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ report_stats.pending }}</h2>
+                <small class="text-muted">Pending</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ report_stats.resolved }}</h2>
+                <small class="text-muted">Resolved</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <h2>{{ report_stats.dismissed }}</h2>
+                <small class="text-muted">Dismissed</small>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-4 text-center">
+                <h4>{{ report_stats.today }}</h4>
+                <small class="text-muted">Reports Today</small>
+            </div>
+            <div class="col-md-4 text-center">
+                <h4>{{ report_stats.week }}</h4>
+                <small class="text-muted">Reports This Week</small>
+            </div>
+            <div class="col-md-4 text-center">
+                <h4>{{ report_stats.today|add:report_stats.week|add:report_stats.dismissed }}</h4>
+                <small class="text-muted">Total This Month</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Growth Chart -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">User Growth (Last 30 Days)</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="userGrowthChart" height="100"></canvas>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Executive Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Key Metrics:</h6>
+                <ul>
+                    <li><strong>User Growth:</strong> {{ user_stats.new_week }} new users this week</li>
+                    <li><strong>Content Creation:</strong> {{ content_stats.posts_week }} posts this week</li>
+                    <li><strong>Engagement Rate:</strong> 
+                        {% with total=user_stats.total week=user_stats.active_week %}
+                            {% if total > 0 %}
+                                {{ week|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        {% endwith %}
+                        active users this week
+                    </li>
+                    <li><strong>Report Resolution:</strong> 
+                        {% with total=report_stats.total resolved=report_stats.resolved %}
+                            {% if total > 0 %}
+                                {{ resolved|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        {% endwith %}
+                        of reports resolved
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Recommendations:</h6>
+                <ul>
+                    {% if report_stats.pending > 10 %}
+                    <li class="text-danger">⚠️ High number of pending reports ({{ report_stats.pending }}) - Consider allocating more resources</li>
+                    {% endif %}
+                    {% if user_stats.new_today < 5 %}
+                    <li class="text-warning">⚠️ Low new user signups today - Consider promotional activities</li>
+                    {% endif %}
+                    {% if content_stats.posts_today < 10 %}
+                    <li class="text-warning">⚠️ Low content creation today - Consider engaging existing users</li>
+                    {% endif %}
+                    {% if report_stats.pending < 5 and user_stats.new_today >= 5 and content_stats.posts_today >= 10 %}
+                    <li class="text-success">✅ All systems operating normally - Good engagement and low report backlog</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generated Report Info -->
+<div class="card mt-4">
+    <div class="card-body text-center">
+        <small class="text-muted">
+            <i class="fas fa-info-circle"></i>
+            Report generated on {% now "F j, Y, g:i a" %}<br>
+            Data reflects real-time statistics from the TalentForge platform
+        </small>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('userGrowthChart').getContext('2d');
+    
+    const labels = JSON.parse('{{ daily_labels_json|safe }}');
+    const data = JSON.parse('{{ daily_signups_json|safe }}');
+    
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'New Users',
+                data: data,
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,349 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Content Analytics{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:analytics' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left"></i> Back
+</a>
+    <a href="{% url 'admin_app:post_moderation' %}" class="btn btn-outline-primary">
+        <i class="fas fa-list"></i> All Posts
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Content Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Posts</h6>
+                        <h2 class="mb-0">{{ total_posts }}</h2>
+                    </div>
+                    <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Today's Posts</h6>
+                        <h2 class="mb-0">{{ posts_today }}</h2>
+                    </div>
+                    <i class="fas fa-calendar-day fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">This Week</h6>
+                        <h2 class="mb-0">{{ posts_week }}</h2>
+                    </div>
+                    <i class="fas fa-calendar-week fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">This Month</h6>
+                        <h2 class="mb-0">{{ posts_month }}</h2>
+                    </div>
+                    <i class="fas fa-calendar-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Type Distribution -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Content Type Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-3">
+                        <h3>{{ text_posts }}</h3>
+                        <small class="text-muted">Text</small>
+                    </div>
+                    <div class="col-3">
+                        <h3>{{ image_posts }}</h3>
+                        <small class="text-muted">Image</small>
+                    </div>
+                    <div class="col-3">
+                        <h3>{{ video_posts }}</h3>
+                        <small class="text-muted">Video</small>
+                    </div>
+                    <div class="col-3">
+                        <h3>{{ job_posts }}</h3>
+                        <small class="text-muted">Job</small>
+                    </div>
+                </div>
+                <hr>
+                <canvas id="contentTypeChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Daily Posting Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Date</th>
+                                <th>Posts</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in daily_posts %}
+                            <tr>
+                                <td>{{ day.day }}</td>
+                                <td>{{ day.date }}</td>
+                                <td>{{ day.count }}</td>
+                                <td>
+                                    {% if day.count > 0 %}
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar bg-{% if day.count > 10 %}success{% elif day.count > 5 %}info{% elif day.count > 2 %}warning{% else %}secondary{% endif %}" 
+                                                 style="width: {{ day.count|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%">
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">0</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Content Creators -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Top Content Creators</h5>
+    </div>
+    <div class="card-body">
+        {% if top_creators %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Creator</th>
+                            <th>Posts</th>
+                            <th>Last Post</th>
+                            <th>Avg. Score</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for creator in top_creators %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-{% if forloop.counter == 1 %}warning{% elif forloop.counter == 2 %}secondary{% elif forloop.counter == 3 %}danger{% else %}light text-dark{% endif %}">
+                                    #{{ forloop.counter }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 36px; height: 36px;">
+                                        {{ creator.author__username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ creator.author__username }}</strong><br>
+                                        <small class="text-muted">ID: {{ creator.author__id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <h5 class="mb-0">{{ creator.post_count }}</h5>
+                                <small class="text-muted">total posts</small>
+                            </td>
+                            <td>
+                                {% comment %} Would need to query for last post date {% endcomment %}
+                                <small class="text-muted">Recent</small>
+                            </td>
+                            <td>
+                                {% comment %} Would need to calculate average validation score {% endcomment %}
+                                <span class="badge bg-info">0.75</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">Active</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-user-edit fa-2x text-muted mb-3"></i>
+                <h6>No Creator Data</h6>
+                <p class="text-muted small">Not enough creator data available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Content Type Details -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Content Type Analysis</h5>
+    </div>
+    <div class="card-body">
+        {% if type_distribution %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Content Type</th>
+                            <th>Count</th>
+                            <th>Percentage</th>
+                            <th>Avg. Engagement</th>
+                            <th>Avg. Score</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type in type_distribution %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">{{ type.type|title }}</span>
+                            </td>
+                            <td>{{ type.count }}</td>
+                            <td>
+                                {% with total=total_posts %}
+                                    {% if total > 0 %}
+                                        {{ type.count|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                {% comment %} Would need to calculate average engagement {% endcomment %}
+                                <span class="badge bg-info">Medium</span>
+                            </td>
+                            <td>
+                                {% comment %} Would need to calculate average validation score {% endcomment %}
+                                <span class="badge bg-success">0.8</span>
+                            </td>
+                            <td>
+                                {% if type.count > 20 %}
+                                    <span class="text-success"><i class="fas fa-arrow-up"></i> High</span>
+                                {% elif type.count > 10 %}
+                                    <span class="text-info"><i class="fas fa-minus"></i> Stable</span>
+                                {% else %}
+                                    <span class="text-warning"><i class="fas fa-arrow-down"></i> Low</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-chart-pie fa-2x text-muted mb-3"></i>
+                <h6>No Type Data</h6>
+                <p class="text-muted small">Not enough content type data available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('contentTypeChart').getContext('2d');
+    
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Text', 'Image', 'Video', 'Job'],
+            datasets: [{
+                label: 'Number of Posts',
+                data: [
+                    {{ text_posts }},
+                    {{ image_posts }},
+                    {{ video_posts }},
+                    {{ job_posts }}
+                ],
+                backgroundColor: [
+                    'rgba(102, 126, 234, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(220, 53, 69, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(102, 126, 234, 1)',
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}AI Settings{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:settings' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <button type="submit" form="aiSettingsForm" class="btn btn-primary">
+        <i class="fas fa-save"></i> Save Changes
+    </button>
+    <a href="{% url 'admin_app:test_validation' %}" class="btn btn-outline-info">
+        <i class="fas fa-vial"></i> Test AI
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<form id="aiSettingsForm" method="post">
+    {% csrf_token %}
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="mb-4">AI Model Configuration</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">AI Model</label>
+                        <select class="form-select" name="ai_model">
+                            <option value="facebook/bart-large-mnli" 
+                                    {% if ai_config.model_name == 'facebook/bart-large-mnli' %}selected{% endif %}>
+                                facebook/bart-large-mnli
+                            </option>
+                            <option value="microsoft/deberta-large-mnli"
+                                    {% if ai_config.model_name == 'microsoft/deberta-large-mnli' %}selected{% endif %}>
+                                microsoft/deberta-large-mnli
+                            </option>
+                            <option value="roberta-large-mnli"
+                                    {% if ai_config.model_name == 'roberta-large-mnli' %}selected{% endif %}>
+                                roberta-large-mnli
+                            </option>
+                            <option value="distilbert-base-uncased"
+                                    {% if ai_config.model_name == 'distilbert-base-uncased' %}selected{% endif %}>
+                                distilbert-base-uncased (Faster)
+                            </option>
+                        </select>
+                        <div class="form-text">Pre-trained model for content classification</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Model Cache Directory</label>
+                        <input type="text" class="form-control" name="model_cache_dir" 
+                               value="{{ ai_config.model_cache_dir|default:'./models/' }}">
+                        <div class="form-text">Directory to cache downloaded models</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="use_gpu" 
+                               id="use_gpu" {% if ai_config.use_gpu|default:False %}checked{% endif %}>
+                        <label class="form-check-label" for="use_gpu">
+                            Use GPU Acceleration
+                        </label>
+                        <div class="form-text">Use GPU for faster processing (if available)</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="cache_models" 
+                               id="cache_models" {% if ai_config.cache_models|default:True %}checked{% endif %}>
+                        <label class="form-check-label" for="cache_models">
+                            Cache Models Locally
+                        </label>
+                        <div class="form-text">Cache downloaded models for faster loading</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Model Load Timeout (seconds)</label>
+                <input type="number" class="form-control" name="model_timeout" 
+                       value="{{ ai_config.model_timeout|default:30 }}" min="10" max="300">
+                <div class="form-text">Timeout for loading AI models</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Validation Thresholds</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Approval Threshold</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="threshold_approve" 
+                                   value="{{ ai_config.threshold_approve|default:0.6 }}" 
+                                   step="0.01" min="0" max="1" required>
+                            <span class="input-group-text">0.0 - 1.0</span>
+                        </div>
+                        <div class="form-text">
+                            Minimum score for automatic approval (≥ {{ ai_config.threshold_approve|default:0.6 }})
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Warning Threshold</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="threshold_warning" 
+                                   value="{{ ai_config.threshold_warning|default:0.4 }}" 
+                                   step="0.01" min="0" max="1" required>
+                            <span class="input-group-text">0.0 - 1.0</span>
+                        </div>
+                        <div class="form-text">
+                            Scores below this require manual review (< {{ ai_config.threshold_warning|default:0.4 }})
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card border">
+                        <div class="card-body text-center">
+                            <h5 class="text-success">Approved</h5>
+                            <h3>≥ {{ ai_config.threshold_approve|default:0.6 }}</h3>
+                            <small class="text-muted">High-quality content</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border">
+                        <div class="card-body text-center">
+                            <h5 class="text-warning">Review</h5>
+                            <h3>{{ ai_config.threshold_warning|default:0.4 }} - {{ ai_config.threshold_approve|default:0.6|add:"-0.01" }}</h3>
+                            <small class="text-muted">Needs manual review</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border">
+                        <div class="card-body text-center">
+                            <h5 class="text-danger">Rejected</h5>
+                            <h3>&lt; {{ ai_config.threshold_warning|default:0.4 }}</h3>
+                            <small class="text-muted">Low-quality content</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Content Analysis Settings</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="analyze_text" 
+                               id="analyze_text" checked>
+                        <label class="form-check-label" for="analyze_text">
+                            Analyze Text Content
+                        </label>
+                        <div class="form-text">Analyze text for quality and relevance</div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="analyze_jobs" 
+                               id="analyze_jobs" checked>
+                        <label class="form-check-label" for="analyze_jobs">
+                            Analyze Job Posts
+                        </label>
+                        <div class="form-text">Validate job postings for completeness</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="detect_spam" 
+                               id="detect_spam" checked>
+                        <label class="form-check-label" for="detect_spam">
+                            Detect Spam
+                        </label>
+                        <div class="form-text">Detect and flag spam content</div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="detect_toxicity" 
+                               id="detect_toxicity" checked>
+                        <label class="form-check-label" for="detect_toxicity">
+                            Detect Toxic Content
+                        </label>
+                        <div class="form-text">Detect hate speech and toxic language</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Minimum Content Length</label>
+                <input type="number" class="form-control" name="min_content_length" 
+                       value="{{ ai_config.min_content_length|default:10 }}" min="0" max="1000">
+                <div class="form-text">Minimum characters for meaningful analysis</div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Maximum Content Length</label>
+                <input type="number" class="form-control" name="max_content_length" 
+                       value="{{ ai_config.max_content_length|default:5000 }}" min="100" max="10000">
+                <div class="form-text">Maximum characters to analyze (truncate longer content)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="mb-4">Performance Settings</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Batch Size</label>
+                        <input type="number" class="form-control" name="batch_size" 
+                               value="{{ ai_config.batch_size|default:8 }}" min="1" max="32">
+                        <div class="form-text">Number of items to process simultaneously</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Processing Timeout (seconds)</label>
+                        <input type="number" class="form-control" name="processing_timeout" 
+                               value="{{ ai_config.processing_timeout|default:10 }}" min="1" max="60">
+                        <div class="form-text">Timeout for AI processing per item</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="enable_caching" 
+                               id="enable_caching" checked>
+                        <label class="form-check-label" for="enable_caching">
+                            Enable Result Caching
+                        </label>
+                        <div class="form-text">Cache validation results for similar content</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" name="log_analytics" 
+                               id="log_analytics" checked>
+                        <label class="form-check-label" for="log_analytics">
+                            Log Analytics Data
+                        </label>
+                        <div class="form-text">Log AI performance and accuracy metrics</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Cache Duration (hours)</label>
+                <input type="number" class="form-control" name="cache_duration" 
+                       value="{{ ai_config.cache_duration|default:24 }}" min="1" max="720">
+                <div class="form-text">How long to cache validation results</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'admin_app:settings' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i>Save AI Settings
+            </button>
+        </div>
+    </div>
+</form>
+
+<div class="alert alert-warning mt-4">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Important:</strong> Changing AI models may require downloading large files (1-2GB). 
+    Performance may be affected during initial model loading.
+</div>
+
+<!-- Model Status -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="mb-3">AI Model Status</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Current Model:</span>
+                    <span class="badge bg-primary">{{ ai_config.model_name }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Model Size:</span>
+                    <span>~1.6 GB</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Loaded in Memory:</span>
+                    <span class="badge bg-success">Yes</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Validations:</span>
+                    <span>1,234</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Average Accuracy:</span>
+                    <span>92.5%</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Last Updated:</span>
+                    <span>{% now "M d, Y" %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

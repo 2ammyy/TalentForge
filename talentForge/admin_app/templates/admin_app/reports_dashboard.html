@@ -1,0 +1,257 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Reports Dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:content_reports' %}" class="btn btn-primary">
+        <i class="fas fa-flag"></i> Content Reports
+    </a>
+    <a href="{% url 'admin_app:user_reports' %}" class="btn btn-outline-primary">
+        <i class="fas fa-user-slash"></i> User Reports
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Reports</h6>
+                        <h2 class="mb-0">{{ total_reports }}</h2>
+                    </div>
+                    <i class="fas fa-flag fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Pending</h6>
+                        <h2 class="mb-0">{{ pending_reports }}</h2>
+                        <small>{{ total_reports|default:"1"|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}% of total</small>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Resolved</h6>
+                        <h2 class="mb-0">{{ resolved_reports }}</h2>
+                        <small>{{ total_reports|default:"1"|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}% of total</small>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Reports by Type -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Reports by Type</h5>
+            </div>
+            <div class="card-body">
+                {% if reports_by_type %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Reason</th>
+                                    <th>Count</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports_by_type %}
+                                <tr>
+                                    <td>{{ report.reason|title }}</td>
+                                    <td>{{ report.count }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar bg-primary" 
+                                                 style="width: {{ report.count|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%">
+                                            </div>
+                                        </div>
+                                        <small>{{ report.count|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-2x text-muted mb-3"></i>
+                        <h6>No Report Data</h6>
+                        <p class="text-muted small">No reports have been submitted yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Weekly Trend -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Weekly Report Trend</h5>
+            </div>
+            <div class="card-body">
+                {% if weekly_trend %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Date</th>
+                                    <th>Reports</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day in weekly_trend %}
+                                <tr>
+                                    <td>{{ day.day }}</td>
+                                    <td>{{ day.date }}</td>
+                                    <td>{{ day.count }}</td>
+                                    <td>
+                                        {% if day.count > 0 %}
+                                            <span class="badge bg-{% if day.count > 5 %}danger{% elif day.count > 2 %}warning{% else %}success{% endif %}">
+                                                {{ day.count }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-line fa-2x text-muted mb-3"></i>
+                        <h6>No Trend Data</h6>
+                        <p class="text-muted small">No reports in the last 7 days.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Reports -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Reports</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_reports %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Report ID</th>
+                            <th>Type</th>
+                            <th>Reason</th>
+                            <th>Reporter</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in recent_reports %}
+                        <tr>
+                            <td>#{{ report.id }}</td>
+                            <td>
+                                {% if report.post %}
+                                    <span class="badge bg-info">Content</span>
+                                {% else %}
+                                    <span class="badge bg-warning">User</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.get_reason_display }}</td>
+                            <td>{{ report.reporter.username }}</td>
+                            <td>
+                                <span class="badge bg-{% if report.status == 'pending' %}warning{% elif report.status == 'resolved' %}success{% else %}secondary{% endif %}">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ report.created_at|timesince }} ago</td>
+                            <td>
+                                {% if report.post %}
+                                <a href="{% url 'admin_app:post_detail' report.post.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% endif %}
+                                {% if report.reported_user %}
+                                <a href="{% url 'admin_app:user_detail' report.reported_user.id %}" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-user"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5>No Recent Reports</h5>
+                <p class="text-muted">No reports have been submitted recently.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="mb-3">Quick Actions</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:content_reports' %}?status=pending" class="btn btn-warning w-100 mb-2">
+                    <i class="fas fa-clock me-2"></i>Pending Content
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:user_reports' %}?status=pending" class="btn btn-danger w-100 mb-2">
+                    <i class="fas fa-user-clock me-2"></i>Pending User
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:analytics_reports' %}" class="btn btn-info w-100 mb-2">
+                    <i class="fas fa-chart-bar me-2"></i>Analytics
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:moderation' %}" class="btn btn-secondary w-100 mb-2">
+                    <i class="fas fa-shield-alt me-2"></i>Moderation
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

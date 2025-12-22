@@ -1,0 +1,217 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}{{ creator.user.username }} - Creator Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:creators' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Creators
+    </a>
+    <a href="{% url 'admin_app:verify_creator' creator.id %}" 
+       class="btn btn-{% if creator.is_verified %}warning{% else %}success{% endif %}"
+       onclick="return confirm('{% if creator.is_verified %}Unverify{% else %}Verify{% endif %} this creator?')">
+        <i class="fas fa-{% if creator.is_verified %}times{% else %}check{% endif %}"></i> 
+        {% if creator.is_verified %}Unverify{% else %}Verify{% endif %}
+    </a>
+    <a href="{% url 'admin_app:creator_stats' creator.id %}" class="btn btn-outline-info">
+        <i class="fas fa-chart-bar"></i> Stats
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Creator Info -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+
+                <p class="text-muted">@{{ creator.user.username }}</p>
+                
+                <div class="mt-4 text-start">
+                    <p><strong>Email:</strong> {{ creator.user.email }}</p>
+                    <p><strong>Joined:</strong> {{ creator.created_at|date:"F j, Y, g:i a" }}</p>
+                    <p><strong>Last Updated:</strong> {{ creator.updated_at|date:"F j, Y, g:i a" }}</p>
+                    
+                    {% if creator.bio %}
+                    <div class="mt-3">
+                        <strong>Bio:</strong>
+                        <p>{{ creator.bio }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if creator.website or creator.github or creator.linkedin %}
+                    <div class="mt-3">
+                        <strong>Links:</strong><br>
+                        {% if creator.website %}
+                            <a href="{{ creator.website }}" target="_blank" class="btn btn-sm btn-outline-primary mb-1">
+                                <i class="fas fa-globe"></i> Website
+                            </a>
+                        {% endif %}
+                        {% if creator.github %}
+                            <a href="{{ creator.github }}" target="_blank" class="btn btn-sm btn-outline-dark mb-1">
+                                <i class="fab fa-github"></i> GitHub
+                            </a>
+                        {% endif %}
+                        {% if creator.linkedin %}
+                            <a href="{{ creator.linkedin }}" target="_blank" class="btn btn-sm btn-outline-info mb-1">
+                                <i class="fab fa-linkedin"></i> LinkedIn
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+    <strong>Status:</strong><br>
+    {% if creator.is_verified %}
+        <span class="badge bg-success">Verified Creator</span>
+    {% else %}
+        <span class="badge bg-warning">Pending Verification</span>
+    {% endif %}
+    {% comment %} Remove is_featured badge {% endcomment %}
+</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="mb-3">Quick Stats</h6>
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <h4>{{ post_count }}</h4>
+                        <small class="text-muted">Posts</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h4>{{ avg_rating }}</h4>
+                        <small class="text-muted">Avg Rating</small>
+                    </div>
+                    <div class="col-6">
+                        <h4>{{ recent_posts }}</h4>
+                        <small class="text-muted">Posts (Week)</small>
+                    </div>
+                    <div class="col-6">
+                        <h4>0</h4>
+                        <small class="text-muted">Followers</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Creator Activity -->
+    <div class="col-md-8">
+        {% if creator_posts %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Posts ({{ creator_posts|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Post</th>
+                                <th>Type</th>
+                                <th>Created</th>
+                                <th>Likes</th>
+                                <th>Comments</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in creator_posts %}
+                            <tr>
+                                <td>
+                                    <strong>{{ post.title|truncatechars:50|default:"No Title" }}</strong>
+                                    {% if post.content %}
+                                        <p class="mb-0 small text-muted">{{ post.content|truncatechars:100 }}</p>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ post.type|title }}</span>
+                                </td>
+                                <td>{{ post.created_at|date:"M d, Y" }}</td>
+                                <td>{{ post.reactions.count }}</td>
+                                <td>{{ post.comments.count }}</td>
+                                <td>
+                                    <a href="{% url 'admin_app:post_detail' post.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5>No Posts Yet</h5>
+                <p class="text-muted">This creator hasn't created any posts yet.</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Validation History -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">AI Validation History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Post</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                                <th>Categories</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in creator_posts %}
+                                {% for validation in post.validation_logs.all|slice:":3" %}
+                                <tr>
+                                    <td>{{ post.title|truncatechars:30|default:"Post" }}</td>
+                                    <td>
+                                        <span class="badge {% if validation.score >= 0.8 %}bg-success{% elif validation.score >= 0.6 %}bg-info{% elif validation.score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ validation.score|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if validation.is_approved %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for cat in validation.detected_categories|slice:":2" %}
+                                            <span class="badge bg-secondary mb-1">{{ cat }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ validation.created_at|date:"M d" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        No validation data available
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

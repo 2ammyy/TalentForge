@@ -1,0 +1,218 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Cleanup Inactive Users{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:users' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Users
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="text-center mb-4">
+            <i class="fas fa-user-slash fa-3x text-warning mb-3"></i>
+            <h3>Inactive Users Cleanup</h3>
+            <p class="text-muted">
+                Users who haven't logged in since {{ cutoff_date|date:"F j, Y" }} (30+ days ago)
+            </p>
+        </div>
+        
+        {% if count > 0 %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Warning:</strong> This action will deactivate {{ count }} user(s). 
+            Deactivated users will not be able to log in until re-activated by an admin.
+        </div>
+        
+        <!-- Inactive Users List -->
+        <div class="table-responsive mb-4">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Last Login</th>
+                        <th>Days Inactive</th>
+                        <th>Posts</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in inactive_users|slice:":10" %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 36px; height: 36px;">
+                                    {{ user.username|first|upper }}
+                                </div>
+                                <div>
+                                    <strong>{{ user.username }}</strong><br>
+                                    <small class="text-muted">Joined: {{ user.date_joined|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.last_login %}
+                                {{ user.last_login|date:"M d, Y" }}
+                            {% else %}
+                                <span class="text-muted">Never</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.last_login %}
+                                {% with days_inactive=user.last_login|timesince %}
+                                    <span class="badge bg-danger">{{ days_inactive }}</span>
+                                {% endwith %}
+                            {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.posts.count }}</td>
+                        <td>
+                            <span class="badge bg-success">Active</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if count > 10 %}
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            Showing 10 of {{ count }} inactive users. 
+            <a href="#" data-bs-toggle="modal" data-bs-target="#allInactiveModal">View all inactive users</a>
+        </div>
+        {% endif %}
+        
+        <!-- Confirmation -->
+        <div class="card border-warning">
+            <div class="card-body">
+                <h5 class="text-warning mb-3">⚠️ Confirmation Required</h5>
+                <p>Are you sure you want to deactivate {{ count }} inactive user(s)?</p>
+                <ul class="small text-muted">
+                    <li>Deactivated users cannot log in</li>
+                    <li>Their content remains visible</li>
+                    <li>They can be reactivated individually later</li>
+                    <li>No data will be deleted</li>
+                </ul>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'admin_app:users' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-user-slash me-2"></i>Deactivate {{ count }} Users
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h4>No Inactive Users Found</h4>
+            <p class="text-muted">
+                All users have been active within the last 30 days. Great job keeping users engaged!
+            </p>
+            <a href="{% url 'admin_app:users' %}" class="btn btn-primary">
+                <i class="fas fa-users me-2"></i>Back to User Management
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- All Inactive Users Modal -->
+<div class="modal fade" id="allInactiveModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">All Inactive Users ({{ count }})</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Last Login</th>
+                                <th>Posts</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in inactive_users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% if user.last_login %}
+                                        {{ user.last_login|date:"M d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.posts.count }}</td>
+                                <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cleanup Guidelines -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Cleanup Guidelines</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-check text-success me-2"></i>Deactivate When:</h6>
+                <ul class="small">
+                    <li>No login for 30+ days</li>
+                    <li>No posts or comments created</li>
+                    <li>Suspected spam accounts</li>
+                    <li>User requested deactivation</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-times text-danger me-2"></i>Keep Active When:</h6>
+                <ul class="small">
+                    <li>Recent activity (within 30 days)</li>
+                    <li>Has created valuable content</li>
+                    <li>Paid or premium users</li>
+                    <li>Staff or admin accounts</li>
+                </ul>
+            </div>
+        </div>
+        <hr>
+        <div class="alert alert-info small">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Note:</strong> Deactivated users can be reactivated individually from their user profile page.
+            This action only affects login ability, no content is deleted.
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,255 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Creator Management{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bulkActionModal">
+        <i class="fas fa-bullhorn"></i> Bulk Actions
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Creators</h6>
+                        <h2 class="mb-0">{{ stats.total|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Verified</h6>
+                        <h2 class="mb-0">{{ stats.verified|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Pending</h6>
+                        <h2 class="mb-0">{{ stats.pending|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Featured</h6>
+                        <h2 class="mb-0">{{ stats.featured|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-star fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Search by username, email, bio..." 
+                       value="{{ search_query }}">
+            </div>
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Creators</option>
+                    <option value="verified" {% if status_filter == 'verified' %}selected{% endif %}>Verified Only</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Only</option>
+                    <option value="featured" {% if status_filter == 'featured' %}selected{% endif %}>Featured Only</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Creators Table -->
+<div class="card">
+    <div class="card-body">
+        {% if creators %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Creator</th>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Posts</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for creator in creators %}
+                        <tr>
+                           <td>
+    <div class="d-flex align-items-center">
+        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" 
+             style="width: 40px; height: 40px;">
+            {{ creator.user.username|first|upper }}
+        </div>
+        <div>
+            <strong>{{ creator.user.username }}</strong>
+        </div>
+    </div>
+</td>
+                            <td>{{ creator.user.username }}</td>
+                            <td>
+                                {% if creator.is_verified %}
+                                    <span class="badge bg-success">Verified</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                                
+                            </td>
+                            <td>{{ creator.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                {% if creator.total_posts %}
+                                    {{ creator.total_posts }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'admin_app:creator_detail' creator.id %}" 
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'admin_app:verify_creator' creator.id %}" 
+                                       class="btn btn-outline-{% if creator.is_verified %}warning{% else %}success{% endif %}"
+                                       onclick="return confirm('{% if creator.is_verified %}Unverify{% else %}Verify{% endif %} this creator?')">
+                                        <i class="fas fa-{% if creator.is_verified %}times{% else %}check{% endif %}"></i>
+                                    </a>
+                                    <a href="{% url 'admin_app:creator_stats' creator.id %}" 
+                                       class="btn btn-outline-info">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if creators.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if creators.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ creators.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}">
+                            &laquo; Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in creators.paginator.page_range %}
+                        {% if creators.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > creators.number|add:'-3' and num < creators.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if creators.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ creators.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}">
+                            Next &raquo;
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5>No creators found</h5>
+                <p class="text-muted">
+                    {% if search_query or status_filter != 'all' %}
+                        Try adjusting your filters
+                    {% else %}
+                        No creators registered yet
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bulk Action Modal -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_app:bulk_notification' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Bulk Actions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Action Type</label>
+                        <select class="form-select" name="action_type">
+                            <option value="notify">Send Notification</option>
+                            <option value="verify">Verify Selected</option>
+                            <option value="feature">Feature Selected</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message (for notifications)</label>
+                        <textarea class="form-control" name="message" rows="3" 
+                                  placeholder="Enter notification message..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Apply to Selected</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

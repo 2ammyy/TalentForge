@@ -1,0 +1,194 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Post Moderation{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:moderation' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All Posts</option>
+                    <option value="approved" {% if filters.status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if filters.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="unvalidated" {% if filters.status == 'unvalidated' %}selected{% endif %}>Unvalidated</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Min Score</label>
+                <input type="number" class="form-control" name="score_min" 
+                       value="{{ filters.score_min }}" min="0" max="1" step="0.1">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Max Score</label>
+                <input type="number" class="form-control" name="score_max" 
+                       value="{{ filters.score_max }}" min="0" max="1" step="0.1">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" name="search" 
+                       value="{{ filters.search }}" placeholder="Search posts, content, or authors...">
+            </div>
+            <div class="col-md-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Apply Filters
+                    </button>
+                    <a href="{% url 'admin_app:post_moderation' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Clear Filters
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Posts Table -->
+<div class="card">
+    <div class="card-body">
+        {% if posts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Post</th>
+                            <th>Author</th>
+                            <th>Type</th>
+                            <th>Score</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in posts %}
+                        <tr>
+                            <td>
+                                <strong>{{ post.title|truncatechars:50|default:"No Title" }}</strong>
+                                {% if post.content %}
+                                    <p class="mb-0 small text-muted">{{ post.content|truncatechars:100 }}</p>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'admin_app:user_detail' post.author.id %}" 
+                                   class="text-decoration-none">
+                                    {{ post.author.username }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ post.type|title }}</span>
+                            </td>
+                            <td>
+                                {% if post.latest_score %}
+                                    <span class="badge {% if post.latest_score >= 0.8 %}bg-success{% elif post.latest_score >= 0.6 %}bg-info{% elif post.latest_score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ post.latest_score|floatformat:2|default:"N/A" }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if post.is_approved == True %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif post.is_approved == False %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ post.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'admin_app:post_detail' post.id %}" 
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'admin_app:manual_validation' post.id %}" 
+                                       class="btn btn-outline-info">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if post.is_approved != True %}
+                                    <a href="{% url 'admin_app:approve_post' post.id %}" 
+                                       class="btn btn-outline-success"
+                                       onclick="return confirm('Approve this post?')">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if post.is_approved != False %}
+                                    <a href="{% url 'admin_app:reject_post' post.id %}" 
+                                       class="btn btn-outline-danger"
+                                       onclick="return confirm('Reject this post?')">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if posts.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if posts.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ posts.previous_page_number }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            &laquo; Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in posts.paginator.page_range %}
+                        {% if posts.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if posts.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ posts.next_page_number }}{% for key,value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Next &raquo;
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5>No posts found</h5>
+                <p class="text-muted">
+                    {% if filters.status or filters.search %}
+                        Try adjusting your filters
+                    {% else %}
+                        No posts available for moderation
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

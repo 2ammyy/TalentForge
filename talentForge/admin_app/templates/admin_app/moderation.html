@@ -1,0 +1,263 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}Content Moderation{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:post_moderation' %}" class="btn btn-primary">
+        <i class="fas fa-list"></i> View All Posts
+    </a>
+    <a href="{% url 'admin_app:validation_logs' %}" class="btn btn-outline-primary">
+        <i class="fas fa-clipboard-list"></i> Validation Logs
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Posts</h6>
+                        <h2 class="mb-0">{{ stats.total_posts|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Pending Moderation</h6>
+                        <h2 class="mb-0">{{ stats.pending_moderation|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Pending Reports</h6>
+                        <h2 class="mb-0">{{ stats.total_reports|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-flag fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-secondary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Low Quality</h6>
+                        <h2 class="mb-0">{{ stats.low_quality|default:"0" }}</h2>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Reports -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Reports</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_reports %}
+                    <div class="list-group">
+                        {% for report in recent_reports %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    {% if report.post %}
+                                        Report on Post
+                                    {% else %}
+                                        Report on User
+                                    {% endif %}
+                                </h6>
+                                <small>{{ report.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-1">
+                                <strong>Reason:</strong> {{ report.get_reason_display }}<br>
+                                <strong>By:</strong> {{ report.reporter.username }}
+                            </p>
+                            <div class="mt-2">
+                                {% if report.post %}
+                                <a href="{% url 'admin_app:post_detail' report.post.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    View Post
+                                </a>
+                                {% endif %}
+                                <span class="badge bg-warning float-end">Pending</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="{% url 'admin_app:content_reports' %}" class="btn btn-outline-primary btn-sm">
+                            View All Reports
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                        <h6>No Pending Reports</h6>
+                        <p class="text-muted small">All reports have been addressed.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Quality Posts -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Low Quality Posts (Score < 0.4)</h5>
+            </div>
+            <div class="card-body">
+                {% if low_quality_posts %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Post</th>
+                                    <th>Score</th>
+                                    <th>Author</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for validation in low_quality_posts %}
+                                <tr>
+                                    <td>
+                                        {% if validation.post %}
+                                            {{ validation.post.title|truncatechars:30|default:"No Title" }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ validation.score|floatformat:2 }}</span>
+                                    </td>
+                                    <td>
+                                        {% if validation.post and validation.post.author %}
+                                            {{ validation.post.author.username }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if validation.post %}
+                                        <a href="{% url 'admin_app:manual_validation' validation.post.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'admin_app:post_detail' validation.post.id %}" 
+                                           class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-thumbs-up fa-2x text-success mb-3"></i>
+                        <h6>No Low Quality Posts</h6>
+                        <p class="text-muted small">All posts meet quality standards.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="mb-3">Quick Actions</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:post_moderation' %}?status=unvalidated" class="btn btn-warning w-100 mb-2">
+                    <i class="fas fa-clock me-2"></i>Pending Posts
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:content_reports' %}" class="btn btn-danger w-100 mb-2">
+                    <i class="fas fa-flag me-2"></i>Content Reports
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:user_reports' %}" class="btn btn-info w-100 mb-2">
+                    <i class="fas fa-user-slash me-2"></i>User Reports
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'admin_app:validation_logs' %}?score_max=0.4" class="btn btn-secondary w-100 mb-2">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Low Quality
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Moderation Guidelines -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Moderation Guidelines</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6><i class="fas fa-check text-success me-2"></i>Approve When:</h6>
+                <ul class="small">
+                    <li>Content is original and relevant</li>
+                    <li>No hate speech or harassment</li>
+                    <li>Properly formatted and informative</li>
+                    <li>AI score ≥ 0.6</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="fas fa-exclamation-triangle text-warning me-2"></i>Review When:</h6>
+                <ul class="small">
+                    <li>AI score between 0.4-0.6</li>
+                    <li>Content borders guidelines</li>
+                    <li>Multiple reports but unclear</li>
+                    <li>Needs minor improvements</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="fas fa-times text-danger me-2"></i>Reject When:</h6>
+                <ul class="small">
+                    <li>Spam or promotional content</li>
+                    <li>Hate speech or harassment</li>
+                    <li>Copyright infringement</li>
+                    <li>AI score < 0.4</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

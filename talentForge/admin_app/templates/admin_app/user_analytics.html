@@ -1,0 +1,306 @@
+{% extends 'admin_app/base_admin.html' %}
+
+{% block page_heading %}User Analytics{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'admin_app:analytics' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left"></i> Back
+</a>
+    <a href="{% url 'admin_app:users' %}" class="btn btn-outline-primary">
+        <i class="fas fa-users"></i> Manage Users
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- User Demographics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Total Users</h6>
+                        <h2 class="mb-0">{{ total_users }}</h2>
+                    </div>
+                    <i class="fas fa-users fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Active Users</h6>
+                        <h2 class="mb-0">{{ active_users }}</h2>
+                        <small>{{ active_today }} today</small>
+                    </div>
+                    <i class="fas fa-user-check fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Staff Users</h6>
+                        <h2 class="mb-0">{{ staff_users }}</h2>
+                    </div>
+                    <i class="fas fa-user-shield fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Superusers</h6>
+                        <h2 class="mb-0">{{ superusers }}</h2>
+                    </div>
+                    <i class="fas fa-crown fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Metrics -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">User Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3>{{ active_today }}</h3>
+                        <small class="text-muted">Active Today</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ active_week }}</h3>
+                        <small class="text-muted">Active This Week</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ active_month }}</h3>
+                        <small class="text-muted">Active This Month</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar bg-success" style="width: {{ active_today|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%">
+                        Today: {{ active_today }}
+                    </div>
+                </div>
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar bg-info" style="width: {{ active_week|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%">
+                        This Week: {{ active_week }}
+                    </div>
+                </div>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-warning" style="width: {{ active_month|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%">
+                        This Month: {{ active_month }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">User Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="userDistributionChart" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Active Users -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Top Active Users</h5>
+    </div>
+    <div class="card-body">
+        {% if top_active_users %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Posts Created</th>
+                            <th>Last Login</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in top_active_users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 36px; height: 36px;">
+                                        {{ user.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ user.username }}</strong><br>
+                                        <small class="text-muted">{{ user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user.post_count|default:"0" }}</td>
+                            <td>
+                                {% if user.last_login %}
+                                    {{ user.last_login|timesince }} ago
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                                {% if user.is_staff %}
+                                    <span class="badge bg-primary">Staff</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'admin_app:user_detail' user.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-user-clock fa-2x text-muted mb-3"></i>
+                <h6>No Activity Data</h6>
+                <p class="text-muted small">Not enough user activity data available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- User Growth Data -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">User Growth (Last 30 Days)</h5>
+    </div>
+    <div class="card-body">
+        {% if user_growth %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>New Users</th>
+                            <th>Cumulative Total</th>
+                            <th>Growth %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in user_growth|slice:":10" %}
+                        <tr>
+                            <td>{{ day.signup_date|date:"M d, Y" }}</td>
+                            <td>{{ day.count }}</td>
+                            <td>{{ forloop.counter|add:total_users|add:"-10" }}</td>
+                            <td>
+                                {% if not forloop.first %}
+                                    <span class="badge bg-{% if day.count > 5 %}success{% elif day.count > 2 %}info{% else %}secondary{% endif %}">
+                                        +{{ day.count }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-chart-line fa-2x text-muted mb-3"></i>
+                <h6>No Growth Data</h6>
+                <p class="text-muted small">Not enough user growth data available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('userDistributionChart').getContext('2d');
+    
+    const chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Regular Users', 'Active Users', 'Staff Users', 'Superusers'],
+            datasets: [{
+                data: [
+                    {{ total_users|add:"-staff_users"|add:"-superusers" }},
+                    {{ active_users }},
+                    {{ staff_users }},
+                    {{ superusers }}
+                ],
+                backgroundColor: [
+                    'rgba(102, 126, 234, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(23, 162, 184, 0.8)',
+                    'rgba(255, 193, 7, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(102, 126, 234, 1)',
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(23, 162, 184, 1)',
+                    'rgba(255, 193, 7, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}
