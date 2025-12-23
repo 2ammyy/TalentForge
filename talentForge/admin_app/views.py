@@ -19,14 +19,30 @@ from .permissions import admin_required
 @admin_required
 def admin_dashboard(request):
     """Main admin dashboard"""
+    from datetime import datetime, timedelta
+    
+    # Get duration parameter
+    duration = request.GET.get('duration', 'week')
+    if duration == 'month':
+        days = 30
+        date_format = '%m/%d'
+    elif duration == 'quarter':
+        days = 90
+        date_format = '%m/%d'
+    else:  # week
+        days = 7
+        date_format = '%a'
+    
     today = timezone.now().date()
     week_ago = today - timedelta(days=7)
+    month_ago = today - timedelta(days=30)
     
     # Basic statistics
     stats = {
         'total_users': User.objects.count(),
         'new_users_today': User.objects.filter(date_joined__date=today).count(),
         'new_users_week': User.objects.filter(date_joined__gte=week_ago).count(),
+        'new_users_month': User.objects.filter(date_joined__gte=month_ago).count(),
         'active_users': User.objects.filter(last_login__gte=week_ago).count(),
     }
     
@@ -44,35 +60,61 @@ def admin_dashboard(request):
         from posts.models import Post
         stats['total_posts'] = Post.objects.count()
         stats['posts_today'] = Post.objects.filter(created_at__date=today).count()
+        stats['posts_week'] = Post.objects.filter(created_at__gte=week_ago).count()
     except:
         stats['total_posts'] = 0
         stats['posts_today'] = 0
+        stats['posts_week'] = 0
     
     # Recent users
     recent_users = User.objects.order_by('-date_joined')[:10]
     
-    # Daily signups for chart (last 7 days including today)
+    # Daily signups for chart
     daily_signups = []
-    
-    # Start from 6 days ago to today
-    for i in range(6, -1, -1):
+    for i in range(days-1, -1, -1):
         day = today - timedelta(days=i)
         count = User.objects.filter(date_joined__date=day).count()
         daily_signups.append({
-            'day': day.strftime('%a'),  # Short day name like "Mon"
+            'day': day.strftime(date_format),
+            'date': day.strftime('%m/%d'),
             'count': count
         })
     
-    print("Daily signups data:", daily_signups)  # Debug print
+    # Get weekly activity for quick stats
+    weekly_activity = {
+        'new_posts': stats['posts_week'],
+        'new_creators': stats['pending_creators'],
+        'active_creators': CreatorProfile.objects.filter(
+            updated_at__gte=week_ago
+        ).count() if 'creator' in locals() else 0,
+    }
+    
+    # Get pending items
+    pending_items = {
+        'reports': 0,
+        'posts': 0,
+    }
+    try:
+        from posts.models import Report
+        pending_items['reports'] = Report.objects.filter(status='pending').count()
+        pending_items['posts'] = Post.objects.filter(validation_logs__isnull=True).count()
+    except:
+        pass
     
     context = {
         'stats': stats,
         'recent_users': recent_users,
         'daily_signups': daily_signups,
+        'weekly_activity': weekly_activity,
+        'pending_items': pending_items,
+        'duration': duration,
+        'date_format': date_format,
+        'days': days,
         'active_page': 'dashboard',
     }
     
     return render(request, 'admin_app/dashboard.html', context)
+
 @login_required
 @admin_required
 def user_management(request):
@@ -885,6 +927,18 @@ def site_analytics(request):
     from datetime import datetime, timedelta
     import json
     
+    # Get duration parameter
+    duration = request.GET.get('duration', 'week')
+    if duration == 'month':
+        days = 30
+        date_format = '%m/%d'
+    elif duration == 'quarter':
+        days = 90
+        date_format = '%m/%d'
+    else:  # week
+        days = 7
+        date_format = '%a'
+    
     # Date ranges
     today = datetime.now().date()
     week_ago = today - timedelta(days=7)
@@ -900,17 +954,17 @@ def site_analytics(request):
     posts_today = Post.objects.filter(created_at__date=today).count()
     posts_week = Post.objects.filter(created_at__gte=week_ago).count()
     
-    # Engagement metrics
+    # Engagement metrics - FIXED: Use actual model counts
     total_likes = Reaction.objects.count()
     total_comments = Comment.objects.count()
     total_shares = Post.objects.filter(shared_post__isnull=False).count()
     
     # Report metrics
-    pending_reports = Report.objects.filter(status='pending').count()
+    pending_reports = Report.objects.filter(status='pending').count() if 'Report' in locals() else 0
     
     # Daily metrics for charts
     daily_metrics = []
-    for i in range(6, -1, -1):  # Last 7 days
+    for i in range(days-1, -1, -1):
         day = today - timedelta(days=i)
         
         day_users = User.objects.filter(date_joined__date=day).count()
@@ -919,7 +973,7 @@ def site_analytics(request):
         day_comments = Comment.objects.filter(created_at__date=day).count()
         
         daily_metrics.append({
-            'day': day.strftime('%a'),
+            'day': day.strftime(date_format),
             'date': day.strftime('%m/%d'),
             'users': day_users,
             'posts': day_posts,
@@ -927,12 +981,17 @@ def site_analytics(request):
             'comments': day_comments,
         })
     
-    # Top performing content - FIXED
-    from django.db.models import Count
+    # Top performing content - FIXED: Use correct field names
     top_posts = Post.objects.annotate(
         like_count_val=Count('reactions'),
         comment_count_val=Count('comments')
     ).order_by('-like_count_val')[:5]
+    
+    # Prepare data for JSON
+    labels = [item['day'] for item in daily_metrics]
+    users_data = [item['users'] for item in daily_metrics]
+    posts_data = [item['posts'] for item in daily_metrics]
+    engagement_data = [item['likes'] + item['comments'] for item in daily_metrics]
     
     context = {
         'active_page': 'analytics',
@@ -948,10 +1007,13 @@ def site_analytics(request):
         'pending_reports': pending_reports,
         'daily_metrics': daily_metrics,
         'top_posts': top_posts,
-        'daily_labels_json': json.dumps([item['day'] for item in daily_metrics]),
-        'users_data_json': json.dumps([item['users'] for item in daily_metrics]),
-        'posts_data_json': json.dumps([item['posts'] for item in daily_metrics]),
-        'engagement_data_json': json.dumps([item['likes'] + item['comments'] for item in daily_metrics]),
+        'duration': duration,
+        'date_format': date_format,
+        'days': days,
+        'daily_labels_json': json.dumps(labels),
+        'users_data_json': json.dumps(users_data),
+        'posts_data_json': json.dumps(posts_data),
+        'engagement_data_json': json.dumps(engagement_data),
     }
     
     return render(request, 'admin_app/site_analytics.html', context)
@@ -1085,17 +1147,33 @@ def engagement_analytics(request):
     from datetime import datetime, timedelta
     from django.db.models import Count, Avg
     
+    # Get duration parameter
+    duration = request.GET.get('duration', 'week')
+    if duration == 'month':
+        days = 30
+        date_format = '%m/%d'
+    elif duration == 'quarter':
+        days = 90
+        date_format = '%m/%d'
+    else:  # week
+        days = 7
+        date_format = '%a'
+    
+    # Date ranges
+    today = datetime.now().date()
+    week_ago = today - timedelta(days=7)
+    
     # Engagement metrics - FIXED: Use actual model counts
     total_likes = Reaction.objects.count()
     total_comments = Comment.objects.count()
-    total_shares = Share.objects.count()
+    total_shares = Share.objects.count() if 'Share' in locals() else Post.objects.filter(shared_post__isnull=False).count()
     
     # Calculate averages correctly
     # Get posts with their related counts
     posts_with_counts = Post.objects.annotate(
         like_count_db=Count('reactions'),
         comment_count_db=Count('comments'),
-        share_count_db=Count('shares')
+        share_count_db=Count('shares') if 'Share' in locals() else Count('post_shares')
     )
     
     # Calculate averages
@@ -1111,24 +1189,21 @@ def engagement_analytics(request):
         avg_comments_per_post = 0
     
     # Time-based engagement
-    today = datetime.now().date()
-    week_ago = today - timedelta(days=7)
-    
     likes_week = Reaction.objects.filter(created_at__gte=week_ago).count()
     comments_week = Comment.objects.filter(created_at__gte=week_ago).count()
-    shares_week = Share.objects.filter(created_at__gte=week_ago).count()
+    shares_week = Share.objects.filter(created_at__gte=week_ago).count() if 'Share' in locals() else 0
     
     # Daily engagement trend
     daily_engagement = []
-    for i in range(6, -1, -1):  # Last 7 days
+    for i in range(days-1, -1, -1):
         day = today - timedelta(days=i)
         
         day_likes = Reaction.objects.filter(created_at__date=day).count()
         day_comments = Comment.objects.filter(created_at__date=day).count()
-        day_shares = Share.objects.filter(created_at__date=day).count()
+        day_shares = Share.objects.filter(created_at__date=day).count() if 'Share' in locals() else 0
         
         daily_engagement.append({
-            'day': day.strftime('%a'),
+            'day': day.strftime(date_format),
             'date': day.strftime('%m/%d'),
             'likes': day_likes,
             'comments': day_comments,
@@ -1140,15 +1215,22 @@ def engagement_analytics(request):
     engaging_posts = Post.objects.annotate(
         like_count_db=Count('reactions'),
         comment_count_db=Count('comments'),
-        share_count_db=Count('shares')
+        share_count_db=Count('shares') if 'Share' in locals() else Count('post_shares')
     ).annotate(
-        total_engagement=Count('reactions') + Count('comments') + Count('shares')
+        total_engagement=Count('reactions') + Count('comments') + Count('shares') if 'Share' in locals() else Count('reactions') + Count('comments')
     ).order_by('-total_engagement')[:10]
     
     # Reaction type distribution
-    reaction_types = Reaction.objects.values('reaction_type').annotate(
-        count=Count('id')
-    ).order_by('-count')
+    reaction_types = []
+    try:
+        reaction_types = Reaction.objects.values('reaction_type').annotate(
+            count=Count('id')
+        ).order_by('-count')
+    except:
+        pass
+    
+    # Calculate percentages
+    total_reactions = sum(rt['count'] for rt in reaction_types) if reaction_types else 1
     
     context = {
         'active_page': 'analytics',
@@ -1163,6 +1245,10 @@ def engagement_analytics(request):
         'daily_engagement': daily_engagement,
         'engaging_posts': engaging_posts,
         'reaction_types': reaction_types,
+        'total_reactions': total_reactions,
+        'duration': duration,
+        'date_format': date_format,
+        'days': days,
     }
     
     return render(request, 'admin_app/engagement_analytics.html', context)
@@ -1399,3 +1485,17 @@ def test_email_connection(request):
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+def get_chart_settings(duration='week'):
+    """Helper function to get chart settings based on duration"""
+    if duration == 'month':
+        days = 30
+        date_format = '%m/%d'
+    elif duration == 'quarter':
+        days = 90
+        date_format = '%m/%d'
+    else:  # week
+        days = 7
+        date_format = '%a'
+    
+    return days, date_format

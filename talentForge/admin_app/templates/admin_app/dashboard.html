@@ -10,6 +10,34 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- Duration Selector -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                {% if active_page == 'dashboard' %}User Growth
+                {% elif active_page == 'analytics' %}Site Analytics
+                {% else %}Engagement Analytics{% endif %}
+                ({{ duration|title }})
+            </h5>
+            <div class="btn-group" role="group">
+                <a href="?duration=week" 
+                   class="btn btn-sm btn-outline-primary {% if duration == 'week' %}active{% endif %}">
+                    1 Week
+                </a>
+                <a href="?duration=month" 
+                   class="btn btn-sm btn-outline-primary {% if duration == 'month' %}active{% endif %}">
+                    1 Month
+                </a>
+                <a href="?duration=quarter" 
+                   class="btn btn-sm btn-outline-primary {% if duration == 'quarter' %}active{% endif %}">
+                    3 Months
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- Stats Cards -->
 <div class="row mb-4">
     <div class="col-md-3 mb-3">

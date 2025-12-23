@@ -14,6 +14,7 @@
 {% endblock %}
 
 {% block content %}
+
 <!-- Content Statistics -->
 <div class="row mb-4">
     <div class="col-md-3 mb-3">
@@ -76,12 +77,12 @@
 <!-- Content Type Distribution -->
 <div class="row">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
                 <h5 class="mb-0">Content Type Distribution</h5>
             </div>
-            <div class="card-body">
-                <div class="row text-center">
+            <div class="card-body d-flex flex-column">
+                <div class="row text-center mb-3">
                     <div class="col-3">
                         <h3>{{ text_posts }}</h3>
                         <small class="text-muted">Text</small>
@@ -100,54 +101,12 @@
                     </div>
                 </div>
                 <hr>
-                <canvas id="contentTypeChart" height="150"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Daily Posting Trend</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Day</th>
-                                <th>Date</th>
-                                <th>Posts</th>
-                                <th>Trend</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for day in daily_posts %}
-                            <tr>
-                                <td>{{ day.day }}</td>
-                                <td>{{ day.date }}</td>
-                                <td>{{ day.count }}</td>
-                                <td>
-                                    {% if day.count > 0 %}
-                                        <div class="progress" style="height: 10px;">
-                                            <div class="progress-bar bg-{% if day.count > 10 %}success{% elif day.count > 5 %}info{% elif day.count > 2 %}warning{% else %}secondary{% endif %}" 
-                                                 style="width: {{ day.count|floatformat:0|add:"0"|stringformat:"d"|slice:":2" }}%">
-                                            </div>
-                                        </div>
-                                    {% else %}
-                                        <span class="badge bg-light text-dark">0</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="flex-grow-1" style="min-height: 200px; max-height: 250px;">
+                    <canvas id="contentTypeChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
 <!-- Top Content Creators -->
 <div class="card mt-4">
     <div class="card-header">
@@ -332,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         drawBorder: false,
                     },
                     ticks: {
-                        stepSize: 1
+                        stepSize: Math.max(1, Math.ceil(Math.max({{ text_posts }}, {{ image_posts }}, {{ video_posts }}, {{ job_posts }}) / 5))
                     }
                 },
                 x: {
