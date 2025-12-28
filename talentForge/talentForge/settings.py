@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-dn&4fms=t@)h23#^s8#93)=bmt0l$o6$6(wwl4f#!g-!hc@8du
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+]
 
 
 # Application definition
@@ -110,8 +111,8 @@ DATABASES = {
         'NAME': 'djangodb',
         'USER': 'django_user',
         'PASSWORD': 'DjangoSecurePass123!',
-        'HOST': 'localhost',
-        #'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
+        #'HOST': 'localhost',
+        'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
         #'HOST': '10.209.202.115',  #ip address Tekup
         'PORT': '5432',
     }

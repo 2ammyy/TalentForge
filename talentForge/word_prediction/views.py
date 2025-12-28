@@ -1,108 +1,64 @@
 # word_prediction/views.py
+import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-import json
-import logging
-import time
 from .services import word_prediction_service
+import logging
 
 logger = logging.getLogger(__name__)
 
-@csrf_exempt
-@require_http_methods(["GET", "POST"])
-def predict(request):
-    """Always return suggestions, even if empty"""
-    start_time = time.time()
-    
+@require_http_methods(["GET"])
+def predict_view(request):
+    """Handle word prediction requests"""
     try:
-        # Get text from request
-        if request.method == 'GET':
-            text = request.GET.get('text', '').strip()
-        else:
-            try:
-                data = json.loads(request.body)
-                text = data.get('text', '').strip()
-            except:
-                text = request.POST.get('text', '').strip()
+        text = request.GET.get('text', '').strip()
+        num_suggestions = int(request.GET.get('num_suggestions', 3))
         
-        # Get number of suggestions
-        try:
-            if request.method == 'GET':
-                num = int(request.GET.get('num_suggestions', 3))
-            else:
-                num = int(request.POST.get('num_suggestions', 3))
-            num = max(1, min(num, 10))  # Limit to 1-10
-        except:
-            num = 3
+        if not text:
+            return JsonResponse({
+                'success': True,
+                'suggestions': ['the', 'i', 'you', 'a', 'to'][:num_suggestions]
+            })
         
-        # Always get predictions
-        suggestions = word_prediction_service.predict(text, num)
-        
-        # Ensure we always return something
-        if not suggestions:
-            suggestions = ["the", "and", "to"][:num]
-        
-        response_time = (time.time() - start_time) * 1000
+        # Get predictions
+        suggestions = word_prediction_service.predict(text, num_suggestions)
         
         return JsonResponse({
             'success': True,
             'suggestions': suggestions,
-            'input': text,
-            'count': len(suggestions),
-            'response_time_ms': round(response_time, 2)
+            'original_text': text
         })
         
     except Exception as e:
-        logger.error(f"Error in predict: {e}")
-        # Even on error, return something
+        logger.error(f"Prediction error: {e}")
         return JsonResponse({
-            'success': True,
-            'suggestions': ["hello", "the", "and"][:3],
-            'input': '',
-            'count': 3,
-            'response_time_ms': 0
+            'success': False,
+            'error': str(e),
+            'suggestions': []
         })
 
-def status(request):
-    """Service status"""
-    status_info = word_prediction_service.get_status()
-    return JsonResponse(status_info)
-
 @csrf_exempt
-def clear_cache(request):
-    """Clear cache"""
-    word_prediction_service.clear_cache()
-    return JsonResponse({'success': True, 'message': 'Cache cleared'})
+@require_http_methods(["POST"])
+def learn_view(request):
+    """Handle learning from user selections"""
+    try:
+        data = json.loads(request.body)
+        text = data.get('text', '').strip()
+        selected = data.get('selected', '').strip()
+        
+        if text and selected:
+            word_prediction_service.feedback_accepted(text, selected)
+            logger.info(f"Learned: '{selected}' for context '{text}'")
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        logger.error(f"Learning error: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
 
-def test(request):
-    """Test endpoint with guaranteed responses"""
-    test_cases = [
-        "he",
-        "hell", 
-        "hello",
-        "hello ",
-        "hello i",
-        "hello i want",
-        "hello i want to",
-        "hello i want to share",
-        "hello i want to share with",
-        "hello i want to share with you",
-        "project",
-        "recipe",
-        "creative"
-    ]
-    
-    results = {}
-    for text in test_cases:
-        suggestions = word_prediction_service.predict(text, 3)
-        results[text] = {
-            'suggestions': suggestions,
-            'count': len(suggestions)
-        }
-    
-    return JsonResponse({
-        'success': True,
-        'test_results': results,
-        'service': 'word_prediction'
-    })
+@require_http_methods(["GET"])
+def status_view(request):
+    """Get service status"""
+    status = word_prediction_service.get_status()
+    return JsonResponse({'success': True, 'status': status})

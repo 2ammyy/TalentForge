@@ -19,7 +19,7 @@
     <link rel="dns-prefetch" href="https://your-video-cdn.com">
 
     <!-- Word Prediction CSS -->
-    <link href="{% static 'css/word-prediction.css' %}" rel="stylesheet">
+    <!-- <link href="{% static 'css/word-prediction.css' %}" rel="stylesheet"> -->
     
     <link href="{% static 'css/moderation.css' %}" rel="stylesheet">
 
@@ -59,7 +59,8 @@
     <script src="{% static 'js/main.js' %}"></script>
     
     <!-- Word Prediction JS -->
-    <script src="{% static 'js/word-prediction.js' %}"></script>
+    <!-- <script src="{% static 'js/google-predictor.js' %}"></script> -->
+    <script src="{% static 'js/google-predictor.js' %}?v=2.0"></script>
     {% block extra_js %}{% endblock %}
 
     <script src="{% static 'js/moderation.js' %}"></script>

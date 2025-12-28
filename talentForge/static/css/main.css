@@ -1017,3 +1017,44 @@ body.theme-musician {
     min-width: 16px;
     height: 16px;
 }
+
+/* WORD PREDICTOR STYLES */
+.predictor-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    display: inline-block !important;
+}
+
+.word-prediction {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    color: #666 !important;
+    font: inherit !important;
+    line-height: inherit !important;
+    padding: inherit !important;
+    margin: inherit !important;
+    border: inherit !important;
+    background: transparent !important;
+    z-index: 1 !important;
+    display: none !important;
+    overflow: hidden !important;
+    white-space: pre-wrap !important;
+    box-sizing: border-box !important;
+}
+
+/* Make sure textarea is see-through */
+#id_content,
+textarea[name="content"] {
+    background-color: rgba(255, 255, 255, 0.7) !important;
+    position: relative !important;
+    z-index: 2 !important;
+}
+
+/* Prevent other scripts from hiding it */
+.word-prediction[style*="display: block"] {
+    display: block !important;
+}
