@@ -1,7 +1,8 @@
+import logging
 from django.contrib import admin
 from django.urls import path
 from django.http import JsonResponse
-from .services import word_prediction_service
+from .services import creative_word_prediction_service 
 
 class WordPredictionAdmin(admin.ModelAdmin):
     """Admin interface for word prediction"""
@@ -16,16 +17,23 @@ class WordPredictionAdmin(admin.ModelAdmin):
     
     def model_status(self, request):
         """Check model status in admin"""
-        status = word_prediction_service.get_model_status()
+        status = creative_creative_word_prediction_service .get_model_status()
         return JsonResponse(status)
     
     def test_prediction(self, request):
         """Test prediction from admin"""
         text = request.GET.get('text', '')
         if text:
-            suggestions = word_prediction_service.predict_next_words(text)
+            suggestions = creative_word_prediction_service .predict_next_words(text)
             return JsonResponse({'suggestions': suggestions})
         return JsonResponse({'error': 'No text provided'})
+    
+    try:
+        from .services import creative_word_prediction_service 
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Could not load word prediction service: {e}")
+        creative_word_prediction_service  = None
 
 # Register if you want an admin page
 # admin.site.register(YourModel, WordPredictionAdmin)

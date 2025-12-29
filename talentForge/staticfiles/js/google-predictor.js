@@ -1,365 +1,133 @@
-// static/js/google-predictor.js - Version avec DEBUG complet
-console.log('🔧 Google Predictor loading...');
-
-(function() {
-    'use strict';
+// Auto-attach to content textarea
+function initializeWordPredictor() {
+    console.log('Initializing word predictor...');
     
-    const PREDICTOR_API = '/predict/';
-    
-    class GooglePredictor {
-        constructor() {
-            console.log('🎯 Google Predictor constructor called');
-            this.currentInput = null;
-            this.currentSuggestion = '';
-            this.debounceTimer = null;
-            
-            this.init();
-        }
+    // Wait a bit for DOM to be fully loaded
+    setTimeout(() => {
+        const textarea = document.getElementById('id_content') || 
+                        document.querySelector('textarea[name="content"]');
         
-        init() {
-            console.log('✅ Google Predictor initializing...');
+        if (textarea) {
+            console.log('Found textarea for word prediction:', textarea);
             
-            // Attacher immédiatement
-            this.attachToTextarea();
-            
-            // Observer pour les champs qui apparaissent plus tard
-            this.observeForTextarea();
-            
-            // Également essayer après un délai
-            setTimeout(() => {
-                console.log('⏰ Delayed attachment attempt');
-                this.attachToTextarea();
-            }, 1000);
-            
-            // Et encore après 3 secondes
-            setTimeout(() => {
-                console.log('⏰ Second delayed attachment attempt');
-                this.attachToTextarea();
-            }, 3000);
-        }
-        
-        attachToTextarea() {
-            console.log('🔍 Looking for textarea...');
-            
-        static selectors = [
-    // Basic elements
-    'textarea',
-    'input[type="text"]',
-    'input[type="search"]',
-    
-    // Common IDs
-    '#content',
-    '#id_content',
-    '#text',
-    '#message',
-    '#comment',
-    '#post',
-    '#description',
-    '#body',
-    '#editor',
-    
-    // Common names
-    'textarea[name="content"]',
-    'textarea[name="text"]',
-    'textarea[name="message"]',
-    'textarea[name="comment"]',
-    'textarea[name="post"]',
-    'textarea[name="description"]',
-    'input[name="content"]',
-    'input[name="text"]',
-    
-    // Common classes
-    '.content-field',
-    '.form-control',
-    '.form-input',
-    '.text-editor',
-    '.editor',
-    '.editable',
-    '.textarea',
-    '.input-text',
-    '.content',
-    '.post-content',
-    '.message-text',
-    '.comment-text',
-    
-    // Form contexts
-    'form textarea',
-    'form input[type="text"]',
-    '.form textarea',
-    '.form input[type="text"]',
-    
-    // Contenteditable
-    '[contenteditable="true"]',
-    
-    // Data attributes
-    '[data-predictor="true"]'
-];',
-            '[contenteditable="true"]',
-            '.editable',
-            '.editor',
-            '.text-editor',
-            'textarea[name="content"]',
-            'textarea#id_content',
-            '#id_content',
-            '#content',
-            '.content-field',
-            'form textarea',
-            'form input[type="text"]',
-            '.form-control',
-            '.form-input'
-        ];
-            
-            for (const selector of selectors) {
-                const textareas = document.querySelectorAll(selector);
-                console.log(`  Checking selector "${selector}": found ${textareas.length} elements`);
-                
-                textareas.forEach((textarea, index) => {
-                    if (!textarea.dataset.gpAttached) {
-                        console.log(`    📝 Attaching to textarea #${index}:`, textarea);
-                        this.setupTextarea(textarea);
-                    } else {
-                        console.log(`    ⏭️ Textarea #${index} already attached`);
-                    }
-                });
-            }
-        }
-        
-        observeForTextarea() {
-            console.log('👀 Setting up MutationObserver...');
-            
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.addedNodes.length) {
-                        console.log('🔄 DOM changed, checking for new textareas...');
-                        setTimeout(() => this.attachToTextarea(), 100);
-                    }
-                });
-            });
-            
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        }
-        
-        setupTextarea(textarea) {
-            try {
-                console.log('🔧 Setting up textarea:', textarea);
-                
-                // Marquer comme attaché
-                textarea.dataset.gpAttached = 'true';
-                console.log('   ✓ Marked as attached');
-                
-                // Événements
-                textarea.addEventListener('input', (e) => this.onInput(e));
-                console.log('   ✓ Added input event');
-                
-                textarea.addEventListener('keydown', (e) => this.onKeyDown(e));
-                console.log('   ✓ Added keydown event');
-                
-                // Mettre en place le placeholder pour la suggestion
-                this.setupSuggestionDisplay(textarea);
-                console.log('   ✓ Setup suggestion display');
-                
-                this.currentInput = textarea;
-                console.log('   ✓ Set as current input');
-                
-            } catch (error) {
-                console.error('❌ Error setting up textarea:', error);
-            }
-        }
-        
-        setupSuggestionDisplay(textarea) {
-            // Créer un conteneur pour la suggestion
-            const container = document.createElement('div');
-            container.id = 'gp-suggestion-container';
-            container.style.cssText = `
-                position: absolute;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                padding: 8px 12px;
-                font-size: 14px;
-                color: #666;
-                display: none;
-                z-index: 10000;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                font-family: Arial, sans-serif;
-                pointer-events: none;
-                white-space: nowrap;
-            `;
-            
-            // Positionner près du textarea
-            const rect = textarea.getBoundingClientRect();
-            container.style.top = (rect.bottom + window.scrollY + 5) + 'px';
-            container.style.left = (rect.left + window.scrollX) + 'px';
-            
-            document.body.appendChild(container);
-            console.log('   📌 Created suggestion container');
-        }
-        
-        onInput(e) {
-            console.log('⌨️ Input event:', e.target.value);
-            clearTimeout(this.debounceTimer);
-            this.currentInput = e.target;
-            
-            const text = e.target.value;
-            const cursorPos = e.target.selectionStart;
-            
-            // Prendre le mot en cours
-            const textBefore = text.substring(0, cursorPos);
-            const lastSpace = textBefore.lastIndexOf(' ');
-            const currentWord = textBefore.substring(lastSpace + 1);
-            
-            console.log(`   Current word: "${currentWord}"`);
-            
-            if (currentWord.length < 1) {
-                console.log('   Empty word, hiding suggestion');
-                this.hideSuggestion();
-                return;
-            }
-            
-            this.debounceTimer = setTimeout(async () => {
-                try {
-                    console.log(`   🔍 Fetching suggestion for: "${currentWord}"`);
-                    
-                    const response = await fetch(
-                        `${PREDICTOR_API}?text=${encodeURIComponent(currentWord)}&num_suggestions=1`
-                    );
-                    
-                    console.log(`   Response status: ${response.status}`);
-                    
-                    if (!response.ok) {
-                        console.log('   ❌ Bad response');
-                        this.hideSuggestion();
-                        return;
-                    }
-                    
-                    const data = await response.json();
-                    console.log('   📦 Response data:', data);
-                    
-                    if (data.success && data.suggestions && data.suggestions.length > 0) {
-                        this.currentSuggestion = data.suggestions[0];
-                        console.log(`   💡 Suggestion found: ${this.currentSuggestion}`);
-                        this.showSuggestion(currentWord, this.currentSuggestion);
-                    } else {
-                        console.log('   ❌ No suggestions in response');
-                        this.hideSuggestion();
-                    }
-                } catch (error) {
-                    console.error('   💥 Fetch error:', error);
-                    this.hideSuggestion();
-                }
-            }, 150);
-        }
-        
-        showSuggestion(typedWord, suggestion) {
-            console.log(`   🎯 Showing suggestion: ${typedWord} -> ${suggestion}`);
-            
-            const container = document.getElementById('gp-suggestion-container');
+            // Create predictions container
+            let container = document.getElementById('predictions-container');
             if (!container) {
-                console.log('   ❌ No suggestion container found');
-                return;
+                container = document.createElement('div');
+                container.id = 'predictions-container';
+                container.className = 'predictions-container';
+                textarea.parentNode.insertBefore(container, textarea.nextSibling);
             }
             
-            // Vérifier la correspondance
-            if (!suggestion.toLowerCase().startsWith(typedWord.toLowerCase())) {
-                console.log('   ❌ Suggestion doesn\'t match typed word');
-                this.hideSuggestion();
-                return;
-            }
+            // Set up input event
+            let timeoutId;
+            textarea.addEventListener('input', function(e) {
+                clearTimeout(timeoutId);
+                
+                // Debounce the request
+                timeoutId = setTimeout(() => {
+                    const text = this.value;
+                    const cursorPos = this.selectionStart;
+                    
+                    // Get the current word being typed
+                    const textBeforeCursor = text.substring(0, cursorPos);
+                    const words = textBeforeCursor.split(/\s+/);
+                    const currentWord = words[words.length - 1] || '';
+                    
+                    console.log('Current word for prediction:', currentWord);
+                    
+                    if (currentWord.length > 0) {
+                        fetchPredictions(currentWord, 5);
+                    } else {
+                        showPredictions([]);
+                    }
+                }, 200); // 200ms delay
+            });
             
-            const completion = suggestion.substring(typedWord.length);
-            if (!completion) {
-                console.log('   ❌ No completion part');
-                this.hideSuggestion();
-                return;
-            }
+            // Handle clicks on predictions
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('prediction-button')) {
+                    acceptPrediction(e.target.textContent, textarea);
+                }
+            });
             
-            // Mettre à jour le contenu
-            container.innerHTML = `
-                <span style="color: #333">${typedWord}</span>
-                <span style="color: #666; font-style: italic">${completion}</span>
-                <span style="color: #999; font-size: 11px; margin-left: 8px; background: #f0f0f0; padding: 2px 6px; border-radius: 3px; border: 1px solid #ddd;">Tab</span>
-            `;
-            
-            // Positionner
-            if (this.currentInput) {
-                const rect = this.currentInput.getBoundingClientRect();
-                container.style.top = (rect.bottom + window.scrollY + 5) + 'px';
-                container.style.left = (rect.left + window.scrollX) + 'px';
-                container.style.width = rect.width + 'px';
-            }
-            
-            container.style.display = 'block';
-            console.log('   ✅ Suggestion displayed');
+            console.log('Word predictor initialized successfully');
+        } else {
+            console.warn('Textarea not found for word prediction');
         }
-        
-        onKeyDown(e) {
-            if (!this.currentInput || !this.currentSuggestion) return;
-            
-            if (e.key === 'Tab') {
-                console.log('   Tab pressed, accepting suggestion');
-                e.preventDefault();
-                
-                const input = this.currentInput;
-                const text = input.value;
-                const cursorPos = input.selectionStart;
-                
-                // Remplacer le dernier mot
-                const textBefore = text.substring(0, cursorPos);
-                const lastSpace = textBefore.lastIndexOf(' ');
-                const wordStart = (lastSpace === -1) ? 0 : lastSpace + 1;
-                
-                const newText = text.substring(0, wordStart) + 
-                               this.currentSuggestion + ' ' + 
-                               text.substring(cursorPos);
-                
-                input.value = newText;
-                
-                // Positionner le curseur
-                const newPos = wordStart + this.currentSuggestion.length + 1;
-                setTimeout(() => {
-                    input.selectionStart = input.selectionEnd = newPos;
-                    input.focus();
-                }, 10);
-                
-                console.log(`   ✅ Inserted: ${this.currentSuggestion}`);
-                
-                this.hideSuggestion();
-                
-                // Déclencher nouvel input
-                setTimeout(() => {
-                    input.dispatchEvent(new Event('input'));
-                }, 50);
-            }
-            
-            if (e.key === 'Escape') {
-                console.log('   Escape pressed, hiding suggestion');
-                this.hideSuggestion();
-            }
-        }
-        
-        hideSuggestion() {
-            const container = document.getElementById('gp-suggestion-container');
-            if (container) {
-                container.style.display = 'none';
-            }
-            this.currentSuggestion = '';
-        }
+    }, 1000);
+}
+
+// Function to accept prediction
+function acceptPrediction(prediction, textarea = null) {
+    if (!textarea) {
+        textarea = document.getElementById('id_content') || 
+                  document.querySelector('textarea[name="content"]');
     }
     
-    // Initialisation
-    console.log('🚀 Starting Google Predictor...');
+    if (!textarea) return;
     
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM fully loaded');
-            window.googlePredictor = new GooglePredictor();
-        });
-    } else {
-        console.log('📄 DOM already loaded');
-        window.googlePredictor = new GooglePredictor();
+    const cursorPos = textarea.selectionStart;
+    const text = textarea.value;
+    const textBeforeCursor = text.substring(0, cursorPos);
+    const textAfterCursor = text.substring(cursorPos);
+    
+    // Find the current word
+    const words = textBeforeCursor.split(/\s+/);
+    const currentWord = words[words.length - 1] || '';
+    
+    // Replace current word with prediction
+    const newTextBefore = textBeforeCursor.substring(0, textBeforeCursor.length - currentWord.length);
+    const newText = newTextBefore + prediction + ' ' + textAfterCursor;
+    
+    textarea.value = newText;
+    
+    // Move cursor after prediction + space
+    const newCursorPos = cursorPos - currentWord.length + prediction.length + 1;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    textarea.focus();
+    
+    // Clear predictions
+    showPredictions([]);
+    
+    // Send feedback to improve model
+    sendFeedbackToServer(currentWord, prediction);
+}
+
+// Send feedback to server
+function sendFeedbackToServer(prefix, acceptedWord) {
+    fetch('/word_prediction/feedback/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+            prefix: prefix,
+            accepted_word: acceptedWord
+        })
+    }).catch(error => console.error('Feedback error:', error));
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
     }
-    
-})();
+    return cookieValue;
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing word predictor...');
+    initializeWordPredictor();
+    testPredictionAPI(); // Optional: keep test
+});

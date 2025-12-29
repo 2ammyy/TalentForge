@@ -1,5 +1,573 @@
 // talentForge\static\js\main.js - VERSION COMPLÈTE AMÉLIORÉE
+// ========== FONCTIONS MANQUANTES ==========
 
+// Fonction pour marquer les messages comme lus
+function markMessagesAsRead() {
+    const unreadMessages = document.querySelectorAll('.message.unread');
+    
+    if (unreadMessages.length > 0) {
+        console.log('📨 Marking messages as read...');
+        
+        // Collect message IDs
+        const messageIds = Array.from(unreadMessages).map(message => {
+            return message.dataset.messageId || message.closest('[data-message-id]')?.dataset.messageId;
+        }).filter(id => id);
+        
+        if (messageIds.length > 0) {
+            // Send request to mark messages as read
+            fetch('/api/mark-messages-read/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message_ids: messageIds })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Update UI
+                    unreadMessages.forEach(message => {
+                        message.classList.remove('unread');
+                        message.classList.add('read');
+                        
+                        // Animation de transition
+                        message.style.transition = 'all 0.3s ease';
+                        message.style.background = 'rgba(102, 126, 234, 0.05)';
+                        setTimeout(() => {
+                            message.style.background = '';
+                        }, 500);
+                    });
+                    
+                    console.log(`✅ Marked ${unreadMessages.length} messages as read`);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error marking messages as read:', error);
+            });
+        }
+    }
+}
+
+// Fonction pour les animations au scroll
+function animateOnScroll() {
+    const animatedElements = document.querySelectorAll('.animate-on-scroll, .fade-in, .slide-up, .art-animate');
+    
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Animation d'entrée
+                    const element = entry.target;
+                    
+                    // Déterminer le type d'animation
+                    if (element.classList.contains('fade-in')) {
+                        element.style.animation = 'fadeIn 0.8s ease forwards';
+                    } else if (element.classList.contains('slide-up')) {
+                        element.style.animation = 'slideUp 0.6s ease forwards';
+                    } else if (element.classList.contains('art-animate')) {
+                        element.style.animation = 'slideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards';
+                    } else {
+                        element.style.animation = 'fadeInUp 0.6s ease forwards';
+                    }
+                    
+                    // Observer une seule fois
+                    observer.unobserve(element);
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+        
+        animatedElements.forEach(element => {
+            observer.observe(element);
+        });
+    } else {
+        // Fallback pour les vieux navigateurs
+        animatedElements.forEach((element, index) => {
+            setTimeout(() => {
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    }
+}
+
+// Fonction pour valider les posts créatifs
+function validateCreativePost(elements) {
+    let isValid = true;
+    const errors = [];
+    
+    // Valider le contenu
+    if (elements.contentTextarea && elements.contentTextarea.value.trim().length === 0) {
+        errors.push('Content is required');
+        elements.contentTextarea.style.borderColor = '#dc3545';
+        isValid = false;
+        
+        // Animation d'erreur
+        elements.contentTextarea.style.animation = 'shake 0.5s ease';
+        setTimeout(() => {
+            elements.contentTextarea.style.animation = '';
+        }, 500);
+    }
+    
+    // Valider les fichiers
+    const fileInputs = [elements.fileInputs.image, elements.fileInputs.video].filter(input => input);
+    fileInputs.forEach(input => {
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            
+            if (file.size > maxSize) {
+                errors.push(`File ${file.name} is too large (max 50MB)`);
+                input.style.borderColor = '#dc3545';
+                isValid = false;
+            }
+        }
+    });
+    
+    // Afficher les erreurs
+    if (errors.length > 0) {
+        showCreativeToast(errors.join('<br>'), 'error');
+    }
+    
+    return isValid;
+}
+
+// Fonction pour mettre à jour les placeholders créatifs
+function updateCreativePlaceholder(type, textarea) {
+    const placeholders = {
+        'text': 'Share your thoughts, ideas, or creative inspiration... ✨',
+        'image': 'Describe your image or artwork... 🎨',
+        'video': 'Tell us about your video or creative project... 🎥',
+        'job': 'Describe the job opportunity or creative position... 💼'
+    };
+    
+    if (textarea && placeholders[type]) {
+        textarea.placeholder = placeholders[type];
+        
+        // Animation
+        textarea.style.opacity = '0.5';
+        setTimeout(() => {
+            textarea.style.opacity = '1';
+            textarea.style.transition = 'opacity 0.3s ease';
+        }, 150);
+    }
+}
+
+// Fonction pour mettre à jour les placeholders d'emploi
+function updateJobPlaceholders(textarea) {
+    if (textarea) {
+        textarea.placeholder = 'Job description, requirements, and creative opportunities... 💼';
+    }
+    
+    // Mettre à jour d'autres champs liés aux emplois si nécessaire
+    const jobFields = document.querySelectorAll('[data-job-field]');
+    jobFields.forEach(field => {
+        const fieldType = field.dataset.jobField;
+        const placeholders = {
+            'title': 'Creative Job Title (e.g., Senior Graphic Designer)',
+            'location': 'Location (e.g., Remote, Paris, New York)',
+            'salary': 'Salary Range or Compensation',
+            'type': 'Job Type (Full-time, Contract, Freelance)'
+        };
+        
+        if (placeholders[fieldType]) {
+            field.placeholder = placeholders[fieldType];
+        }
+    });
+}
+
+// Fonction pour mettre à jour le compteur de réactions
+function updateCreativeReactionCount(postId, newCount) {
+    const reactionCounts = document.querySelectorAll(`[data-post-id="${postId}"] .reaction-count, .like-count[data-post-id="${postId}"]`);
+    
+    reactionCounts.forEach(element => {
+        const originalCount = parseInt(element.textContent) || 0;
+        
+        // Animation du compteur
+        if (newCount > originalCount) {
+            element.style.transform = 'scale(1.5)';
+            element.style.color = '#667eea';
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+                element.style.color = '';
+                element.textContent = newCount;
+            }, 300);
+        } else {
+            element.textContent = newCount;
+        }
+    });
+}
+
+// Fonction pour basculer la lecture vidéo
+function toggleCreativeVideoPlay(video, button) {
+    if (!video || !button) return;
+    
+    if (video.paused) {
+        video.play().then(() => {
+            button.innerHTML = '<i class="fas fa-pause"></i>';
+            button.style.background = '#667eea';
+            
+            // Animation
+            button.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                button.style.transform = 'scale(1)';
+            }, 300);
+        }).catch(error => {
+            console.error('Video play failed:', error);
+            showCreativeToast('Video playback failed', 'error');
+        });
+    } else {
+        video.pause();
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        button.style.background = '';
+    }
+}
+
+// Fonction pour initialiser les contrôles vidéo créatifs
+function initCreativeVideoControls(video) {
+    if (!video) return;
+    
+    // Créer les contrôles personnalisés
+    const controls = document.createElement('div');
+    controls.className = 'creative-video-controls';
+    controls.style.cssText = `
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 20px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+    
+    // Bouton play/pause
+    const playBtn = document.createElement('button');
+    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+    playBtn.style.cssText = `
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+    `;
+    
+    // Barre de progression
+    const progress = document.createElement('div');
+    progress.className = 'video-progress';
+    progress.style.cssText = `
+        flex: 1;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+        overflow: hidden;
+    `;
+    
+    const progressBar = document.createElement('div');
+    progressBar.className = 'video-progress-bar';
+    progressBar.style.cssText = `
+        width: 0%;
+        height: 100%;
+        background: #667eea;
+        border-radius: 2px;
+        transition: width 0.1s linear;
+    `;
+    
+    progress.appendChild(progressBar);
+    
+    // Conteneur vidéo
+    const videoContainer = video.parentNode;
+    videoContainer.style.position = 'relative';
+    
+    // Ajouter les contrôles
+    controls.appendChild(playBtn);
+    controls.appendChild(progress);
+    videoContainer.appendChild(controls);
+    
+    // Événements
+    playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCreativeVideoPlay(video, playBtn);
+    });
+    
+    video.addEventListener('timeupdate', () => {
+        const percent = (video.currentTime / video.duration) * 100;
+        progressBar.style.width = `${percent}%`;
+    });
+    
+    video.addEventListener('mouseenter', () => {
+        controls.style.opacity = '1';
+    });
+    
+    video.addEventListener('mouseleave', () => {
+        if (!video.paused) {
+            controls.style.opacity = '0';
+        }
+    });
+    
+    controls.addEventListener('mouseenter', () => {
+        controls.style.opacity = '1';
+    });
+    
+    controls.addEventListener('mouseleave', () => {
+        if (!video.paused) {
+            setTimeout(() => {
+                controls.style.opacity = '0';
+            }, 1000);
+        }
+    });
+}
+
+// Fonction pour initialiser le chargement infini de la galerie
+function initInfiniteGallery() {
+    const galleryContainer = document.querySelector('.infinite-gallery, .art-gallery-infinite');
+    if (!galleryContainer) return;
+    
+    let isLoading = false;
+    let page = 1;
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !isLoading) {
+                loadMoreGalleryItems(page + 1);
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    const sentinel = document.createElement('div');
+    sentinel.className = 'gallery-sentinel';
+    sentinel.style.height = '50px';
+    galleryContainer.appendChild(sentinel);
+    observer.observe(sentinel);
+}
+
+// Fonction pour charger plus d'éléments de galerie
+function loadMoreGalleryItems(nextPage) {
+    console.log('🖼️ Loading more gallery items, page:', nextPage);
+    
+    const galleryContainer = document.querySelector('.infinite-gallery, .art-gallery-infinite');
+    if (!galleryContainer) return;
+    
+    // Simuler le chargement
+    const loader = document.createElement('div');
+    loader.className = 'gallery-loader';
+    loader.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    `;
+    loader.style.textAlign = 'center';
+    loader.style.padding = '2rem';
+    
+    galleryContainer.appendChild(loader);
+    
+    // Simulation d'une requête API
+    setTimeout(() => {
+        loader.remove();
+        
+        // Ajouter de nouveaux éléments (simulation)
+        const newItems = createGalleryItems(6); // Crée 6 nouveaux éléments
+        
+        newItems.forEach(item => {
+            galleryContainer.appendChild(item);
+        });
+        
+        // Réinitialiser Masonry
+        initMasonryLayout(galleryContainer);
+        
+        console.log('✅ Added new gallery items');
+    }, 1500);
+}
+
+// Fonction pour créer des éléments de galerie (simulation)
+function createGalleryItems(count) {
+    const items = [];
+    const types = ['painting', 'photography', 'design', 'illustration', 'digital'];
+    
+    for (let i = 0; i < count; i++) {
+        const item = document.createElement('div');
+        item.className = 'art-masonry-item animate__animated animate__fadeIn';
+        item.dataset.artType = types[Math.floor(Math.random() * types.length)];
+        
+        item.innerHTML = `
+            <div class="art-item-card">
+                <div class="art-item-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 200px; border-radius: 12px;"></div>
+                <div class="art-item-content p-3">
+                    <h6 class="mb-2">Creative Artwork ${Math.floor(Math.random() * 1000)}</h6>
+                    <p class="text-muted small">Posted ${Math.floor(Math.random() * 24)} hours ago</p>
+                </div>
+            </div>
+        `;
+        
+        items.push(item);
+    }
+    
+    return items;
+}
+
+// Fonction pour initialiser la lightbox créative
+function initCreativeLightbox() {
+    const lightboxImages = document.querySelectorAll('.lightbox-image, .artwork-image');
+    
+    lightboxImages.forEach(image => {
+        image.style.cursor = 'zoom-in';
+        
+        image.addEventListener('click', function() {
+            openCreativeLightbox(this.src, this.alt);
+        });
+    });
+}
+
+// Fonction pour ouvrir la lightbox
+function openCreativeLightbox(src, alt) {
+    const lightbox = document.createElement('div');
+    lightbox.className = 'creative-lightbox';
+    lightbox.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        animation: fadeIn 0.3s ease forwards;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt;
+    img.style.cssText = `
+        max-width: 90%;
+        max-height: 90%;
+        border-radius: 8px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        transform: scale(0.8);
+        animation: scaleIn 0.3s ease 0.1s forwards;
+    `;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '×';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    `;
+    
+    closeBtn.addEventListener('mouseenter', () => {
+        closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+        closeBtn.style.transform = 'rotate(90deg) scale(1.1)';
+    });
+    
+    closeBtn.addEventListener('mouseleave', () => {
+        closeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        closeBtn.style.transform = 'rotate(0deg) scale(1)';
+    });
+    
+    closeBtn.addEventListener('click', () => {
+        lightbox.style.animation = 'fadeOut 0.3s ease forwards';
+        setTimeout(() => {
+            document.body.removeChild(lightbox);
+        }, 300);
+    });
+    
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+            closeBtn.click();
+        }
+    });
+    
+    lightbox.appendChild(img);
+    lightbox.appendChild(closeBtn);
+    document.body.appendChild(lightbox);
+}
+
+// Fonction utilitaire pour obtenir le token CSRF
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+
+// Fonction pour animer le badge de notification
+function animateNotificationBadge() {
+    const badge = document.querySelector('.notification-badge, .badge.bg-danger');
+    if (badge) {
+        badge.style.animation = 'pulse 2s infinite';
+    }
+}
+
+// Fonction pour initialiser les animations de chargement
+function initLoadingAnimations() {
+    const loaders = document.querySelectorAll('.creative-loader, .art-loader');
+    
+    loaders.forEach(loader => {
+        // Animation de rotation
+        loader.style.animation = 'spin 1s linear infinite';
+        
+        // Ajouter des points animés
+        if (loader.classList.contains('art-loader')) {
+            const dots = document.createElement('div');
+            dots.innerHTML = `
+                <span style="animation-delay: 0s">.</span>
+                <span style="animation-delay: 0.2s">.</span>
+                <span style="animation-delay: 0.4s">.</span>
+            `;
+            dots.style.cssText = `
+                display: inline-block;
+                margin-left: 5px;
+            `;
+            loader.appendChild(dots);
+        }
+    });
+}
+
+// Fonction pour initialiser les animations au scroll
+function initScrollAnimations() {
+    // Déclencher une fois au chargement
+    animateOnScroll();
+    
+    // Et au scroll
+    window.addEventListener('scroll', animateOnScroll);
+}
+
+// Fonction pour initialiser les modales créatives
+function initCreativeModals() {
+    const modals = document.querySelectorAll('.creative-modal, .art-modal');
+    
+    modals.forEach(modal => {
+        modal.addEventListener('show.bs.modal', function() {
+            this.style.transform = 'translateY(-50px) scale(0.9)';
+            this.style.opacity = '0';
+        });
+        
+        modal.addEventListener('shown.bs.modal', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+            this.style.opacity = '1';
+            this.style.transition = 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+        });
+    });
+}
 // ========== INITIALISATION GLOBALE ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎨 Initializing TalentForge Creative Platform...');
@@ -1198,3 +1766,69 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Add to existing style tag - append these to the existing keyframes
+style.textContent += `
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .fade-in {
+        opacity: 0;
+    }
+    
+    .slide-up {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    
+    .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+`;

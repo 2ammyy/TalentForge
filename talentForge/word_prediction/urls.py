@@ -1,9 +1,9 @@
-# word_prediction/urls.py
 from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('predict/', views.predict_view, name='word_prediction_predict'),
-    path('learn/', views.learn_view, name='word_prediction_learn'),
-    path('status/', views.status_view, name='word_prediction_status'),
+    path('predict/', views.predict_word, name='predict_word'),
+    path('feedback/', views.feedback, name='feedback'),
+    path('status/', views.status, name='status'),
+    path('test/', views.test_creative, name='test'),
 ]

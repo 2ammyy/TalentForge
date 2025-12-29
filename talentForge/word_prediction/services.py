@@ -2,14 +2,15 @@ import requests
 import logging
 import re
 import time
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Any
 import urllib.parse
 import json
 import os
-from collections import defaultdict, Counter
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 import threading
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -18,194 +19,195 @@ class Suggestion:
     text: str
     confidence: float
     source: str
+    type: str  # 'creative_completion', 'art_term', 'phrase', 'next_word'
 
-class IntelligentWordPredictionService:
+class CreativeWordPredictionService:
     def __init__(self):
         self.base_url = "http://localhost:11434"
-        self.model = "llama2"  # Changed to a more common model name
-        self.timeout = 2.0  # Increased timeout
+        self.model = "llama2"
+        self.timeout = 3.0
         
-        # Cache with TTL
+        # Cache
         self._cache = {}
         self._cache_timestamps = {}
-        self._cache_ttl = 300  # 5 minutes
+        self._cache_ttl = 600
+        self._max_cache_size = 500
         
-        # Learning
-        self._user_patterns = defaultdict(Counter)
-        self._learned_ngrams = defaultdict(Counter)
-        self._pattern_file = "word_patterns.json"
-        self._save_interval = 10
+        # Learning - only for user-specific patterns
+        self._user_patterns = defaultdict(lambda: defaultdict(float))
+        self._pattern_file = "creative_user_patterns.json"
+        self._save_interval = 50
         
-        # Context
-        self._recent_words = []
-        self._max_recent = 8
+        # Creative context tracking
+        self._creative_contexts = defaultdict(list)
+        self._max_context_length = 100
         
-        # Static suggestions
-        self._common_continuations = self._load_common_continuations()
-        
-        self._init_suggestions_db()
-        self._load_learned_patterns()
-        
-        # Stats
+        # Statistics
         self.stats = {
             'total_requests': 0,
             'cache_hits': 0,
-            'ollama_success': 0,
-            'ollama_failed': 0,
-            'ngram_hits': 0,
-            'user_pattern_hits': 0,
-            'fallback_used': 0
+            'llama2_success': 0,
+            'llama2_failed': 0,
+            'creative_hits': 0,
+            'fallback_used': 0,
+            'response_times': [],
+            'average_response_time': 0
         }
         
-        # Start cleanup thread
+        # Small set of core creative terms for fallback
+        self._core_creative_terms = {
+            'art': ['artist', 'artwork', 'artistic', 'artistry'],
+            'crea': ['create', 'creative', 'creativity', 'creation'],
+            'pain': ['painting', 'painter', 'paint'],
+            'draw': ['drawing', 'draw'],
+            'desi': ['design', 'designer'],
+            'phot': ['photo', 'photography', 'photographer'],
+            'musi': ['music', 'musician'],
+            'writ': ['writing', 'writer'],
+            'danc': ['dance', 'dancer'],
+            'film': ['film', 'filmmaker'],
+            'poet': ['poetry', 'poet'],
+            'scul': ['sculpture', 'sculptor'],
+            'craf': ['craft', 'craftsman'],
+            'digi': ['digital', 'digital art'],
+            'trad': ['traditional', 'tradition'],
+            'cont': ['contemporary', 'contemporary art'],
+            'abst': ['abstract', 'abstract art'],
+            'real': ['realism', 'realistic'],
+            'expr': ['expression', 'expressionism'],
+            'surr': ['surreal', 'surrealism'],
+            'min': ['minimal', 'minimalism'],
+            'mod': ['modern', 'modernism'],
+            'post': ['postmodern', 'postmodernism'],
+            'colo': ['color', 'colorful'],
+            'comp': ['composition', 'composer'],
+            'insp': ['inspiration', 'inspired'],
+            'inn': ['innovation', 'innovative'],
+            'exhi': ['exhibition', 'exhibit'],
+            'gall': ['gallery', 'gallerist'],
+            'stud': ['studio', 'study'],
+            'sket': ['sketch', 'sketching'],
+            'canv': ['canvas', 'canvases'],
+            'brus': ['brush', 'brushes'],
+            'pale': ['palette', 'palettes'],
+            'styl': ['style', 'stylistic'],
+            'tech': ['technique', 'technical'],
+            'mater': ['material', 'materials'],
+            'medi': ['medium', 'media'],
+            'form': ['form', 'formal'],
+            'text': ['texture', 'textural']
+        }
+        
+        # Common creative phrases for quick suggestions
+        self._creative_phrases = {
+            'I am': ['an artist', 'a creative', 'working on', 'inspired by'],
+            'I create': ['art', 'designs', 'music', 'stories'],
+            'My art': ['is about', 'explores', 'challenges', 'celebrates'],
+            'The project': ['focuses on', 'explores', 'investigates', 'questions'],
+            'This piece': ['represents', 'expresses', 'conveys', 'symbolizes'],
+            'Inspired by': ['nature', 'emotions', 'society', 'dreams'],
+            'Working with': ['paint', 'clay', 'digital media', 'found objects'],
+            'Exploring': ['identity', 'memory', 'time', 'space'],
+            'Challenging': ['norms', 'perceptions', 'boundaries', 'expectations'],
+            'Celebrating': ['diversity', 'creativity', 'innovation', 'tradition']
+        }
+        
+        # Load user patterns
+        self._load_user_patterns()
+        
+        # Start maintenance thread
         self._cleanup_thread = threading.Thread(target=self._periodic_cleanup, daemon=True)
         self._cleanup_thread.start()
-    
-    def _load_common_continuations(self) -> Dict[str, List[Tuple[str, float]]]:
-        """Common English word continuations"""
-        return {
-            "": [("the", 0.95), ("i", 0.90), ("you", 0.85), ("a", 0.80), ("to", 0.75)],
-            "i": [("am", 0.92), ("have", 0.88), ("want", 0.85), ("need", 0.82)],
-            "you": [("are", 0.93), ("can", 0.87), ("have", 0.85), ("should", 0.78)],
-            "we": [("are", 0.90), ("can", 0.85), ("have", 0.80)],
-            "they": [("are", 0.92), ("have", 0.85)],
-            "the": [("best", 0.65), ("most", 0.60), ("first", 0.55)],
-            "to": [("be", 0.90), ("do", 0.85), ("get", 0.80)],
-            "in": [("the", 0.85), ("a", 0.75)],
-            "for": [("the", 0.80), ("a", 0.75)],
-            "hello": [("there", 0.95), ("world", 0.80)],
-            "thank": [("you", 0.98)],
-            "good": [("morning", 0.85), ("afternoon", 0.80)],
-        }
+        
+        logger.info("Creative Word Prediction Service initialized for TalentForge")
 
-    def _init_suggestions_db(self):
-        """Initialize enhanced static suggestions database"""
-        self.suggestions_db = {
-            # Single letter predictions
-            'a': [('and', 0.9), ('are', 0.85), ('about', 0.8), ('also', 0.75)],
-            'b': [('but', 0.9), ('be', 0.85), ('by', 0.8), ('because', 0.75)],
-            'c': [('can', 0.9), ('could', 0.85), ('come', 0.8)],
-            'd': [('do', 0.9), ('did', 0.85), ('does', 0.8), ('don\'t', 0.75)],
-            'e': [('every', 0.9), ('each', 0.85), ('even', 0.8)],
-            'f': [('for', 0.9), ('from', 0.85), ('first', 0.8)],
-            'g': [('go', 0.9), ('get', 0.85), ('good', 0.8)],
-            'h': [('hello', 0.95), ('hi', 0.9), ('how', 0.85), ('have', 0.8), ('here', 0.75)],
-            
-            # Common partials
-            'he': [('hello', 0.95), ('help', 0.9), ('here', 0.85), ('hello', 0.8)],
-            'hel': [('hello', 0.98), ('help', 0.9), ('hello', 0.85)],
-            'hell': [('hello', 0.99), ('hello', 0.95)],
-            
-            # Greetings
-            'hello': [('there', 0.95), ('world', 0.9), ('everyone', 0.85), ('friend', 0.8)],
-            'hi': [('there', 0.95), ('everyone', 0.9), ('how', 0.85)],
-            
-            # Common phrases
-            'i': [('am', 0.95), ('have', 0.9), ('want', 0.85), ('need', 0.8), ('think', 0.75)],
-            'i ': [('am', 0.95), ('have', 0.9), ('want', 0.85)],
-            'i w': [('want', 0.95), ('will', 0.9), ('was', 0.85), ('would', 0.8)],
-            'i want': [('to', 0.97), ('a', 0.9), ('the', 0.85), ('some', 0.8)],
-            'i need': [('to', 0.95), ('help', 0.9), ('a', 0.85), ('some', 0.8)],
-            
-            'how': [('are', 0.95), ('to', 0.9), ('can', 0.85), ('do', 0.8)],
-            'how ': [('are', 0.95), ('to', 0.9), ('can', 0.85)],
-            'how a': [('are', 0.98), ('about', 0.9)],
-            'how are': [('you', 0.98), ('things', 0.85), ('we', 0.8)],
-            
-            'thank': [('you', 0.98), ('god', 0.8), ('goodness', 0.75)],
-            'thanks': [('for', 0.95), ('everyone', 0.85), ('a', 0.8)],
-            
-            # Question words
-            'what': [('is', 0.95), ('are', 0.9), ('do', 0.85), ('can', 0.8)],
-            'when': [('is', 0.95), ('will', 0.9), ('can', 0.85), ('do', 0.8)],
-            'where': [('is', 0.95), ('are', 0.9), ('can', 0.85), ('do', 0.8)],
-            'why': [('is', 0.95), ('are', 0.9), ('do', 0.85), ('can', 0.8)],
-            
-            # Project-related
-            'project': [('update', 0.95), ('idea', 0.9), ('progress', 0.85), ('management', 0.8)],
-            'recipe': [('for', 0.95), ('ideas', 0.9), ('sharing', 0.85), ('book', 0.8)],
-            
-            # Tech/common
-            'can': [('you', 0.95), ('i', 0.9), ('we', 0.85), ('someone', 0.8)],
-            'should': [('i', 0.95), ('we', 0.9), ('you', 0.85), ('they', 0.8)],
-            'will': [('be', 0.95), ('have', 0.9), ('you', 0.85), ('i', 0.8)],
-            
-            # Platform context
-            'platform': [('access', 0.95), ('features', 0.9), ('update', 0.85), ('integration', 0.8)],
-            'access': [('to', 0.95), ('the', 0.9), ('control', 0.85), ('permissions', 0.8)],
-        }
-
-    def _load_learned_patterns(self):
-        """Load learned patterns from file"""
+    def _load_user_patterns(self):
+        """Load user-specific patterns from file"""
         try:
             if os.path.exists(self._pattern_file):
                 with open(self._pattern_file, 'r') as f:
                     data = json.load(f)
-                    for prefix, counter in data.get('patterns', {}).items():
-                        self._user_patterns[prefix] = Counter(counter)
-                    for ngram, counter in data.get('ngrams', {}).items():
-                        self._learned_ngrams[ngram] = Counter(counter)
-                logger.info(f"Loaded learned patterns from {self._pattern_file}")
+                    
+                    # Load user patterns
+                    patterns = data.get('patterns', {})
+                    for prefix, word_dict in patterns.items():
+                        for word, weight in word_dict.items():
+                            self._user_patterns[prefix][word] = float(weight)
+                            
+                logger.info(f"Loaded user patterns from {self._pattern_file}")
         except Exception as e:
-            logger.warning(f"Failed to load patterns: {e}")
+            logger.warning(f"Failed to load user patterns: {e}")
 
-    def _save_learned_patterns(self):
-        """Save learned patterns to file"""
+    def _save_user_patterns(self):
+        """Save user patterns to file"""
         try:
             data = {
-                'patterns': {k: dict(v) for k, v in self._user_patterns.items() if v},
-                'ngrams': {k: dict(v) for k, v in self._learned_ngrams.items() if v},
-                'timestamp': datetime.now().isoformat()
+                'patterns': {
+                    k: {word: float(weight) for word, weight in v.items()}
+                    for k, v in self._user_patterns.items() if v
+                },
+                'timestamp': datetime.now().isoformat(),
+                'platform': 'TalentForge Creative Platform'
             }
+            
             with open(self._pattern_file, 'w') as f:
                 json.dump(data, f, indent=2)
+                
         except Exception as e:
-            logger.warning(f"Failed to save patterns: {e}")
+            logger.warning(f"Failed to save user patterns: {e}")
 
-    def _learn_from_accepted(self, prefix: str, accepted_word: str):
-        """Learn from user-accepted suggestions"""
-        if not prefix or not accepted_word:
-            return
+    def _create_creative_prompt(self, text: str, context: str = "") -> str:
+        """Create a creative-focused prompt for Llama2"""
         
-        prefix_lower = prefix.lower().strip()
-        word_lower = accepted_word.lower().strip()
+        creative_context = f"""
+        You are a creative assistant for TalentForge, a platform for artists and creators.
+        Your task is to help artists with creative writing and idea generation.
         
-        # Update user patterns
-        self._user_patterns[prefix_lower][word_lower] += 1
+        Context: The user is working on creative content (art, writing, design, music, etc.).
         
-        # Update n-grams
-        recent = self._recent_words[-3:]
-        if recent:
-            # Create n-grams from recent context
-            for i in range(1, min(3, len(recent) + 1)):
-                ngram = " ".join(recent[-i:])
-                if ngram:
-                    self._learned_ngrams[ngram][word_lower] += 1
+        For partial words, complete them with creative/art-related terms.
+        For phrases, suggest creative continuations.
+        For complete words, suggest creative next words.
         
-        # Save periodically
-        if self.stats['total_requests'] % self._save_interval == 0:
-            threading.Thread(target=self._save_learned_patterns, daemon=True).start()
+        Always prioritize creative, artistic, and innovative suggestions.
+        
+        User input: "{text}"
+        """
+        
+        if context:
+            creative_context += f"\nAdditional context: {context}\n"
+        
+        if ' ' not in text:  # Single word or partial word
+            creative_context += f"""
+            The user has typed: "{text}"
+            If this looks like a partial word, suggest the most likely creative/art-related completion.
+            If it's a complete word, suggest creative next words that artists might use.
+            
+            Suggestions:"""
+        elif text.endswith(' '):  # Looking for next word
+            creative_context += f"""
+            The user wrote: "{text.strip()}"
+            Suggest creative next words that would naturally follow in an artistic context.
+            
+            Next word suggestions:"""
+        else:  # Partial phrase
+            creative_context += f"""
+            The user wrote: "{text}"
+            Complete this phrase with creative, artistic suggestions.
+            
+            Completion suggestions:"""
+        
+        return creative_context
 
-    def _periodic_cleanup(self):
-        """Clean up expired cache entries"""
-        while True:
-            time.sleep(60)
-            now = time.time()
-            expired = [k for k, t in self._cache_timestamps.items() 
-                      if now - t > self._cache_ttl]
-            for k in expired:
-                self._cache.pop(k, None)
-                self._cache_timestamps.pop(k, None)
-
-    def _get_ollama_completion(self, text: str) -> Optional[str]:
-        """Get completion from Ollama"""
+    def _get_llama2_creative_completion(self, text: str, context: str = "") -> List[Tuple[str, float]]:
+        """Get creative completions from Llama2"""
         if not text.strip():
-            return None
+            return []
         
-        # Simple prompt for better reliability
-        prompt = f"""Complete this text with the most likely next word: "{text}"
+        start_time = time.time()
+        prompt = self._create_creative_prompt(text, context)
         
-        Next word:"""
+        logger.info(f"Asking Llama2 for creative suggestions for: '{text}'")
         
         try:
             response = requests.post(
@@ -215,8 +217,11 @@ class IntelligentWordPredictionService:
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.1,
-                        "num_predict": 10
+                        "temperature": 0.3,  # Slightly creative temperature
+                        "num_predict": 30,    # More tokens for creative suggestions
+                        "stop": ["\n\n", "User:", "Assistant:", "Suggestions:", "Completion:"],
+                        "top_p": 0.85,
+                        "top_k": 30
                     }
                 },
                 timeout=self.timeout
@@ -226,31 +231,96 @@ class IntelligentWordPredictionService:
                 result = response.json()
                 completion = result.get("response", "").strip()
                 
-                # Extract first word
-                words = re.findall(r'\b[a-zA-Z]+\b', completion)
-                if words:
-                    word = words[0].lower()
-                    # Clean word
-                    word = re.sub(r'[^\w\s]', '', word)
-                    if word and len(word) > 1:
-                        self.stats['ollama_success'] += 1
-                        return word
+                logger.debug(f"Llama2 raw creative response: '{completion}'")
                 
-            self.stats['ollama_failed'] += 1
-            return None
+                # Parse suggestions from response
+                suggestions = []
+                
+                # Extract suggested words/phrases
+                lines = completion.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    
+                    # Remove bullet points, numbers, etc.
+                    line = re.sub(r'^[•\-*]\s*', '', line)
+                    line = re.sub(r'^\d+[\.\)]\s*', '', line)
+                    
+                    # Extract potential words/phrases
+                    words = re.findall(r'\b[a-zA-Z][a-zA-Z\s\-]*[a-zA-Z]\b', line)
+                    
+                    for word in words:
+                        word = word.strip().lower()
+                        if len(word) > 1 and len(word) < 25:  # Reasonable length
+                            # Score based on position and relevance
+                            score = 0.9 - (len(suggestions) * 0.1)
+                            suggestions.append((word, min(max(score, 0.1), 0.9)))
+                
+                # Remove duplicates while preserving order
+                seen = set()
+                unique_suggestions = []
+                for word, score in suggestions:
+                    if word not in seen and word not in [text.lower(), text.lower() + ' ']:
+                        seen.add(word)
+                        unique_suggestions.append((word, score))
+                
+                if unique_suggestions:
+                    elapsed = time.time() - start_time
+                    self.stats['response_times'].append(elapsed)
+                    self.stats['llama2_success'] += 1
+                    self.stats['creative_hits'] += 1
+                    return unique_suggestions[:5]
+            
+            self.stats['llama2_failed'] += 1
+            return []
             
         except requests.exceptions.Timeout:
-            logger.debug("Ollama timeout")
-            self.stats['ollama_failed'] += 1
-            return None
+            logger.warning(f"Llama2 timeout for creative suggestion: '{text}'")
+            self.stats['llama2_failed'] += 1
+            return []
         except Exception as e:
-            logger.debug(f"Ollama error: {e}")
-            self.stats['ollama_failed'] += 1
-            return None
+            logger.warning(f"Llama2 error for creative suggestion '{text}': {e}")
+            self.stats['llama2_failed'] += 1
+            return []
 
-    def predict(self, text: str, num_suggestions: int = 3) -> List[str]:
-        """Main prediction method - enhanced for Google-style completion"""
+    def _analyze_input_for_creativity(self, text: str) -> Dict[str, Any]:
+        """Analyze input for creative prediction opportunities"""
+        analysis = {
+            'is_partial_word': False,
+            'is_phrase': False,
+            'needs_next_word': False,
+            'is_creative_context': False,
+            'creative_keywords': []
+        }
+        
+        text = text.strip().lower()
+        
+        # Check for creative keywords
+        creative_keywords = ['art', 'create', 'design', 'paint', 'draw', 'write', 
+                           'music', 'dance', 'film', 'photo', 'sculpt', 'craft',
+                           'creative', 'artist', 'painter', 'writer', 'maker',
+                           'project', 'piece', 'work', 'studio', 'gallery',
+                           'exhibit', 'show', 'performance', 'installation']
+        
+        for keyword in creative_keywords:
+            if keyword in text:
+                analysis['is_creative_context'] = True
+                analysis['creative_keywords'].append(keyword)
+        
+        # Check input type
+        if text.endswith(' '):
+            analysis['needs_next_word'] = True
+        elif ' ' in text:
+            analysis['is_phrase'] = True
+        else:
+            analysis['is_partial_word'] = True
+        
+        return analysis
+
+    def predict_creative(self, text: str, num_suggestions: int = 5, context: str = "") -> List[Suggestion]:
+        """Main creative prediction method"""
         self.stats['total_requests'] += 1
+        
+        logger.info(f"Creative prediction request: '{text}' (context: '{context}')")
         
         try:
             text = urllib.parse.unquote(text)
@@ -259,110 +329,244 @@ class IntelligentWordPredictionService:
         
         text = text.strip()
         
-        # Return defaults for empty text
         if not text:
-            return ["the", "i", "you", "a", "to"][:num_suggestions]
+            # Default creative suggestions
+            return [
+                Suggestion(text="art", confidence=0.9, source="creative_default", type="creative_completion"),
+                Suggestion(text="create", confidence=0.85, source="creative_default", type="creative_completion"),
+                Suggestion(text="design", confidence=0.8, source="creative_default", type="creative_completion"),
+                Suggestion(text="inspiration", confidence=0.75, source="creative_default", type="creative_completion"),
+                Suggestion(text="studio", confidence=0.7, source="creative_default", type="creative_completion")
+            ][:num_suggestions]
         
         # Check cache
-        cache_key = f"{text}_{num_suggestions}"
+        cache_key = hashlib.md5(f"creative_{text}_{context}".encode()).hexdigest()
         if cache_key in self._cache:
             self.stats['cache_hits'] += 1
-            return self._cache[cache_key]
+            logger.debug(f"Cache hit for: '{text}'")
+            cached = self._cache[cache_key]
+            return cached[:num_suggestions]
         
         suggestions = []
-        text_lower = text.lower()
         
-        # 1. Try Ollama first for intelligent completion
-        ollama_word = self._get_ollama_completion(text)
-        if ollama_word and ollama_word not in suggestions:
-            suggestions.append(ollama_word)
+        # Analyze input
+        analysis = self._analyze_input_for_creativity(text)
         
-        # 2. Check for partial word completion
-        if " " not in text_lower and len(text_lower) >= 2:
-            # Look for words starting with the partial input
-            possible_matches = []
+        # 1. Try Llama2 for creative suggestions (primary)
+        llama_suggestions = self._get_llama2_creative_completion(text, context)
+        
+        for word, confidence in llama_suggestions:
+            if len(suggestions) < num_suggestions:
+                suggestions.append(Suggestion(
+                    text=word,
+                    confidence=confidence,
+                    source="llama2_creative",
+                    type="creative_completion"
+                ))
+        
+        # 2. Check core creative terms for partial words
+        if analysis['is_partial_word']:
+            text_lower = text.lower()
+            for pattern, completions in self._core_creative_terms.items():
+                if text_lower.startswith(pattern):
+                    for comp in completions:
+                        if len(suggestions) < num_suggestions and comp not in [s.text for s in suggestions]:
+                            # Adjust confidence based on match quality
+                            confidence = 0.8 if text_lower == pattern else 0.7
+                            suggestions.append(Suggestion(
+                                text=comp,
+                                confidence=confidence,
+                                source="core_creative",
+                                type="art_term"
+                            ))
+        
+        # 3. Check creative phrases
+        if analysis['is_phrase']:
+            text_lower = text.lower()
+            for phrase, continuations in self._creative_phrases.items():
+                if text_lower.startswith(phrase):
+                    for cont in continuations:
+                        if len(suggestions) < num_suggestions and cont not in [s.text for s in suggestions]:
+                            suggestions.append(Suggestion(
+                                text=cont,
+                                confidence=0.75,
+                                source="creative_phrase",
+                                type="phrase"
+                            ))
+        
+        # 4. Check user patterns (personalized learning)
+        if text.lower() in self._user_patterns:
+            common_words = sorted(
+                self._user_patterns[text.lower()].items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:3]
             
-            # Check static database for partial matches
-            for key, items in self.suggestions_db.items():
-                if key.startswith(text_lower) and key != text_lower:
-                    for word, _ in items:
-                        possible_matches.append(word)
-            
-            # Check common words for partial matches
-            for common_word, _ in self._common_continuations.get("", []):
-                if common_word.startswith(text_lower):
-                    possible_matches.append(common_word)
-            
-            # Add unique matches
-            for match in possible_matches:
-                if len(suggestions) < num_suggestions and match not in suggestions:
-                    suggestions.append(match)
+            for word, freq in common_words:
+                confidence = min(0.6 + (freq * 0.1), 0.85)
+                if len(suggestions) < num_suggestions and word not in [s.text for s in suggestions]:
+                    suggestions.append(Suggestion(
+                        text=word,
+                        confidence=confidence,
+                        source="user_pattern",
+                        type="personalized"
+                    ))
         
-        # 3. Check static database for exact matches
-        if text_lower in self.suggestions_db:
-            for word, _ in self.suggestions_db[text_lower]:
-                if len(suggestions) < num_suggestions and word not in suggestions:
-                    suggestions.append(word)
-        
-        # 4. Check user patterns
-        if text_lower in self._user_patterns:
-            common_words = self._user_patterns[text_lower].most_common(3)
-            for word, _ in common_words:
-                if len(suggestions) < num_suggestions and word not in suggestions:
-                    suggestions.append(word)
-            self.stats['user_pattern_hits'] += 1
-        
-        # 5. Check common continuations
-        last_word = text_lower.split()[-1] if text_lower.split() else ""
-        if last_word in self._common_continuations:
-            for word, _ in self._common_continuations[last_word]:
-                if len(suggestions) < num_suggestions and word not in suggestions:
-                    suggestions.append(word)
-        
-        # 6. Final fallback
+        # 5. Creative fallback suggestions
         if len(suggestions) < num_suggestions:
-            fallback = [("the", 0.7), ("to", 0.65), ("a", 0.6), ("and", 0.55), 
-                       ("in", 0.5), ("is", 0.45), ("you", 0.4), ("that", 0.35)]
+            creative_fallbacks = [
+                ("creative", 0.7),
+                ("artist", 0.65),
+                ("inspiration", 0.6),
+                ("studio", 0.55),
+                ("gallery", 0.5),
+                ("exhibition", 0.45),
+                ("painting", 0.4),
+                ("sculpture", 0.35),
+                ("photography", 0.3),
+                ("performance", 0.25)
+            ]
             
-            for word, _ in fallback:
-                if len(suggestions) < num_suggestions and word not in suggestions:
-                    suggestions.append(word)
+            for word, conf in creative_fallbacks:
+                if len(suggestions) < num_suggestions and word not in [s.text for s in suggestions]:
+                    suggestions.append(Suggestion(
+                        text=word,
+                        confidence=conf,
+                        source="creative_fallback",
+                        type="art_term"
+                    ))
             self.stats['fallback_used'] += 1
         
-        # Cache the result
+        # Sort by confidence
+        suggestions.sort(key=lambda x: x.confidence, reverse=True)
+        
+        # Cache results
         self._cache[cache_key] = suggestions
         self._cache_timestamps[cache_key] = time.time()
         
-        logger.debug(f"Google-style prediction: '{text}' -> {suggestions}")
+        # Clean cache if too large
+        if len(self._cache) > self._max_cache_size:
+            oldest = sorted(self._cache_timestamps.items(), key=lambda x: x[1])[:50]
+            for key, _ in oldest:
+                self._cache.pop(key, None)
+                self._cache_timestamps.pop(key, None)
+        
+        # Update stats
+        if self.stats['response_times']:
+            self.stats['average_response_time'] = sum(self.stats['response_times'][-10:]) / min(10, len(self.stats['response_times']))
+        
+        logger.info(f"Creative suggestions for '{text}': {[s.text for s in suggestions]}")
         
         return suggestions[:num_suggestions]
 
-    def feedback_accepted(self, prefix: str, accepted_word: str):
-        """Record user acceptance for learning"""
-        self._learn_from_accepted(prefix, accepted_word)
+    def predict(self, text: str, num_suggestions: int = 3) -> List[str]:
+        """Backward-compatible simple prediction"""
+        suggestions = self.predict_creative(text, num_suggestions)
+        return [s.text for s in suggestions]
+
+    def feedback_accepted(self, prefix: str, accepted_word: str, context: str = ""):
+        """Record user acceptance for personalized learning"""
+        prefix = prefix.lower().strip()
+        accepted_word = accepted_word.lower().strip()
         
-        # Also update recent words for context
-        self._recent_words.append(accepted_word.lower())
-        if len(self._recent_words) > self._max_recent:
-            self._recent_words.pop(0)
+        if not prefix or not accepted_word:
+            return
+        
+        # Update user patterns
+        current_weight = self._user_patterns[prefix].get(accepted_word, 0)
+        self._user_patterns[prefix][accepted_word] = current_weight * 0.9 + 1.0
+        
+        # Update creative context
+        if context:
+            context_key = context[:50]  # Limit context length
+            if context_key not in self._creative_contexts:
+                self._creative_contexts[context_key] = []
+            
+            # Add to context history
+            self._creative_contexts[context_key].append((prefix, accepted_word))
+            if len(self._creative_contexts[context_key]) > self._max_context_length:
+                self._creative_contexts[context_key].pop(0)
+        
+        # Save periodically
+        if self.stats['total_requests'] % self._save_interval == 0:
+            threading.Thread(target=self._save_user_patterns, daemon=True).start()
+        
+        logger.info(f"Feedback recorded: '{prefix}' -> '{accepted_word}'")
+
+    def _periodic_cleanup(self):
+        """Clean up expired cache entries"""
+        while True:
+            time.sleep(300)  # Run every 5 minutes
+            now = time.time()
+            expired = []
+            
+            for key, timestamp in list(self._cache_timestamps.items()):
+                if now - timestamp > self._cache_ttl:
+                    expired.append(key)
+            
+            for key in expired:
+                self._cache.pop(key, None)
+                self._cache_timestamps.pop(key, None)
 
     def get_status(self) -> Dict:
         """Get service status"""
         try:
-            # Check Ollama
             response = requests.get(f"{self.base_url}/api/tags", timeout=2)
             ollama_ok = response.status_code == 200
+            models = response.json().get('models', [])
+            available_models = [m['name'] for m in models]
         except:
             ollama_ok = False
+            available_models = []
         
         return {
             "status": "ready",
+            "platform": "TalentForge Creative Platform",
             "ollama_available": ollama_ok,
             "model": self.model,
+            "available_models": available_models,
             "cache_size": len(self._cache),
-            "learned_patterns": len(self._user_patterns),
-            "stats": self.stats
+            "user_patterns": len(self._user_patterns),
+            "creative_contexts": len(self._creative_contexts),
+            "stats": {
+                'total_requests': self.stats['total_requests'],
+                'cache_hits': self.stats['cache_hits'],
+                'llama2_success': self.stats['llama2_success'],
+                'llama2_failed': self.stats['llama2_failed'],
+                'creative_hits': self.stats['creative_hits'],
+                'fallback_used': self.stats['fallback_used'],
+                'avg_response_time_ms': round(self.stats.get('average_response_time', 0) * 1000, 2)
+            }
         }
 
+    def batch_predict(self, texts: List[str], num_suggestions: int = 3) -> Dict[str, List[Suggestion]]:
+        """Batch prediction for multiple inputs"""
+        results = {}
+        for text in texts:
+            results[text] = self.predict_creative(text, num_suggestions)
+        return results
+
+    def get_context_suggestions(self, context: str, num_suggestions: int = 5) -> List[Suggestion]:
+        """Get suggestions based on creative context"""
+        # Extract keywords from context
+        words = re.findall(r'\b[a-zA-Z]{3,}\b', context.lower())
+        
+        # Look for creative keywords
+        creative_words = [w for w in words if w in [
+            'art', 'artist', 'creative', 'design', 'paint', 'draw',
+            'music', 'write', 'sculpt', 'craft', 'photo', 'film'
+        ]]
+        
+        if creative_words:
+            # Use the most frequent creative word as base
+            from collections import Counter
+            word_counts = Counter(creative_words)
+            most_common = word_counts.most_common(1)[0][0] if word_counts else 'art'
+            
+            return self.predict_creative(most_common, num_suggestions, context)
+        
+        # Default to general creative suggestions
+        return self.predict_creative("creative", num_suggestions, context)
+
 # Global instance
-word_prediction_service = IntelligentWordPredictionService()
+creative_word_prediction_service = CreativeWordPredictionService()
