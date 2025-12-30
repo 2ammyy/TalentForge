@@ -5,40 +5,45 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 
-# Set work directory
+# Variables pour l'IA
+ENV TRANSFORMERS_CACHE=/root/.cache/huggingface
+ENV HF_HOME=/root/.cache/huggingface
+ENV TORCH_HOME=/root/.cache/torch
+
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         gcc \
-        postgresql-client \
-        libpq-dev \
+        python3-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (for better caching)
+# Créer les répertoires de cache
+RUN mkdir -p /root/.cache/huggingface \
+    && mkdir -p /root/.cache/torch
+
+# Copier les requirements
 COPY requirements.txt .
 
-# Install Python dependencies
+# Installer TOUT en une seule commande (évite les conflits de versions)
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir \
+    -r requirements.txt \
+    profanity-check==1.0.3 \
+    scikit-learn==1.3.2 \
+    joblib==1.3.0
 
-# Copy project
+# Copier l'application
 COPY . .
 
-# Create non-root user
+# Configurer l'utilisateur
 RUN useradd -m -u 1000 appuser \
-    && chown -R appuser:appuser /app
+    && chown -R appuser:appuser /app /root/.cache
 
-# Create directories for static and media files
-RUN mkdir -p /app/staticfiles /app/media \
-    && chown -R appuser:appuser /app/staticfiles /app/media
-
-# Switch to non-root user
 USER appuser
 
-# Expose port
 EXPOSE 8000
 
-# Default command (will be overridden by docker-compose)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "talentForge.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "talentForge.wsgi:application"]
