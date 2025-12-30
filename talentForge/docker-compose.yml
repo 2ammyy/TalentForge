@@ -1,0 +1,63 @@
+﻿services:
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: talentforge_db
+  #   restart: unless-stopped
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=djangodb
+  #     - POSTGRES_USER=django_user
+  #     - POSTGRES_PASSWORD=DjangoSecurePass123!
+  #   ports:
+  #     - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U django_user -d djangodb"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: talentforge_ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11435:11434"
+    # Pas de healthcheck pour ollama car lent au démarrage
+
+  web:
+    build: .
+    container_name: talentforge_web
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      # - static_volume:/app/staticfiles
+      # - media_volume:/app/media
+    ports:
+      - "8001:8000"
+    environment:
+      - DEBUG=1
+      # - SECRET_KEY=django-insecure-development-key-change-in-production
+      - DB_HOST=192.168.0.60
+      - DB_PORT=5432
+      - DB_NAME=djangodb
+      - DB_USER=django_user
+      - DB_PASSWORD=DjangoSecurePass123!
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+    depends_on:
+      # db:
+      #   condition: service_healthy
+      ollama:
+        condition: service_started
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3 talentForge.wsgi:application"
+
+volumes:
+  # postgres_data:
+  ollama_data:
+  # static_volume:
+  # media_volume: C:/Users/zahra/talentForge/TalentForge/talentForge/media

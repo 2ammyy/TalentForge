@@ -1056,8 +1056,3 @@ body.theme-musician {
 .form-group:has(#id_content) {
     position: relative;
 }
-
-/* Style for the post creation page specifically */
-#create-post-form textarea {
-    min-height: 150px;
-}

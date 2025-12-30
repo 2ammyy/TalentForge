@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,10 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-dn&4fms=t@)h23#^s8#93)=bmt0l$o6$6(wwl4f#!g-!hc@8du'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+#DEBUG = True
 DEBUG = True
 
-ALLOWED_HOSTS = [
-]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web', 'nginx', '192.168.0.60']
 
 
 # Application definition
@@ -74,6 +78,9 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
+OLLAMA_BASE_URL = f"http://{os.environ.get('OLLAMA_HOST', 'ollama')}:{os.environ.get('OLLAMA_PORT', '11434')}"
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama2')
+
 ROOT_URLCONF = 'talentForge.urls'
 
 TEMPLATES = [
@@ -108,13 +115,20 @@ WSGI_APPLICATION = 'talentForge.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'djangodb',
-        'USER': 'django_user',
-        'PASSWORD': 'DjangoSecurePass123!',
+        # 'NAME': 'djangodb',
+        # 'USER': 'django_user',
+        # 'PASSWORD': 'DjangoSecurePass123!',
         #'HOST': 'localhost',
-        'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
+        #'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
         #'HOST': '10.209.202.115',  #ip address Tekup
-        'PORT': '5432',
+        #'HOST': os.environ.get('DB_HOST', 'db'),
+        # 'PORT': os.environ.get('DB_PORT', '5432'),
+        #'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'djangodb'),
+        'USER': os.environ.get('DB_USER', 'django_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'DjangoSecurePass123!'),
+        'HOST': os.environ.get('DB_HOST', '192.168.0.60'),  # Amira's IP
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
