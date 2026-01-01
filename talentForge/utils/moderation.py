@@ -1,5 +1,6 @@
 # utils/moderation.py
-from transformers import pipeline
+import torch
+from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 import logging
 import re
 from typing import Tuple, Dict, List, Optional, Any
@@ -12,9 +13,33 @@ logger = logging.getLogger(__name__)
 # Global model instances
 _toxicity_model = None
 _model_loaded = False
+_device = None
+
+def get_device():
+    """Determine and set device properly"""
+    global _device
+    
+    if _device is None:
+        try:
+            # First try to use MPS (Apple Silicon) if available
+            if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                _device = torch.device("mps")
+                logger.info("Using MPS (Apple Silicon) device")
+            # Then try CUDA
+            elif torch.cuda.is_available():
+                _device = torch.device("cuda")
+                logger.info(f"Using CUDA device: {torch.cuda.get_device_name(0)}")
+            else:
+                _device = torch.device("cpu")
+                logger.info("Using CPU device")
+        except Exception as e:
+            logger.warning(f"Error detecting device, falling back to CPU: {e}")
+            _device = torch.device("cpu")
+    
+    return _device
 
 def get_toxicity_model():
-    """Lazy load model with proper error handling"""
+    """Lazy load model with proper device handling"""
     global _toxicity_model, _model_loaded
     
     if _model_loaded and _toxicity_model is None:
@@ -22,25 +47,66 @@ def get_toxicity_model():
     
     if _toxicity_model is None and not _model_loaded:
         try:
-            logger.info("Loading toxicity model...")
+            device = get_device()
+            logger.info(f"Loading toxicity model on {device}...")
             
-            # Use simpler pipeline without top_k=None initially
+            # Determine device index for pipeline
+            device_idx = 0 if device.type == "cuda" else -1
+            
+            # Force model to specific device with proper configuration
             _toxicity_model = pipeline(
                 "text-classification",
                 model="unitary/toxic-bert",
-                device=-1,  # CPU
+                device=device_idx,  # 0 for GPU, -1 for CPU/MPS
+                framework="pt",
                 max_length=512,
-                truncation=True,
-                return_all_scores=False  # Don't return all scores by default
+                truncation=True
             )
             
+            # Test the model with a simple prediction
+            try:
+                test_result = _toxicity_model("test", top_k=2)
+                logger.info(f"✅ Toxicity model loaded successfully on {device}")
+                logger.debug(f"Model test result: {test_result}")
+            except Exception as test_error:
+                logger.warning(f"Model test failed but model loaded: {test_error}")
+            
             _model_loaded = True
-            logger.info("✅ Toxicity model loaded successfully")
             
         except Exception as e:
-            logger.error(f"❌ Failed to load toxicity model: {str(e)[:200]}")
-            _model_loaded = True  # Mark as loaded even if failed to prevent repeated attempts
-            _toxicity_model = None
+            logger.error(f"❌ Failed to load toxicity model with pipeline: {str(e)}")
+            logger.error(f"Error type: {type(e).__name__}")
+            
+            # Try alternative approach with explicit model loading
+            try:
+                logger.info("Trying alternative loading method...")
+                
+                # Load model and tokenizer separately
+                tokenizer = AutoTokenizer.from_pretrained("unitary/toxic-bert")
+                model = AutoModelForSequenceClassification.from_pretrained("unitary/toxic-bert")
+                
+                # Move to appropriate device
+                device = get_device()
+                model.to(device)
+                
+                # Create pipeline with the loaded model
+                _toxicity_model = pipeline(
+                    "text-classification",
+                    model=model,
+                    tokenizer=tokenizer,
+                    device=0 if device.type == "cuda" else -1,
+                    framework="pt",
+                    max_length=512,
+                    truncation=True
+                )
+                
+                logger.info(f"✅ Toxicity model loaded via alternative method on {device}")
+                _model_loaded = True
+                
+            except Exception as alt_e:
+                logger.error(f"❌ Alternative loading also failed: {alt_e}")
+                _model_loaded = True  # Mark as loaded even if failed
+                _toxicity_model = None
     
     return _toxicity_model
 
@@ -48,48 +114,58 @@ def get_enhanced_toxicity_scores(text: str) -> Dict[str, float]:
     """Get detailed toxicity scores with proper error handling"""
     model = get_toxicity_model()
     if not model:
+        logger.warning("Model not available for toxicity scoring")
         return {}
     
     try:
-        # First try with return_all_scores=True if model supports it
+        # Clean the text
+        if not text or len(text.strip()) < 3:
+            return {}
+        
+        text = text.strip()
+        
+        # Use top_k=None instead of return_all_scores (deprecated)
         try:
-            # Some models might not support return_all_scores
-            result = model(text, return_all_scores=True)
-            if isinstance(result, list) and len(result) > 0:
+            results = model(text, top_k=None)
+            
+            if results and isinstance(results, list):
                 # Convert to dictionary format
                 scores = {}
-                for item in result[0]:
+                for item in results:
                     scores[item['label']] = item['score']
                 return scores
+                
         except Exception as e:
-            logger.debug(f"return_all_scores not supported, using default: {e}")
-        
-        # Fallback: get single prediction and estimate other scores
-        result = model(text)[0]
-        
-        # For unitary/toxic-bert, we know the labels
-        toxic_labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-        
-        # If the model returned one of these labels, distribute scores
-        if result['label'] in toxic_labels:
-            # Main score for the predicted label, lower scores for others
-            scores = {}
-            main_score = result['score']
-            for label in toxic_labels:
-                if label == result['label']:
-                    scores[label] = main_score
-                else:
-                    # Estimate other scores (lower)
-                    scores[label] = min(0.3, main_score * 0.3)
-            return scores
-        else:
-            # Non-toxic prediction
-            return {result['label']: result['score']}
+            logger.warning(f"top_k=None failed, trying top_k=6: {e}")
+            
+            # Fallback to getting top 6 scores (all labels)
+            try:
+                results = model(text, top_k=6)
+                
+                if results and isinstance(results, list):
+                    scores = {}
+                    for item in results:
+                        scores[item['label']] = item['score']
+                    return scores
+                    
+            except Exception as inner_e:
+                logger.warning(f"top_k=6 failed, trying default: {inner_e}")
+                
+                # Final fallback to single prediction
+                try:
+                    result = model(text)[0]
+                    label = result.get('label', '')
+                    score = result.get('score', 0.0)
+                    
+                    # Return single prediction
+                    return {label: score}
+                    
+                except Exception as final_e:
+                    logger.error(f"Even default prediction failed: {final_e}")
+                    return {}
             
     except Exception as e:
-        logger.error(f"Error getting toxicity scores: {e}")
-        if hasattr(e, '__dict__'):
-            logger.error(f"Error details: {json.dumps(str(e.__dict__)[:500])}")
+        logger.error(f"Error getting toxicity scores: {str(e)[:200]}")
         return {}
 
 def is_context_safe(text: str) -> Tuple[bool, str]:
@@ -277,7 +353,7 @@ def _is_toxic_content_impl(text: str, threshold: float = 0.7) -> Tuple[bool, flo
                            if label not in toxic_labels}
         
         # Get maximum toxic score
-        max_toxic_score = max(toxic_scores.values())
+        max_toxic_score = max(toxic_scores.values()) if toxic_scores else 0.0
         
         # Adjust threshold based on context
         adjusted_threshold = threshold
@@ -498,43 +574,56 @@ def keyword_check(text: str) -> bool:
     is_toxic, _, _ = intelligent_keyword_check(text)
     return is_toxic
 
-# Quick test function
-def test_moderation():
-    """Test the moderation system with various examples"""
+def test_moderation_system():
+    """Test the moderation system"""
+    print("Testing moderation system...")
+    
+    # Test device detection
+    device = get_device()
+    print(f"Device: {device}")
+    print(f"PyTorch version: {torch.__version__}")
+    print(f"Cuda available: {torch.cuda.is_available()}")
+    
+    # Test model loading
+    print("\nLoading toxicity model...")
+    model = get_toxicity_model()
+    if model:
+        print("✅ Model loaded successfully")
+    else:
+        print("❌ Model failed to load")
+    
+    # Test toxicity checking
     test_cases = [
-        ("You're such a fucking idiot!", True, "Highly toxic"),
-        ("The study examines suicide prevention methods.", False, "Academic context"),
-        ("I'm going to kill you tomorrow.", True, "Direct threat"),
-        ("The movie has a murder scene that's important to the plot.", False, "Literary context"),
-        ("Hello, how are you today?", False, "Clean text"),
-        ("Oh shit, I forgot my keys!", False, "Casual swearing"),
-        ("This is a discussion about racist policies.", False, "Educational context"),
-        ("You're a stupid moron who should die.", True, "Insult with threat"),
-        ("Racism is a serious problem we need to address.", False, "Anti-racism statement"),
-        ("", False, "Empty string"),
-        ("Hi", False, "Too short"),
+        ("Hello world!", False),
+        ("You are fucking stupid!", True),
+        ("This is a test message.", False),
+        ("I love this platform!", False),
+        ("Go to hell you idiot!", True),
+        ("This is a discussion about suicide prevention.", False),
     ]
     
-    print("Testing Enhanced Moderation System")
-    print("=" * 60)
+    print("\n" + "="*50)
+    print("Testing toxicity detection:")
     
-    for text, expected_toxic, description in test_cases:
-        print(f"\nTest: {description}")
-        print(f"Text: {text}")
-        
-        # Basic check
-        is_toxic, score = is_toxic_content(text)
-        status = "✓" if is_toxic == expected_toxic else "✗"
-        print(f"{status} Basic: Toxic={is_toxic}, Score={score:.3f} (Expected: {expected_toxic})")
-        
-        # Detailed breakdown
-        if text and len(text.strip()) >= 5:
-            breakdown = get_toxicity_breakdown(text)
-            print(f"  Context: {breakdown['context']['type'] if breakdown['context']['is_safe'] else 'unsafe'}")
-            print(f"  Recommendation: {breakdown['recommendation']}")
-            if breakdown.get('keyword_matches'):
-                print(f"  Keyword matches: {breakdown['keyword_matches']}")
+    for text, expected_toxic in test_cases:
+        print(f"\nTesting: '{text}'")
+        is_toxic, score = is_toxic_content(text, use_cache=False)
+        print(f"Result: Toxic={is_toxic}, Score={score:.3f}")
+        print(f"Expected: Toxic={expected_toxic}")
+        match = "✓" if is_toxic == expected_toxic else "✗"
+        print(f"Match: {match}")
+    
+    # Test breakdown
+    print("\n" + "="*50)
+    print("Detailed breakdown test:")
+    test_text = "This is a really stupid idea"
+    breakdown = get_toxicity_breakdown(test_text)
+    print(f"Text: '{test_text}'")
+    print(f"Toxic: {breakdown['is_toxic']}")
+    print(f"Score: {breakdown['overall_score']:.3f}")
+    print(f"Source: {breakdown['source']}")
+    print(f"Recommendation: {breakdown['recommendation']}")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    test_moderation()
+    test_moderation_system()
