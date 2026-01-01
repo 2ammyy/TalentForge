@@ -1,6 +1,8 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render
-from .models import ContentValidationLog, CreativeCategory
+
+from talentForge.admin_app.views_ai_validation import User
+from .models import ContentValidationLog, CreativeCategory, Post
 from django.db.models import Count, Avg, Q
 from datetime import datetime, timedelta
 

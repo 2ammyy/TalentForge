@@ -1,0 +1,30 @@
+<!-- test-predictor.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Predictor</title>
+</head>
+<body>
+    <h1>Testing Google Predictor JS</h1>
+    
+    <script src="/static/js/google-predictor.js?v=test"></script>
+    <script>
+        console.log('Test page loaded');
+        console.log('fetchPredictions:', typeof fetchPredictions);
+        
+        if (typeof fetchPredictions === 'function') {
+            console.log('SUCCESS! Function exists');
+            fetchPredictions('art');
+        } else {
+            console.error('FAILED: Function does not exist');
+            
+            // Try to load with error handling
+            const script = document.createElement('script');
+            script.src = "/static/js/google-predictor.js?v=test2";
+            script.onload = () => console.log('Script loaded onerror');
+            script.onerror = (e) => console.error('Script failed to load:', e);
+            document.head.appendChild(script);
+        }
+    </script>
+</body>
+</html>

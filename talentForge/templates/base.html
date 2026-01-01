@@ -19,7 +19,7 @@
     <link rel="dns-prefetch" href="https://your-video-cdn.com">
 
     <!-- Word Prediction CSS -->
-    <link href="{% static 'css/word-prediction.css' %}" rel="stylesheet">
+    <!-- <link href="{% static 'css/word-prediction.css' %}" rel="stylesheet"> -->
     
     <link href="{% static 'css/moderation.css' %}" rel="stylesheet">
 
@@ -59,7 +59,33 @@
     <script src="{% static 'js/main.js' %}"></script>
     
     <!-- Word Prediction JS -->
-    <script src="{% static 'js/word-prediction.js' %}"></script>
+    <!-- <script src="{% static 'js/google-predictor.js' %}"></script> -->
+    <script src="{% static 'js/google-predictor.js' %}?v=2.0"></script>
+     <script>
+        console.log('=== AFTER ALL SCRIPTS LOADED ===');
+        console.log('fetchPredictions defined:', typeof fetchPredictions !== 'undefined');
+        console.log('showPredictions defined:', typeof showPredictions !== 'undefined');
+        
+        // Test if we can call it
+        if (typeof fetchPredictions !== 'undefined') {
+            console.log('✓ SUCCESS: Functions are available');
+            // Auto-test after 2 seconds
+            setTimeout(() => {
+                console.log('Auto-testing with "art"...');
+                fetchPredictions('art');
+            }, 2000);
+        } else {
+            console.error('✗ ERROR: Functions are NOT defined!');
+            
+            // Try to find the issue
+            console.log('Checking window object...');
+            for (let key in window) {
+                if (key.toLowerCase().includes('predict')) {
+                    console.log('Found:', key);
+                }
+            }
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 
     <script src="{% static 'js/moderation.js' %}"></script>

@@ -1,0 +1,58 @@
+﻿services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: talentforge_ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11435:11434"
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+
+  web:
+    build: .
+    container_name: talentforge_web
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - huggingface_cache:/root/.cache/huggingface
+      - torch_cache:/root/.cache/torch
+    ports:
+      - "8001:8000"
+    environment:
+      - DEBUG=1
+      - DB_HOST=192.168.0.60
+      - DB_PORT=5432
+      - DB_NAME=djangodb
+      - DB_USER=django_user
+      - DB_PASSWORD=DjangoSecurePass123!
+      - OLLAMA_BASE_URL=http://ollama:11434
+      # Variables pour l'IA
+      - TRANSFORMERS_CACHE=/root/.cache/huggingface
+      - HF_HOME=/root/.cache/huggingface
+      - TORCH_HOME=/root/.cache/torch
+      - HF_DATASETS_CACHE=/root/.cache/huggingface/datasets
+    depends_on:
+      ollama:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: '2.0'
+    
+    # COMMANDE COMPLÈTE ET CORRECTE
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 talentForge.wsgi:application"
+
+volumes:
+  ollama_data:
+  huggingface_cache:
+  torch_cache:

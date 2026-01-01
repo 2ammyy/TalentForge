@@ -1017,3 +1017,42 @@ body.theme-musician {
     min-width: 16px;
     height: 16px;
 }
+
+/* PREDICTIONS CONTAINER STYLES */
+.predictions-container {
+    display: none;
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 5px;
+    z-index: 1000;
+    max-width: 300px;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 5px;
+}
+
+.prediction-button {
+    padding: 6px 12px;
+    margin: 2px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.prediction-button:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+/* Make sure textarea container is relative for positioning */
+.form-group:has(#id_content) {
+    position: relative;
+}

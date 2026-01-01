@@ -39,6 +39,7 @@ urlpatterns = [
          
     path('creator/', include('creator.urls', namespace='creator')),
     path('word_prediction/', include('word_prediction.urls')),
+    # path('api/get-unread-count/', include('word_prediction.urls')),  # New URL for unread counts
 ]
 
 # Servir les fichiers médias en mode développement
