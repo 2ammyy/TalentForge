@@ -1,3 +1,4 @@
+<!-- talentForge\posts\templates\posts\post_create.html -->
 {% extends 'base.html' %}
 {% load static %} 
 
@@ -13,6 +14,9 @@
         --creative-gradient: linear-gradient(135deg, #8A2BE2, #4169E1);
         --light-bg: #F8F7FF;
         --card-shadow: 0 10px 30px rgba(138, 43, 226, 0.1);
+        --error-red: #dc3545;
+        --warning-orange: #fd7e14;
+        --success-green: #28a745;
     }
 
     .post-create-container {
@@ -100,10 +104,12 @@
     /* Form Styles */
     .post-form {
         background: white;
+        position: relative;
     }
 
     .form-group {
         margin-bottom: 1.5rem;
+        position: relative;
     }
 
     .form-group label {
@@ -116,7 +122,7 @@
 
     .form-group label.required:after {
         content: " *";
-        color: #FF4757;
+        color: var(--error-red);
     }
 
     .form-group input,
@@ -146,6 +152,116 @@
         line-height: 1.6;
     }
 
+    /* Validation Error States */
+    .form-group.error input,
+    .form-group.error textarea,
+    .form-group.error select {
+        border-color: var(--error-red);
+        background-color: rgba(220, 53, 69, 0.02);
+    }
+
+    .form-group.warning input,
+    .form-group.warning textarea,
+    .form-group.warning select {
+        border-color: var(--warning-orange);
+        background-color: rgba(253, 126, 20, 0.02);
+    }
+
+    .form-group.success input,
+    .form-group.success textarea,
+    .form-group.success select {
+        border-color: var(--success-green);
+        background-color: rgba(40, 167, 69, 0.02);
+    }
+
+    .validation-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.2rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .form-group.error .validation-icon {
+        color: var(--error-red);
+        opacity: 1;
+    }
+
+    .form-group.warning .validation-icon {
+        color: var(--warning-orange);
+        opacity: 1;
+    }
+
+    .form-group.success .validation-icon {
+        color: var(--success-green);
+        opacity: 1;
+    }
+
+    .validation-message {
+        display: none;
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        animation: slideDown 0.3s ease;
+    }
+
+    .validation-message.error {
+        display: block;
+        background-color: rgba(220, 53, 69, 0.1);
+        border-left: 4px solid var(--error-red);
+        color: #721c24;
+    }
+
+    .validation-message.warning {
+        display: block;
+        background-color: rgba(253, 126, 20, 0.1);
+        border-left: 4px solid var(--warning-orange);
+        color: #856404;
+    }
+
+    .validation-message.success {
+        display: block;
+        background-color: rgba(40, 167, 69, 0.1);
+        border-left: 4px solid var(--success-green);
+        color: #155724;
+    }
+
+    .validation-message ul {
+        margin: 0.5rem 0 0 0;
+        padding-left: 1.5rem;
+    }
+
+    .validation-message li {
+        margin-bottom: 0.3rem;
+        font-size: 0.85rem;
+    }
+
+    /* Score Indicator */
+    .score-indicator {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-right: 0.5rem;
+        color: white;
+    }
+
+    .score-low {
+        background: var(--error-red);
+    }
+
+    .score-medium {
+        background: var(--warning-orange);
+    }
+
+    .score-high {
+        background: var(--success-green);
+    }
+
     /* Job-specific fields - hidden by default */
     .job-field-group {
         display: none;
@@ -154,17 +270,6 @@
     .job-field-group.active {
         display: block;
         animation: fadeIn 0.3s ease;
-    }
-
-    /* Error Styling */
-    .error {
-        color: #FF4757;
-        font-size: 0.9rem;
-        margin-top: 0.3rem;
-        padding: 0.5rem;
-        background: rgba(255, 71, 87, 0.1);
-        border-radius: 6px;
-        border-left: 3px solid #FF4757;
     }
 
     /* Form Row */
@@ -199,75 +304,14 @@
         box-shadow: 0 10px 25px rgba(138, 43, 226, 0.2);
     }
 
-    /* Validation feedback styles */
-    .validation-result {
-        margin: 1.5rem 0;
-        padding: 1.5rem;
-        border-radius: 16px;
-        display: none;
-        animation: fadeIn 0.3s ease;
-        border: 2px solid transparent;
+    .submit-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
-    
-    .validation-result.valid {
-        background: rgba(46, 204, 113, 0.1);
-        border-color: #2ecc71;
-        color: #27ae60;
-    }
-    
-    .validation-result.invalid {
-        background: rgba(231, 76, 60, 0.1);
-        border-color: #e74c3c;
-        color: #c0392b;
-    }
-    
-    .validation-result.warning {
-        background: rgba(241, 196, 15, 0.1);
-        border-color: #f1c40f;
-        color: #f39c12;
-    }
-    
-    .validation-score {
-        display: inline-block;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-weight: bold;
-        margin-right: 1rem;
-        font-size: 0.9rem;
-        color: white;
-    }
-    
-    .score-high { background: #2ecc71; }
-    .score-medium { background: #f1c40f; }
-    .score-low { background: #e74c3c; }
-    
-    .validation-categories {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin: 1rem 0;
-    }
-    
-    .category-tag {
-        background: var(--creative-purple);
-        color: white;
-        padding: 0.3rem 0.8rem;
-        border-radius: 15px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    
-    .suggestions-list {
-        margin: 1rem 0 0 0;
-        padding-left: 1.5rem;
-    }
-    
-    .suggestions-list li {
-        margin-bottom: 0.5rem;
-        color: #555;
-        line-height: 1.4;
-    }
-    
+
+    /* AI Checking Indicator */
     .ai-checking {
         display: none;
         text-align: center;
@@ -296,6 +340,36 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    @keyframes slideDown {
+        from { 
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+        }
+        to { 
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 200px;
+        }
+    }
+
+    /* Categories Tags */
+    .categories-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+    
+    .category-tag {
+        background: var(--creative-purple);
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
 </style>
 {% endblock %}
 
@@ -304,20 +378,6 @@
     <div class="create-header">
         <h2>Create Your Post</h2>
         <p>Share your creativity with the TalentForge community</p>
-    </div>
-    
-    <!-- AI Validation Result Container -->
-    <div id="validationResult" class="validation-result">
-        <div class="d-flex align-items-center mb-2">
-            <span id="validationScore" class="validation-score"></span>
-            <strong id="validationTitle" style="font-size: 1.1rem;"></strong>
-        </div>
-        <p id="validationReason" class="mb-2"></p>
-        <div id="validationCategories" class="validation-categories"></div>
-        <div id="validationSuggestions" style="display: none;">
-            <strong>💡 Suggestions to improve your post:</strong>
-            <ul class="suggestions-list" id="suggestionsList"></ul>
-        </div>
     </div>
     
     <!-- AI Checking Indicator -->
@@ -348,44 +408,39 @@
         <!-- Hidden type field -->
         <input type="hidden" name="type" id="id_type" value="text">
         
-        <!-- Display form validation errors (including AI validation) -->
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger" role="alert" style="border-radius: 12px; border-left: 4px solid #e74c3c;">
-            <h5><i class="fas fa-exclamation-triangle"></i> Content Validation Failed</h5>
-            {% for error in form.non_field_errors %}
-                <p class="mb-1" style="white-space: pre-line;">{{ error }}</p>
-            {% endfor %}
-            
-            {% if form.cleaned_data and form.cleaned_data.validation_result %}
-            <div class="mt-3 p-3 bg-light rounded">
-                <small>
-                    <strong>AI Analysis:</strong><br>
-                    Score: {{ form.cleaned_data.validation_result.score|floatformat:2 }}<br>
-                    Reason: {{ form.cleaned_data.validation_result.reason }}
-                </small>
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
-        
         <!-- Title Field -->
-        <div class="form-group">
+        <div class="form-group" id="titleGroup">
             <label for="id_title" id="titleLabel">Title (Optional)</label>
             <input type="text" name="title" id="id_title" class="form-control" 
                    placeholder="Enter post title..." value="{{ form.title.value|default:'' }}">
+            <i class="fas fa-exclamation-circle validation-icon"></i>
+            <div class="validation-message" id="titleValidation"></div>
             {% if form.title.errors %}
                 <div class="error">{{ form.title.errors }}</div>
             {% endif %}
         </div>
         
         <!-- Content Field -->
-        <div class="form-group">
+        <div class="form-group" id="contentGroup">
             <label for="id_content" id="contentLabel">Content</label>
             <textarea name="content" id="id_content" class="form-control" 
                       placeholder="What's on your mind?" rows="4">{{ form.content.value|default:'' }}</textarea>
+            <i class="fas fa-exclamation-circle validation-icon"></i>
+            <div class="validation-message" id="contentValidation"></div>
             {% if form.content.errors %}
                 <div class="error">{{ form.content.errors }}</div>
             {% endif %}
+        </div>
+        
+        <!-- Validation Summary (will be filled by JavaScript) -->
+        <div id="validationSummary" class="validation-message" style="display: none;">
+            <strong id="validationSummaryTitle"></strong>
+            <p id="validationSummaryReason" class="mb-2"></p>
+            <div id="validationCategories" class="categories-container"></div>
+            <div id="validationSuggestions" style="display: none;">
+                <strong>💡 Suggestions to improve your post:</strong>
+                <ul id="suggestionsList"></ul>
+            </div>
         </div>
         
         <!-- Image Upload -->
@@ -473,7 +528,7 @@
         
         <!-- Add a test validation button -->
         <button type="button" id="validateBtn" class="btn btn-outline-primary mt-3" style="width: 100%; padding: 0.8rem; border-radius: 12px;">
-            <i class="fas fa-robot"></i> Check Creative Relevance (AI Preview)
+            <i class="fas fa-robot"></i> Check Creative Relevance
         </button>
     </form>
 </div>
@@ -488,19 +543,23 @@
         const titleLabel = document.getElementById('titleLabel');
         const contentLabel = document.getElementById('contentLabel');
         const contentField = document.getElementById('id_content');
+        const titleField = document.getElementById('id_title');
         const jobFields = document.querySelectorAll('.job-field-group');
         const imageField = document.getElementById('imageField');
         const videoField = document.getElementById('videoField');
-        const validationResult = document.getElementById('validationResult');
-        const validationScore = document.getElementById('validationScore');
-        const validationTitle = document.getElementById('validationTitle');
-        const validationReason = document.getElementById('validationReason');
-        const validationCategories = document.getElementById('validationCategories');
-        const suggestionsList = document.getElementById('suggestionsList');
-        const validationSuggestions = document.getElementById('validationSuggestions');
         const aiChecking = document.getElementById('aiChecking');
         const validateBtn = document.getElementById('validateBtn');
         const submitBtn = document.getElementById('submitBtn');
+        const titleGroup = document.getElementById('titleGroup');
+        const contentGroup = document.getElementById('contentGroup');
+        const titleValidation = document.getElementById('titleValidation');
+        const contentValidation = document.getElementById('contentValidation');
+        const validationSummary = document.getElementById('validationSummary');
+        const validationSummaryTitle = document.getElementById('validationSummaryTitle');
+        const validationSummaryReason = document.getElementById('validationSummaryReason');
+        const validationCategories = document.getElementById('validationCategories');
+        const suggestionsList = document.getElementById('suggestionsList');
+        const validationSuggestions = document.getElementById('validationSuggestions');
         
         // Function to show creative post fields
         function showCreativePost() {
@@ -529,8 +588,8 @@
             console.log("Showing job post");
             
             // Update labels and placeholders
-            titleLabel.innerHTML = '<i class="fas fa-heading"></i> Job Title <span style="color:#FF4757;">*</span>';
-            contentLabel.innerHTML = '<i class="fas fa-file-alt"></i> Job Description <span style="color:#FF4757;">*</span>';
+            titleLabel.innerHTML = '<i class="fas fa-heading"></i> Job Title <span style="color: #dc3545;">*</span>';
+            contentLabel.innerHTML = '<i class="fas fa-file-alt"></i> Job Description <span style="color: #dc3545;">*</span>';
             if (contentField) {
                 contentField.placeholder = "Describe the job responsibilities, requirements, and benefits...";
             }
@@ -572,6 +631,9 @@
                     showJobPost();
                 }
                 
+                // Clear any validation states
+                clearValidationStates();
+                
                 // Trigger validation after type change
                 setTimeout(checkContent, 500);
             });
@@ -579,6 +641,41 @@
         
         // Initialize form
         showCreativePost();
+        
+        // Function to clear validation states
+        function clearValidationStates() {
+            // Remove validation classes from form groups
+            titleGroup.classList.remove('error', 'warning', 'success');
+            contentGroup.classList.remove('error', 'warning', 'success');
+            
+            // Hide validation messages
+            titleValidation.style.display = 'none';
+            contentValidation.style.display = 'none';
+            validationSummary.style.display = 'none';
+        }
+        
+        // Function to update field validation state
+        function updateFieldValidation(fieldGroup, isValid, score, message) {
+            // Remove all validation classes first
+            fieldGroup.classList.remove('error', 'warning', 'success');
+            
+            if (score >= 0.7) {
+                fieldGroup.classList.add('success');
+            } else if (score >= 0.4) {
+                fieldGroup.classList.add('warning');
+            } else if (score > 0) {
+                fieldGroup.classList.add('error');
+            }
+            
+            // Update message if provided
+            if (message) {
+                const messageEl = fieldGroup.querySelector('.validation-message');
+                if (messageEl) {
+                    messageEl.innerHTML = message;
+                    messageEl.style.display = 'block';
+                }
+            }
+        }
         
         // Function to check content in real-time
         async function checkContent() {
@@ -589,13 +686,16 @@
             
             // Only check if there's content
             if (!title && !content) {
-                validationResult.style.display = 'none';
+                clearValidationStates();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Create Post';
+                submitBtn.style.opacity = '1';
                 return;
             }
             
             // Show checking indicator
             aiChecking.classList.add('active');
-            validationResult.style.display = 'none';
+            clearValidationStates();
             
             // Prepare data
             const data = {
@@ -641,13 +741,7 @@
             } catch (error) {
                 console.error('Validation error:', error);
                 aiChecking.classList.remove('active');
-                validationResult.innerHTML = `
-                    <div class="text-center text-muted">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <p>Unable to validate content at the moment.</p>
-                    </div>
-                `;
-                validationResult.style.display = 'block';
+                clearValidationStates();
             }
         }
         
@@ -655,29 +749,40 @@
         function displayValidationResult(data) {
             if (!data) return;
             
-            // Set score and style
-            let scoreClass = 'score-low';
-            let resultClass = 'invalid';
-            let titleText = 'Not Creative Enough';
-            let emoji = '❌';
+            // Determine validation level based on score
+            let validationLevel = 'success';
+            let summaryClass = 'success';
+            let summaryTitle = '✅ Great Creative Content!';
             
             if (data.score >= 0.7) {
-                scoreClass = 'score-high';
-                resultClass = 'valid';
-                titleText = 'Great Creative Content!';
-                emoji = '✅';
+                validationLevel = 'success';
+                summaryClass = 'success';
+                summaryTitle = '✅ Great Creative Content!';
             } else if (data.score >= 0.4) {
-                scoreClass = 'score-medium';
-                resultClass = 'warning';
-                titleText = 'Could Be More Creative';
-                emoji = '⚠️';
+                validationLevel = 'warning';
+                summaryClass = 'warning';
+                summaryTitle = '⚠️ Could Be More Creative';
+            } else {
+                validationLevel = 'error';
+                summaryClass = 'error';
+                summaryTitle = '❌ Not Creative Enough';
             }
             
-            // Update validation elements
-            validationScore.textContent = `Score: ${(data.score * 100).toFixed(0)}%`;
-            validationScore.className = `validation-score ${scoreClass}`;
-            validationTitle.textContent = `${emoji} ${titleText}`;
-            validationReason.textContent = data.reason;
+            // Update field validation states
+            if (titleField.value.trim()) {
+                updateFieldValidation(titleGroup, data.score >= 0.4, data.score, 
+                    `Title creativity score: ${Math.round(data.score * 100)}%`);
+            }
+            
+            if (contentField.value.trim()) {
+                updateFieldValidation(contentGroup, data.score >= 0.4, data.score,
+                    `Content creativity score: ${Math.round(data.score * 100)}%`);
+            }
+            
+            // Update validation summary
+            validationSummary.className = `validation-message ${summaryClass}`;
+            validationSummaryTitle.innerHTML = `<span class="score-indicator score-${data.score >= 0.7 ? 'high' : data.score >= 0.4 ? 'medium' : 'low'}">Score: ${Math.round(data.score * 100)}%</span> ${summaryTitle}`;
+            validationSummaryReason.textContent = data.reason;
             
             // Display categories
             validationCategories.innerHTML = '';
@@ -692,7 +797,7 @@
             
             // Display suggestions
             suggestionsList.innerHTML = '';
-            if (data.suggestions && data.suggestions.length > 0) {
+            if (data.suggestions && data.suggestions.length > 0 && data.score < 0.7) {
                 data.suggestions.forEach(suggestion => {
                     const li = document.createElement('li');
                     li.textContent = suggestion;
@@ -703,9 +808,13 @@
                 validationSuggestions.style.display = 'none';
             }
             
-            // Show validation result
-            validationResult.className = `validation-result ${resultClass}`;
-            validationResult.style.display = 'block';
+            // Show validation summary
+            validationSummary.style.display = 'block';
+            
+            // Scroll to validation summary if score is low
+            if (data.score < 0.4) {
+                validationSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             
             // Update submit button based on validation
             if (data.score >= 0.4) {
@@ -718,31 +827,30 @@
                 submitBtn.style.opacity = '0.7';
                 submitBtn.style.cursor = 'not-allowed';
             }
-            
-            // Scroll to validation result if score is low
-            if (data.score < 0.4) {
-                validationResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
         }
         
         // Event listener for validation button
-        validateBtn.addEventListener('click', checkContent);
+        validateBtn.addEventListener('click', function() {
+            checkContent();
+            // Scroll to validation summary after checking
+            setTimeout(() => {
+                validationSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+        });
         
         // Auto-check when user stops typing (debounced)
         let typingTimer;
-        const contentFieldElement = document.getElementById('id_content');
-        const titleFieldElement = document.getElementById('id_title');
         
         function startTypingTimer() {
             clearTimeout(typingTimer);
-            typingTimer = setTimeout(checkContent, 1000); // 1 second after typing stops
+            typingTimer = setTimeout(checkContent, 1000);
         }
         
-        if (contentFieldElement) {
-            contentFieldElement.addEventListener('input', startTypingTimer);
+        if (contentField) {
+            contentField.addEventListener('input', startTypingTimer);
         }
-        if (titleFieldElement) {
-            titleFieldElement.addEventListener('input', startTypingTimer);
+        if (titleField) {
+            titleField.addEventListener('input', startTypingTimer);
         }
         
         // Also check when post type changes
@@ -754,7 +862,7 @@
         
         // Initialize validation on page load if there's content
         setTimeout(() => {
-            if (contentFieldElement.value || titleFieldElement.value) {
+            if (contentField.value || titleField.value) {
                 checkContent();
             }
         }, 1000);
@@ -780,8 +888,8 @@
                     const element = document.getElementById(field.id);
                     if (element && !element.value.trim()) {
                         missingFields.push(field.name);
-                        element.style.borderColor = '#FF4757';
-                        element.style.boxShadow = '0 0 0 3px rgba(255, 71, 87, 0.1)';
+                        element.style.borderColor = '#dc3545';
+                        element.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.1)';
                     }
                 });
                 
@@ -799,14 +907,19 @@
             }
             
             // Check validation score before submitting
-            const scoreElement = document.getElementById('validationScore');
+            const scoreElement = document.querySelector('.score-indicator');
             if (scoreElement && scoreElement.textContent.includes('Score:')) {
                 const scoreText = scoreElement.textContent.replace('Score:', '').replace('%', '').trim();
                 const score = parseFloat(scoreText) / 100;
                 
                 if (score < 0.4) {
                     e.preventDefault();
-                    alert('⚠️ Your content needs to be more creative to post on TalentForge.\n\nPlease modify your post to include more creative elements.');
+                    validationSummary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Highlight the fields in red
+                    titleGroup.classList.add('error');
+                    contentGroup.classList.add('error');
+                    
                     return false;
                 }
             }
@@ -818,6 +931,10 @@
             input.addEventListener('input', function() {
                 this.style.borderColor = '';
                 this.style.boxShadow = '';
+                const formGroup = this.closest('.form-group');
+                if (formGroup) {
+                    formGroup.classList.remove('error');
+                }
             });
         });
     });
