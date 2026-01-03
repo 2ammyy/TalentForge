@@ -1,3 +1,4 @@
+<!-- talentForge\posts\templates\posts\post_list.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -92,6 +93,7 @@
         transition: all 0.3s ease;
         cursor: pointer;
         border: 1px solid #E5E7EB;
+        position: relative;
     }
 
     .pin-card:hover {
@@ -99,16 +101,61 @@
         box-shadow: 0 20px 40px rgba(138, 43, 226, 0.2);
     }
 
+    /* Pin Actions (Save Button) */
+    .pin-actions {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .pin-card:hover .pin-actions {
+        opacity: 1;
+    }
+
+    .save-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #8A2BE2;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .save-btn:hover {
+        background: white;
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        color: #FF6B6B;
+    }
+
+    .save-btn.saved {
+        color: #FF6B6B;
+        background: rgba(255, 255, 255, 0.95);
+    }
+
     /* Media */
     .pin-media {
         position: relative;
         width: 100%;
         overflow: hidden;
+        background: #f5f5f5;
+        min-height: 200px;
     }
 
     .pin-media img, .pin-media video {
         width: 100%;
-        height: auto;
+        height: 250px;
+        object-fit: cover;
         display: block;
         transition: transform 0.5s ease;
     }
@@ -160,6 +207,7 @@
         font-weight: 700;
         margin-bottom: 0.8rem;
         color: #333;
+        line-height: 1.4;
     }
 
     .pin-description {
@@ -190,6 +238,13 @@
         border-radius: 50%;
         overflow: hidden;
         border: 2px solid #E5E7EB;
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.9rem;
     }
 
     .author-avatar img {
@@ -209,6 +264,104 @@
         gap: 0.3rem;
         font-size: 0.85rem;
         color: #888;
+    }
+
+    /* Video hover controls */
+    .video-hover-controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .pin-card:hover .video-hover-controls {
+        opacity: 1;
+    }
+
+    .video-play-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #8A2BE2;
+        transition: all 0.3s ease;
+    }
+
+    .video-play-btn:hover {
+        background: white;
+        transform: scale(1.1);
+    }
+
+    /* Job details */
+    .job-details-container {
+        background: #f8f9fa;
+        padding: 0.8rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+    }
+
+    .job-detail {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.3rem;
+        font-size: 0.85rem;
+        color: #555;
+    }
+
+    .job-detail i {
+        width: 16px;
+        color: #FF6B6B;
+    }
+
+    /* Text content placeholder */
+    .text-content-placeholder {
+        padding: 2rem;
+        text-align: center;
+        color: white;
+        background: linear-gradient(135deg, #8A2BE2, #4169E1);
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Empty state */
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #8A2BE2;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: #666;
+        margin-bottom: 1.5rem;
     }
 </style>
 {% endblock %}
@@ -238,198 +391,295 @@
             <i class="fas fa-briefcase"></i> Jobs
         </button>
     </div>
-<!-- Pinterest Grid -->
-<div class="pinterest-grid" id="pinterestGrid">
-    {% for post in posts %}
-    {% comment %} FIRST check if it's a job post {% endcomment %}
-    {% if post.type == 'job' or post.job_details %}
-        {% comment %} Job Post - This should always show as job {% endcomment %}
-        <div class="pin-card" data-post-type="job" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
-            <div class="type-badge job"><i class="fas fa-briefcase"></i> Job</div>
+
+    <!-- Pinterest Grid -->
+    <div class="pinterest-grid" id="pinterestGrid">
+        {% for post in posts %}
+            {% if post.type == 'job' or post.job_details %}
+                <!-- Job Post -->
+                <div class="pin-card" data-post-type="job" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+                    <!-- Save Button -->
+                    <div class="pin-actions">
+                        {% if user.is_authenticated %}
+                            {% if post.id in user_saved_post_ids %}
+                                <form method="post" action="{% url 'posts:unsave_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, false)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn saved" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="fas fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'posts:save_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, true)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="far fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pin-media">
+                        {% if post.image %}
+                            <img src="{{ post.image.url }}" alt="{{ post.title|default:'Job' }}" loading="lazy">
+                        {% else %}
+                            <div class="text-content-placeholder">
+                                <i class="fas fa-briefcase fa-3x mb-3"></i>
+                                <h3 style="color: white; margin: 0;">Job Opportunity</h3>
+                                {% if post.job_details and post.job_details.company %}
+                                    <p style="color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0;">{{ post.job_details.company }}</p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="type-badge job"><i class="fas fa-briefcase"></i> Job</div>
+                    </div>
+                    
+                    <div class="pin-content">
+                        {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                        
+                        <!-- Job Specific Details -->
+                        {% if post.job_details %}
+                        <div class="job-details-container">
+                            {% if post.job_details.company %}
+                            <div class="job-detail">
+                                <i class="fas fa-building"></i>
+                                <strong>{{ post.job_details.company }}</strong>
+                            </div>
+                            {% endif %}
+                            
+                            {% if post.job_details.location %}
+                            <div class="job-detail">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ post.job_details.location }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if post.job_details.employment_type %}
+                            <div class="job-detail">
+                                <i class="fas fa-clock"></i>
+                                <span>{{ post.job_details.get_employment_type_display }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if post.job_details.salary_range %}
+                            <div class="job-detail">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>{{ post.job_details.get_salary_range_display }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                        
+                        <div class="pin-footer">
+                            <div class="pin-author">
+                                <div class="author-avatar">
+                                    {% if post.author.userprofile.profile_picture %}
+                                        <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                        {{ post.author.username|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <span style="font-size: 0.9rem; font-weight: 500;">{{ post.author.username }}</span>
+                            </div>
+                            <div class="pin-stats">
+                                <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                                <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             
-            <!-- Media Section -->
-            {% if post.image %}
-            <div class="pin-media">
-                <img src="{{ post.image.url }}" alt="{{ post.title|default:'Job' }}" loading="lazy">
-            </div>
+            {% elif post.type == 'video' and post.video %}
+                <!-- Video Post -->
+                <div class="pin-card" data-post-type="video" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+                    <!-- Save Button -->
+                    <div class="pin-actions">
+                        {% if user.is_authenticated %}
+                            {% if post.id in user_saved_post_ids %}
+                                <form method="post" action="{% url 'posts:unsave_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, false)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn saved" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="fas fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'posts:save_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, true)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="far fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pin-media">
+                        <video class="post-video" preload="metadata" muted loop playsinline>
+                            <source src="{{ post.video.url }}" type="video/mp4">
+                        </video>
+                        <div class="video-hover-controls">
+                            <button class="video-play-btn" onclick="event.stopPropagation(); toggleVideoPlayPause(this)">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                        <div class="type-badge video"><i class="fas fa-video"></i> Video</div>
+                    </div>
+                    <div class="pin-content">
+                        {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                        {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                        <div class="pin-footer">
+                            <div class="pin-author">
+                                <div class="author-avatar">
+                                    {% if post.author.userprofile.profile_picture %}
+                                        <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                        {{ post.author.username|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <span style="font-size: 0.9rem; font-weight: 500;">{{ post.author.username }}</span>
+                            </div>
+                            <div class="pin-stats">
+                                <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                                <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+            {% elif post.type == 'image' and post.image %}
+                <!-- Image Post (Visual Art) -->
+                <div class="pin-card" data-post-type="visual-art" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+                    <!-- Save Button -->
+                    <div class="pin-actions">
+                        {% if user.is_authenticated %}
+                            {% if post.id in user_saved_post_ids %}
+                                <form method="post" action="{% url 'posts:unsave_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, false)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn saved" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="fas fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'posts:save_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, true)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="far fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pin-media">
+                        <img src="{{ post.image.url }}" alt="{{ post.title|default:'Visual Art' }}" loading="lazy">
+                        <div class="type-badge visual-art"><i class="fas fa-palette"></i> Visual Art</div>
+                    </div>
+                    <div class="pin-content">
+                        {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
+                        {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
+                        <div class="pin-footer">
+                            <div class="pin-author">
+                                <div class="author-avatar">
+                                    {% if post.author.userprofile.profile_picture %}
+                                        <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                        {{ post.author.username|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <span style="font-size: 0.9rem; font-weight: 500;">{{ post.author.username }}</span>
+                            </div>
+                            <div class="pin-stats">
+                                <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                                <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
             {% else %}
-            <div class="pin-media" style="background: linear-gradient(135deg, #FF6B6B, #FFA726); min-height: 200px; display: flex; align-items: center; justify-content: center; color: white; padding: 2rem;">
-                <div style="text-align: center;">
-                    {% if post.job_details and post.job_details.company %}
-                    <h3 style="margin-bottom: 1rem;">{{ post.job_details.company }}</h3>
-                    {% endif %}
-                    <h4 style="margin-bottom: 0.5rem;">{{ post.title|default:"Job Opportunity" }}</h4>
-                    {% if post.job_details and post.job_details.location %}
-                    <p><i class="fas fa-map-marker-alt"></i> {{ post.job_details.location }}</p>
-                    {% endif %}
+                <!-- Text Post (Writing) -->
+                <div class="pin-card" data-post-type="writing" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
+                    <!-- Save Button -->
+                    <div class="pin-actions">
+                        {% if user.is_authenticated %}
+                            {% if post.id in user_saved_post_ids %}
+                                <form method="post" action="{% url 'posts:unsave_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, false)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn saved" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="fas fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'posts:save_post' post.id %}" 
+                                      onsubmit="handleSaveUnsave(event, {{ post.id }}, true)">
+                                    {% csrf_token %}
+                                    <button type="submit" class="save-btn" 
+                                            onclick="event.stopPropagation();">
+                                        <i class="far fa-bookmark"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pin-media">
+                        <div class="text-content-placeholder">
+                            <i class="fas fa-pen-nib fa-3x mb-3"></i>
+                            {% if post.title %}<h3 style="color: white; margin: 0 0 1rem 0;">{{ post.title }}</h3>{% endif %}
+                            {% if post.content %}<p style="color: rgba(255,255,255,0.9);">{{ post.content|truncatechars:150 }}</p>{% endif %}
+                        </div>
+                        <div class="type-badge writing"><i class="fas fa-pen-nib"></i> Writing</div>
+                    </div>
+                    <div class="pin-content">
+                        <div class="pin-footer">
+                            <div class="pin-author">
+                                <div class="author-avatar">
+                                    {% if post.author.userprofile.profile_picture %}
+                                        <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                        {{ post.author.username|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <span style="font-size: 0.9rem; font-weight: 500;">{{ post.author.username }}</span>
+                            </div>
+                            <div class="pin-stats">
+                                <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
+                                <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
             {% endif %}
-            
-            <!-- Content Section -->
-            <div class="pin-content">
-                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
-                
-                <!-- Job Specific Details -->
-                {% if post.job_details %}
-                <div style="margin-bottom: 1rem;">
-                    {% if post.job_details.company %}
-                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
-                        <i class="fas fa-building"></i> {{ post.job_details.company }}
-                    </p>
-                    {% endif %}
-                    
-                    {% if post.job_details.location %}
-                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
-                        <i class="fas fa-map-marker-alt"></i> {{ post.job_details.location }}
-                    </p>
-                    {% endif %}
-                    
-                    {% if post.job_details.employment_type %}
-                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 0.3rem;">
-                        <i class="fas fa-clock"></i> {{ post.job_details.get_employment_type_display }}
-                    </p>
-                    {% endif %}
-                    
-                    {% if post.job_details.salary_range %}
-                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 1rem;">
-                        <i class="fas fa-money-bill-wave"></i> {{ post.job_details.get_salary_range_display }}
-                    </p>
-                    {% endif %}
-                </div>
-                {% endif %}
-                
-                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
-                
-                <div class="pin-footer">
-                    <div class="pin-author">
-                        <div class="author-avatar">
-                            {% if post.author.userprofile.profile_picture %}
-                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
-                            {% else %}
-                                <div style="background: #FF6B6B; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
-                                    {{ post.author.username|first|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <span>{{ post.author.username }}</span>
-                    </div>
-                    <div class="pin-stats">
-                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
-                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
-                    </div>
-                </div>
-            </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-newspaper"></i>
+            <h3>No posts yet</h3>
+            <p>Be the first to share your creativity!</p>
+            <a href="{% url 'posts:post_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Create Your First Post
+            </a>
         </div>
-    
-    {% elif post.video %}
-        {% comment %} Video Post {% endcomment %}
-        <div class="pin-card" data-post-type="video" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
-            <div class="type-badge video"><i class="fas fa-video"></i> Video</div>
-            <div class="pin-media">
-                <video src="{{ post.video.url }}" 
-                       preload="metadata"
-                       muted
-                       loop
-                       poster="{% if post.image %}{{ post.image.url }}{% endif %}">
-                </video>
-            </div>
-            <div class="pin-content">
-                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
-                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
-                <div class="pin-footer">
-                    <div class="pin-author">
-                        <div class="author-avatar">
-                            {% if post.author.userprofile.profile_picture %}
-                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
-                            {% else %}
-                                <div style="background: #20B2AA; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
-                                    {{ post.author.username|first|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <span>{{ post.author.username }}</span>
-                    </div>
-                    <div class="pin-stats">
-                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
-                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    
-    {% elif post.image %}
-        {% comment %} Image Post (Visual Art) {% endcomment %}
-        <div class="pin-card" data-post-type="visual-art" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
-            <div class="type-badge visual-art"><i class="fas fa-palette"></i> Visual Art</div>
-            <div class="pin-media">
-                <img src="{{ post.image.url }}" alt="{{ post.title|default:'Visual Art' }}" loading="lazy">
-            </div>
-            <div class="pin-content">
-                {% if post.title %}<h3 class="pin-title">{{ post.title }}</h3>{% endif %}
-                {% if post.content %}<p class="pin-description">{{ post.content|truncatechars:100 }}</p>{% endif %}
-                <div class="pin-footer">
-                    <div class="pin-author">
-                        <div class="author-avatar">
-                            {% if post.author.userprofile.profile_picture %}
-                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
-                            {% else %}
-                                <div style="background: #4169E1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
-                                    {{ post.author.username|first|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <span>{{ post.author.username }}</span>
-                    </div>
-                    <div class="pin-stats">
-                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
-                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    
-    {% else %}
-        {% comment %} Text Post (Writing) {% endcomment %}
-        <div class="pin-card" data-post-type="writing" onclick="window.location.href='{% url 'posts:post_detail' post.id %}'">
-            <div class="type-badge writing"><i class="fas fa-pen-nib"></i> Writing</div>
-            <div class="pin-media" style="background: linear-gradient(135deg, #8A2BE2, #4169E1); min-height: 200px; display: flex; align-items: center; justify-content: center; color: white; padding: 2rem;">
-                <div style="text-align: center;">
-                    {% if post.title %}<h3>{{ post.title }}</h3>{% endif %}
-                    {% if post.content %}<p>{{ post.content|truncatechars:150 }}</p>{% endif %}
-                </div>
-            </div>
-            <div class="pin-content">
-                <div class="pin-footer">
-                    <div class="pin-author">
-                        <div class="author-avatar">
-                            {% if post.author.userprofile.profile_picture %}
-                                <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
-                            {% else %}
-                                <div style="background: #8A2BE2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white;">
-                                    {{ post.author.username|first|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <span>{{ post.author.username }}</span>
-                    </div>
-                    <div class="pin-stats">
-                        <div class="stat-item"><i class="fas fa-heart"></i> {{ post.reactions.count }}</div>
-                        <div class="stat-item"><i class="fas fa-comment"></i> {{ post.comments.count }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {% endif %}
-    {% empty %}
-    <div style="text-align: center; padding: 4rem; grid-column: 1 / -1;">
-        <h3>No posts yet</h3>
-        <p>Be the first to share your creativity!</p>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
 </div>
 
+{% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Filter functionality
@@ -463,20 +713,166 @@
             const card = video.closest('.pin-card');
             
             card.addEventListener('mouseenter', function() {
-                video.play();
+                video.play().catch(e => console.log("Video play failed:", e));
             });
             
             card.addEventListener('mouseleave', function() {
                 video.pause();
-                video.currentTime = 0;
             });
             
-            card.addEventListener('click', function() {
-                video.pause();
-            });
-            
+            // Initialize video
             video.muted = true;
+            video.loop = true;
+            video.playsInline = true;
+        });
+        
+        // Adjust grid columns on resize
+        function adjustGridColumns() {
+            const grid = document.getElementById('pinterestGrid');
+            if (!grid) return;
+            
+            const width = window.innerWidth;
+            if (width >= 1200) grid.style.columnCount = '4';
+            else if (width >= 900) grid.style.columnCount = '3';
+            else if (width >= 600) grid.style.columnCount = '2';
+            else grid.style.columnCount = '1';
+        }
+        
+        adjustGridColumns();
+        window.addEventListener('resize', adjustGridColumns);
+        
+        // Lazy loading images
+        const lazyImages = document.querySelectorAll('img[loading="lazy"]');
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    observer.unobserve(img);
+                }
+            });
+        });
+        
+        lazyImages.forEach(img => {
+            if (img.dataset.src) {
+                imageObserver.observe(img);
+            }
         });
     });
+    
+    // Toggle video play/pause
+    function toggleVideoPlayPause(button) {
+        const video = button.closest('.pin-media').querySelector('video');
+        const icon = button.querySelector('i');
+        
+        if (video.paused) {
+            video.play();
+            icon.className = 'fas fa-pause';
+        } else {
+            video.pause();
+            icon.className = 'fas fa-play';
+        }
+    }
+    
+    // Handle save/unsave with AJAX
+    function handleSaveUnsave(event, postId, isSaving) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const form = event.target.closest('form');
+        const url = form.action;
+        const button = form.querySelector('button');
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Visual feedback
+                if (isSaving) {
+                    // Change to saved state
+                    button.innerHTML = '<i class="fas fa-bookmark"></i>';
+                    button.classList.add('saved');
+                    
+                    // Change form action to unsave
+                    form.action = `/posts/unsave/${postId}/`;
+                    form.onsubmit = function(e) { 
+                        return handleSaveUnsave(e, postId, false); 
+                    };
+                    
+                    // Show success message
+                    showToast('Post saved!', 'success');
+                } else {
+                    // Change to unsaved state
+                    button.innerHTML = '<i class="far fa-bookmark"></i>';
+                    button.classList.remove('saved');
+                    
+                    // Change form action to save
+                    form.action = `/posts/save/${postId}/`;
+                    form.onsubmit = function(e) { 
+                        return handleSaveUnsave(e, postId, true); 
+                    };
+                    
+                    // Show info message
+                    showToast('Post removed from saved', 'info');
+                }
+            } else {
+                showToast(data.error || 'Operation failed', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred', 'error');
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCSRFToken() {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        return csrfToken ? csrfToken.value : '';
+    }
+    
+    // Toast notification
+    function showToast(message, type = 'info') {
+        // Remove existing toast
+        const existingToast = document.querySelector('.custom-toast');
+        if (existingToast) existingToast.remove();
+        
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `custom-toast alert alert-${type} alert-dismissible fade show`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 250px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        `;
+        
+        // Set icon based on type
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'error') icon = 'exclamation-circle';
+        
+        toast.innerHTML = `
+            <i class="fas fa-${icon} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
 </script>
+{% endblock %}
 {% endblock %}

@@ -10,7 +10,7 @@ from django.core.mail import send_mail
 import json
 from django.core.paginator import Paginator
 
-from .models import Post, Comment, Reaction, JobPost, Share, Report, UserProfile, Message, Notification, Follow, Block
+from .models import Post, Comment, Reaction, JobPost, SavedPost, Share, Report, UserProfile, Message, Notification, Follow, Block
 from .forms import PostForm, CommentForm, ShareForm, ReportForm, UserProfileForm, MessageForm, SearchForm
 
 from utils.moderation import is_toxic_content
@@ -113,6 +113,30 @@ def post_create(request):
         'post_type': post_type if 'post_type' in locals() else 'text'
     })
 
+# def post_list(request):
+#     # Get all posts with related data
+#     posts = Post.objects.all().select_related(
+#         'author', 
+#         'author__userprofile',
+#         'job_details'
+#     ).prefetch_related(
+#         'comments',
+#         'reactions',
+#         'post_shares'
+#     ).order_by('-created_at')
+    
+#     # Pagination
+#     paginator = Paginator(posts, 12)  # 12 posts per page
+#     page_number = request.GET.get('page')
+#     page_obj = paginator.get_page(page_number)
+    
+#     return render(request, 'posts/post_list.html', {
+#         'posts': page_obj,
+#         'page_obj': page_obj,
+#         'is_paginated': page_obj.has_other_pages(),
+#     })
+
+@login_required
 def post_list(request):
     # Get all posts with related data
     posts = Post.objects.all().select_related(
@@ -125,6 +149,13 @@ def post_list(request):
         'post_shares'
     ).order_by('-created_at')
     
+    # Get user's saved post IDs
+    user_saved_post_ids = []
+    if request.user.is_authenticated:
+        user_saved_post_ids = SavedPost.objects.filter(
+            user=request.user
+        ).values_list('post_id', flat=True)
+    
     # Pagination
     paginator = Paginator(posts, 12)  # 12 posts per page
     page_number = request.GET.get('page')
@@ -134,9 +165,33 @@ def post_list(request):
         'posts': page_obj,
         'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
+        'user_saved_post_ids': list(user_saved_post_ids),
     })
-
-
+@login_required
+def saved_posts_view(request):
+    """
+    View for displaying all saved posts by the current user
+    """
+    # Get all saved posts for the current user
+    saved_posts = SavedPost.objects.filter(user=request.user).select_related(
+        'post', 
+        'post__author', 
+        'post__author__userprofile'
+    ).order_by('-saved_at')
+    
+    # Paginate the results
+    paginator = Paginator(saved_posts, 12)  # 12 posts per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'saved_posts': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'title': 'Saved Posts'
+    }
+    
+    return render(request, 'posts/saved_posts.html', context)
 # def post_detail(request, pk):
 #     """View for post details"""
 #     post = get_object_or_404(Post, pk=pk)
@@ -562,6 +617,46 @@ def my_profile(request):
     return render(request, 'posts/profile.html', context)
 
 
+# def user_profile(request, username):
+#     """Profile of another user"""
+#     profile_user = get_object_or_404(User, username=username)
+#     user_posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+    
+#     # Get shared posts
+#     shared_posts = Share.objects.filter(user=profile_user).select_related(
+#         'post', 'post__author', 'post__author__userprofile'
+#     ).order_by('-created_at')
+    
+#     context = {
+#         'profile_user': profile_user,
+#         'user_posts': user_posts,
+#         'shared_posts': shared_posts,
+#         'is_own_profile': False
+#     }
+    
+#     # Check social relations only if user is logged in
+#     if request.user.is_authenticated and request.user != profile_user:
+#         # Check if user follows this profile
+#         try:
+#             context['is_following'] = Follow.objects.filter(
+#                 follower=request.user, 
+#                 following=profile_user
+#             ).exists()
+#         except:
+#             context['is_following'] = False
+        
+#         # Check if user has blocked this profile
+#         try:
+#             context['is_blocked'] = Block.objects.filter(
+#                 blocker=request.user, 
+#                 blocked=profile_user
+#             ).exists()
+#         except:
+#             context['is_blocked'] = False
+    
+#     return render(request, 'posts/profile.html', context)
+
+@login_required
 def user_profile(request, username):
     """Profile of another user"""
     profile_user = get_object_or_404(User, username=username)
@@ -572,11 +667,19 @@ def user_profile(request, username):
         'post', 'post__author', 'post__author__userprofile'
     ).order_by('-created_at')
     
+    # Get saved posts ONLY if viewing own profile (limit to 6 for preview)
+    saved_posts = None
+    if request.user == profile_user:
+        saved_posts = SavedPost.objects.filter(user=request.user).select_related(
+            'post', 'post__author', 'post__author__userprofile'
+        ).order_by('-saved_at')[:6]  # Limite à 6 pour l'aperçu
+    
     context = {
         'profile_user': profile_user,
         'user_posts': user_posts,
         'shared_posts': shared_posts,
-        'is_own_profile': False
+        'saved_posts': saved_posts,
+        'is_own_profile': (request.user == profile_user)
     }
     
     # Check social relations only if user is logged in
@@ -600,7 +703,6 @@ def user_profile(request, username):
             context['is_blocked'] = False
     
     return render(request, 'posts/profile.html', context)
-
 
 @login_required
 def edit_profile(request):
@@ -1003,3 +1105,81 @@ def check_creative_content(request):
             'success': False,
             'error': str(e)
         })
+    
+@login_required
+def view_profile(request, username=None):
+    # Get the user whose profile we're viewing
+    if username:
+        profile_user = get_object_or_404(User, username=username)
+    else:
+        profile_user = request.user
+    
+    # Get posts, followers, following info
+    user_posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+    
+    # Get shared posts (posts shared by this user)
+    shared_posts = Post.objects.filter(shares__user=profile_user).distinct().order_by('-shares__created_at')
+    
+    # Get saved posts (ONLY for the logged-in user viewing their own profile)
+    saved_posts = []
+    if request.user == profile_user:
+        saved_posts = SavedPost.objects.filter(user=request.user).select_related('post').order_by('-saved_at')
+    
+    # Check if current user is following this profile
+    is_following = False
+    if request.user.is_authenticated and request.user != profile_user:
+        is_following = Follow.objects.filter(follower=request.user, following=profile_user).exists()
+    
+    # Check if blocked
+    is_blocked = False
+    if request.user.is_authenticated and request.user != profile_user:
+        is_blocked = Block.objects.filter(blocker=request.user, blocked=profile_user).exists()
+    
+    context = {
+        'profile_user': profile_user,
+        'user_posts': user_posts,
+        'shared_posts': shared_posts,
+        'saved_posts': saved_posts,  # Add this
+        'is_following': is_following,
+        'is_blocked': is_blocked,
+    }
+    
+    return render(request, 'posts/profile.html', context)
+
+from django.http import JsonResponse
+from .models import SavedPost
+
+@login_required
+def save_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Check if already saved
+    if SavedPost.objects.filter(user=request.user, post=post).exists():
+        return JsonResponse({'success': False, 'error': 'Post already saved'})
+    
+    # Save the post
+    saved_post = SavedPost.objects.create(user=request.user, post=post)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': 'Post saved successfully',
+            'saved_id': saved_post.id
+        })
+    
+    return redirect('posts:post_detail', pk=post_id)
+
+@login_required
+def unsave_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Try to unsave
+    deleted_count, _ = SavedPost.objects.filter(user=request.user, post=post).delete()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': deleted_count > 0,
+            'message': 'Post unsaved successfully' if deleted_count > 0 else 'Post was not saved'
+        })
+    
+    return redirect('posts:post_detail', pk=post_id)

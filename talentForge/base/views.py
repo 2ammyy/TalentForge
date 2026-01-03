@@ -13,7 +13,7 @@ from .models import UserProfile
 import random
 import string
 from datetime import timedelta
-from posts.models import Follow
+from posts.models import Block, Follow, Post, SavedPost
 
 # Stockage temporaire pour les codes de vérification
 verification_codes = {}
@@ -463,16 +463,50 @@ def edit_profile(request):
     
     return render(request, 'registration/edit_profile.html', {'form': form})
 
+
 @login_required
-def view_profile(request):
-    try:
-        profile = request.user.userprofile
-    except UserProfile.DoesNotExist:
-        profile = UserProfile.objects.create(user=request.user)
+def view_profile(request, username=None):
+    # Get the user whose profile we're viewing
+    if username:
+        profile_user = get_object_or_404(User, username=username)
+    else:
+        profile_user = request.user
     
-    return render(request, 'registration/view_profile.html', {'profile': profile})
+    # Get posts, followers, following info
+    user_posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+    
+    # Get shared posts (posts shared by this user)
+    shared_posts = Post.objects.filter(shares__user=profile_user).distinct().order_by('-shares__created_at')
+    
+    # Get saved posts (ONLY for the logged-in user viewing their own profile)
+    saved_posts = []
+    if request.user == profile_user:
+        saved_posts = SavedPost.objects.filter(user=request.user).select_related('post').order_by('-saved_at')
+    
+    # Check if current user is following this profile
+    is_following = False
+    if request.user.is_authenticated and request.user != profile_user:
+        is_following = Follow.objects.filter(follower=request.user, following=profile_user).exists()
+    
+    # Check if blocked
+    is_blocked = False
+    if request.user.is_authenticated and request.user != profile_user:
+        is_blocked = Block.objects.filter(blocker=request.user, blocked=profile_user).exists()
+    
+    context = {
+        'profile_user': profile_user,
+        'user_posts': user_posts,
+        'shared_posts': shared_posts,
+        'saved_posts': saved_posts,  # Add this
+        'is_following': is_following,
+        'is_blocked': is_blocked,
+    }
+
+    return render(request, 'registration/view_profile.html', context)
+
 
 @login_required
 def social_signup_redirect(request):
     """redirect immediately after a successful social signup"""
     return redirect('base:home')
+

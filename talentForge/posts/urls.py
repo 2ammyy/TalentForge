@@ -60,4 +60,8 @@ urlpatterns = [
     path('notifications/mark-read/<int:notification_id>/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
 
+    # ============ SAVED/UNSAVED POSTS ============
+    path('save/<int:post_id>/', views.save_post, name='save_post'),
+    path('unsave/<int:post_id>/', views.unsave_post, name='unsave_post'),
+    path('saved/', views.saved_posts_view, name='saved_posts'),
 ]
