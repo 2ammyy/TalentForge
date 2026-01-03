@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',  # ← Required for allauth
     
     'base',
-    'posts',
+    'posts.apps.PostsConfig',
     'creator',
     'admin_app.apps.AdminAppConfig',
     'word_prediction',  # Word Prediction app

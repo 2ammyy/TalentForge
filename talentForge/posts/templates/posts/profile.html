@@ -1,5 +1,8 @@
+<!-- talentForge\posts\templates\posts\profile.html -->
 {% extends 'base.html' %}
 {% load static %} 
+{% load post_tags %}
+
 {% block subtitle %}{{ profile_user.username }}'s Profile{% endblock %}
 
 {% block extra_css %}
@@ -8,6 +11,7 @@
         --profile-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         --creator-gradient: linear-gradient(135deg, #FF6B6B 0%, #FFA726 100%);
         --share-gradient: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        --save-gradient: linear-gradient(135deg, #FF6B6B 0%, #FFA726 100%);
         --card-shadow: 0 20px 40px rgba(102, 126, 234, 0.1);
         --glass-effect: rgba(255, 255, 255, 0.1);
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -222,7 +226,7 @@
         position: relative;
     }
 
-    .profile-stat-item.followers strong::after {
+    .profile-stat-item.followers.has-followers strong::after {
         content: '';
         position: absolute;
         top: -5px;
@@ -231,10 +235,6 @@
         height: 8px;
         background: #FF6B6B;
         border-radius: 50%;
-        display: none;
-    }
-
-    .profile-stat-item.followers.has-followers strong::after {
         display: block;
         animation: blink 1.5s infinite;
     }
@@ -379,6 +379,16 @@
         transform: translateY(-3px);
     }
 
+    .profile-action-btn.view-saved {
+        background: var(--save-gradient);
+        color: white;
+    }
+
+    .profile-action-btn.view-saved:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+    }
+
     /* Posts Section */
     .posts-section {
         margin-top: 2rem;
@@ -453,11 +463,43 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         transition: var(--transition);
         border: 1px solid #e5e7eb;
+        position: relative;
     }
 
     .post-card-modern:hover {
         transform: translateY(-8px);
         box-shadow: 0 20px 40px rgba(102, 126, 234, 0.15);
+    }
+
+    /* Save Indicator - FIXED POSITION */
+    .save-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: var(--save-gradient);
+        color: white;
+        padding: 0.25rem 0.7rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        z-index: 10;
+        animation: pulse 2s infinite;
+        border: 1px solid white;
+        white-space: nowrap;
+        vertical-align: middle;
+        margin-left: 0.5rem;
+        margin-top: -0.2rem;
+    }
+
+    .save-indicator i {
+        font-size: 0.6rem;
+    }
+
+    .save-time {
+        font-size: 0.65rem;
+        opacity: 0.9;
+        margin-left: 0.3rem;
     }
 
     .post-header-modern {
@@ -526,11 +568,19 @@
         flex: 1;
     }
 
+    .author-header-line {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.3rem;
+    }
+
     .post-author-modern strong {
-        display: block;
+        display: inline-block;
         font-size: 1rem;
         color: #333;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0;
     }
 
     .post-date-modern {
@@ -597,6 +647,118 @@
         height: 200px;
         object-fit: cover;
         display: block;
+    }
+
+    /* Video Styling */
+    .post-video-modern {
+        width: 100%;
+        height: 200px;
+        position: relative;
+        background: #000;
+        overflow: hidden;
+    }
+    
+    .post-video-modern video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    
+    .video-controls {
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 10;
+    }
+    
+    .post-video-modern:hover .video-controls {
+        opacity: 1;
+    }
+    
+    .video-control-btn {
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .video-control-btn:hover {
+        background: rgba(102, 126, 234, 0.9);
+    }
+    
+    .video-muted-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        z-index: 5;
+        display: none;
+    }
+    
+    .video-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+    }
+    
+    .video-play-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    
+    .play-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #667eea;
+        font-size: 1.5rem;
+        transition: transform 0.3s;
+    }
+    
+    .play-icon:hover {
+        transform: scale(1.1);
+    }
+    
+    .video-placeholder {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
     }
 
     /* Post Actions */
@@ -758,7 +920,7 @@
         content: "💬 ";
     }
 
-    /* Empty State for Shared Posts */
+    /* Empty State for Saved/Shared Posts */
     .no-shared-posts {
         text-align: center;
         padding: 3rem 2rem;
@@ -784,6 +946,10 @@
     .no-shared-posts p {
         color: #666;
         margin-bottom: 1.5rem;
+    }
+
+    .no-saved-posts-icon {
+        color: #FF6B6B;
     }
 
     /* Hide sections by default */
@@ -812,8 +978,40 @@
         font-weight: 600;
     }
 
-    /* Responsive */
-    @media (max-width: 640px) {
+    /* View All Link */
+    .view-all-link {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    /* Mobile video controls */
+    @media (max-width: 768px) {
+        .video-controls {
+            opacity: 1 !important;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 20px;
+            bottom: 20px;
+        }
+        
+        .video-control-btn {
+            width: 35px;
+            height: 35px;
+            font-size: 0.9rem;
+        }
+        
+        .video-muted-indicator {
+            font-size: 0.7rem;
+            padding: 3px 6px;
+        }
+        
+        .post-video-modern {
+            touch-action: manipulation;
+        }
+        
+        /* Responsive adjustments */
         .profile-hero {
             padding: 3rem 0;
         }
@@ -860,6 +1058,15 @@
         .profile-tab {
             padding: 0.8rem 1rem;
             justify-content: space-between;
+        }
+        
+        .save-indicator {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+        }
+        
+        .save-time {
+            display: none;
         }
     }
 </style>
@@ -928,6 +1135,12 @@
                         <strong>{{ shared_posts.count }}</strong>
                         <span>Shares</span>
                     </div>
+                    {% if is_own_profile %}
+                    <div class="profile-stat-item">
+                        <strong>{{ saved_posts.count|default:0 }}</strong>
+                        <span>Saved</span>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Action Buttons -->
@@ -978,6 +1191,11 @@
                         <a href="{% url 'base:edit_profile' %}" class="profile-action-btn edit">
                             <i class="fas fa-edit"></i> Edit Profile
                         </a>
+                        {% if saved_posts %}
+                        <button class="profile-action-btn view-saved" data-target="saved-posts">
+                            <i class="fas fa-bookmark"></i> View Saved Posts
+                        </button>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>
@@ -994,6 +1212,14 @@
             <i class="fas fa-share-alt"></i> Shared Posts
             <span class="profile-tab-badge">{{ shared_posts.count }}</span>
         </button>
+        
+        <!-- Saved Posts Tab (only for own profile) -->
+        {% if is_own_profile and saved_posts %}
+        <button class="profile-tab" data-target="saved-posts">
+            <i class="fas fa-bookmark"></i> Saved Posts
+            <span class="profile-tab-badge">{{ saved_posts.count }}</span>
+        </button>
+        {% endif %}
     </div>
 
     <!-- My Posts Section -->
@@ -1034,12 +1260,14 @@
                                     {% endif %}
                                 </div>
                                 <div class="post-author-modern">
-                                    <strong>
-                                        {{ post.author.get_full_name|default:post.author.username }}
-                                        {% if post.author.user_followers.count > 0 %}
-                                        <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
-                                        {% endif %}
-                                    </strong>
+                                    <div class="author-header-line">
+                                        <strong>
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% if post.author.user_followers.count > 0 %}
+                                            <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
+                                            {% endif %}
+                                        </strong>
+                                    </div>
                                     <div class="post-date-modern">
                                         {{ post.created_at|timesince }} ago
                                         {% if post.updated_at != post.created_at %}
@@ -1112,15 +1340,46 @@
                         </div>
 
                         <!-- Post Media -->
-                        {% if post.image %}
+                        {% if post.image or post.video %}
                         <div class="post-media-modern">
-                            <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% elif post.video %}
+                                <div class="post-video-modern" data-video-id="{{ post.id }}">
+                                    <video 
+                                        id="video-{{ post.id }}" 
+                                        class="video-thumbnail"
+                                        muted 
+                                        loop
+                                        playsinline
+                                        preload="metadata"
+                                        poster="{% static 'img/video-placeholder.jpg' %}"
+                                    >
+                                        <source src="{{ post.video.url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <div class="video-muted-indicator" id="muted-indicator-{{ post.id }}">
+                                        <i class="fas fa-volume-mute"></i> Muted
+                                    </div>
+                                    <div class="video-controls" id="controls-{{ post.id }}">
+                                        <button class="video-control-btn play-pause-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button class="video-control-btn volume-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                        <button class="video-control-btn fullscreen-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         {% endif %}
 
                         <!-- Post Actions -->
                         <div class="post-actions-modern">
-                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-comment"></i>
                                 <span class="action-count">{{ post.comments.count }}</span>
                             </a>
@@ -1131,10 +1390,17 @@
                                 <span class="action-count">{{ post.reactions.count }}</span>
                             </button>
                             
-                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-share"></i>
                                 <span class="action-count">{{ post.post_shares.count }}</span>
                             </a>
+                            
+                            {% if request.user.is_authenticated and not is_own_profile %}
+                            <button class="action-btn-modern save-post-btn" data-post-id="{{ post.id }}">
+                                <i class="fas fa-bookmark"></i>
+                                <span class="action-count">Save</span>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 {% endfor %}
@@ -1178,7 +1444,7 @@
                 {% for share in shared_posts %}
                     <div class="post-card-modern">
                         <!-- Shared Indicator -->
-                        <div class="shared-indicator">
+                        <div class="shared-indicator text-decoration-none">
                             <i class="fas fa-share-alt"></i> Shared
                         </div>
                         
@@ -1230,12 +1496,14 @@
                                     {% endif %}
                                 </div>
                                 <div class="post-author-modern">
-                                    <strong>
-                                        {{ post.author.get_full_name|default:post.author.username }}
-                                        {% if post.author.user_followers.count > 0 %}
-                                        <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
-                                        {% endif %}
-                                    </strong>
+                                    <div class="author-header-line">
+                                        <strong>
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% if post.author.user_followers.count > 0 %}
+                                            <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
+                                            {% endif %}
+                                        </strong>
+                                    </div>
                                     <div class="post-date-modern">
                                         {{ post.created_at|timesince }} ago
                                         {% if post.updated_at != post.created_at %}
@@ -1296,15 +1564,46 @@
                         </div>
 
                         <!-- Post Media -->
-                        {% if post.image %}
+                        {% if post.image or post.video %}
                         <div class="post-media-modern">
-                            <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% elif post.video %}
+                                <div class="post-video-modern" data-video-id="{{ post.id }}">
+                                    <video 
+                                        id="video-{{ post.id }}" 
+                                        class="video-thumbnail"
+                                        muted 
+                                        loop
+                                        playsinline
+                                        preload="metadata"
+                                        poster="{% static 'img/video-placeholder.jpg' %}"
+                                    >
+                                        <source src="{{ post.video.url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <div class="video-muted-indicator" id="muted-indicator-{{ post.id }}">
+                                        <i class="fas fa-volume-mute"></i> Muted
+                                    </div>
+                                    <div class="video-controls" id="controls-{{ post.id }}">
+                                        <button class="video-control-btn play-pause-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button class="video-control-btn volume-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                        <button class="video-control-btn fullscreen-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         {% endif %}
 
                         <!-- Post Actions -->
                         <div class="post-actions-modern">
-                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-comment"></i>
                                 <span class="action-count">{{ post.comments.count }}</span>
                             </a>
@@ -1315,7 +1614,7 @@
                                 <span class="action-count">{{ post.reactions.count }}</span>
                             </button>
                             
-                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-share"></i>
                                 <span class="action-count">{{ post.post_shares.count }}</span>
                             </a>
@@ -1346,6 +1645,200 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- Saved Posts Section -->
+    {% if is_own_profile %}
+    <div id="saved-posts" class="content-section">
+        <div class="section-header">
+            <h2>Saved Posts</h2>
+            <a href="{% url 'posts:post_list' %}" class="create-post-btn">
+                <i class="fas fa-compass"></i> Explore More
+            </a>
+        </div>
+
+        {% if saved_posts %}
+            <div class="posts-grid">
+                {% for saved in saved_posts %}
+                    <div class="post-card-modern">
+                        <!-- Original Post Content -->
+                        {% with post=saved.post %}
+                        <div class="post-header-modern">
+                            <div class="post-author-info-modern">
+                                <div class="author-avatar-modern">
+                                    {% if post.author.userprofile.profile_picture %}
+                                        <img src="{{ post.author.userprofile.profile_picture.url }}" alt="{{ post.author.username }}">
+                                    {% elif post.author.userprofile.get_profile_picture %}
+                                        <img src="{{ post.author.userprofile.get_profile_picture }}" alt="{{ post.author.username }}">
+                                    {% else %}
+                                        <div class="default-avatar-small">
+                                            {{ post.author.username|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Mini Creator Badge for Post Author -->
+                                    {% if post.author.user_followers.count > 0 %}
+                                    <div class="mini-creator-badge">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="post-author-modern">
+                                    <div class="author-header-line">
+                                        <strong>
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% if post.author.user_followers.count > 0 %}
+                                            <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
+                                            {% endif %}
+                                        </strong>
+                                        <!-- Save Indicator -->
+                                        <div class="save-indicator">
+                                            <i class="fas fa-bookmark"></i> Saved
+                                            <span class="save-time">{{ saved.saved_at|timesince }} ago</span>
+                                        </div>
+                                    </div>
+                                    <div class="post-date-modern">
+                                        {{ post.created_at|timesince }} ago
+                                        {% if post.updated_at != post.created_at %}
+                                            <span class="post-edited">• edited</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Remove Save Button -->
+                            <div class="post-actions-dropdown-modern">
+                                <div class="dropdown">
+                                    <button class="dropdown-toggle-modern" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <form method="post" action="{% url 'posts:unsave_post' post.pk %}" 
+                                                  class="unsave-form" 
+                                                  onsubmit="handleUnsave(event, {{ post.pk }})">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    <i class="fas fa-bookmark-slash me-2"></i>
+                                                    Remove from Saved
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Post Type Badge -->
+                        {% if post.type %}
+                        <div class="post-type-badge-modern">
+                            <span class="type-badge-modern {{ post.type }}">
+                                {% if post.type == 'job' %}
+                                    <i class="fas fa-briefcase me-1"></i>
+                                {% elif post.type == 'image' %}
+                                    <i class="fas fa-image me-1"></i>
+                                {% elif post.type == 'video' %}
+                                    <i class="fas fa-video me-1"></i>
+                                {% else %}
+                                    <i class="fas fa-file-alt me-1"></i>
+                                {% endif %}
+                                {{ post.get_type_display }}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Post Content -->
+                        <div class="post-content-modern">
+                            <h3 class="post-title-modern">
+                                <a href="{% url 'posts:post_detail' post.pk %}">{{ post.title|default:"Untitled Post" }}</a>
+                            </h3>
+                            
+                            {% if post.content %}
+                            <div class="post-excerpt-modern">
+                                {{ post.content|truncatechars:120 }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Post Media -->
+                        {% if post.image or post.video %}
+                        <div class="post-media-modern">
+                            {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% elif post.video %}
+                                <div class="post-video-modern" data-video-id="{{ post.id }}">
+                                    <video 
+                                        id="video-{{ post.id }}" 
+                                        class="video-thumbnail"
+                                        muted 
+                                        loop
+                                        playsinline
+                                        preload="metadata"
+                                        poster="{% static 'img/video-placeholder.jpg' %}"
+                                    >
+                                        <source src="{{ post.video.url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <div class="video-muted-indicator" id="muted-indicator-{{ post.id }}">
+                                        <i class="fas fa-volume-mute"></i> Muted
+                                    </div>
+                                    <div class="video-controls" id="controls-{{ post.id }}">
+                                        <button class="video-control-btn play-pause-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button class="video-control-btn volume-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                        <button class="video-control-btn fullscreen-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Post Actions -->
+                        <div class="post-actions-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern text-decoration-none">
+                                <i class="fas fa-comment"></i>
+                                <span class="action-count">{{ post.comments.count }}</span>
+                            </a>
+                            
+                            <button class="action-btn-modern {% if post.reactions.count %}liked{% endif %}" 
+                                    onclick="toggleReaction({{ post.id }}, this)">
+                                <i class="fas fa-heart"></i>
+                                <span class="action-count">{{ post.reactions.count }}</span>
+                            </button>
+                            
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none">
+                                <i class="fas fa-share"></i>
+                                <span class="action-count">{{ post.post_shares.count }}</span>
+                            </a>
+                        </div>
+                        {% endwith %}
+                    </div>
+                {% endfor %}
+            </div>
+            
+            
+            
+        {% else %}
+            <!-- No Saved Posts -->
+            <div class="no-shared-posts">
+                <div class="no-shared-posts-icon no-saved-posts-icon">
+                    <i class="fas fa-bookmark"></i>
+                </div>
+                <h3>No Saved Posts Yet</h3>
+                <p>
+                    You haven't saved any posts yet. Click the bookmark icon on posts to save them here.
+                </p>
+                <a href="{% url 'posts:post_list' %}" class="create-post-btn">
+                    <i class="fas fa-compass"></i> Explore Posts
+                </a>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <!-- Report Modal -->
@@ -1386,6 +1879,9 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
     // Tab switching functionality
     document.addEventListener('DOMContentLoaded', function() {
@@ -1410,6 +1906,18 @@
                 });
             });
         });
+        
+        // Add click handler for "View Saved Posts" button
+        const viewSavedBtn = document.querySelector('.profile-action-btn.view-saved');
+        if (viewSavedBtn) {
+            viewSavedBtn.addEventListener('click', function() {
+                const targetId = this.dataset.target;
+                const savedTab = document.querySelector(`[data-target="${targetId}"]`);
+                if (savedTab) {
+                    savedTab.click();
+                }
+            });
+        }
         
         // Toggle reaction with animation
         function toggleReaction(postId, button) {
@@ -1438,7 +1946,7 @@
             fetch(url, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-CSRFToken': getCSRFToken(),
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -1455,20 +1963,302 @@
               });
         }
         
-        // Expose function globally
+        // Save post functionality
+        function toggleSavePost(postId, button) {
+            const url = `/posts/save/${postId}/`;
+            const isSaved = button.classList.contains('saved');
+            
+            fetch(url, {
+                method: isSaved ? 'DELETE' : 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.classList.toggle('saved');
+                    const icon = button.querySelector('i');
+                    const text = button.querySelector('.action-count');
+                    
+                    if (button.classList.contains('saved')) {
+                        icon.className = 'fas fa-bookmark';
+                        text.textContent = 'Saved';
+                        showToast('Post saved successfully', 'success');
+                    } else {
+                        icon.className = 'fas fa-bookmark';
+                        text.textContent = 'Save';
+                        showToast('Post removed from saved', 'info');
+                    }
+                }
+            });
+        }
+        
+        // Add save button listeners
+        document.querySelectorAll('.save-post-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                toggleSavePost(postId, this);
+            });
+        });
+        
+        // Handle unsave from saved posts section
+        function handleUnsave(event, postId) {
+            event.preventDefault();
+            
+            const form = event.target.closest('form');
+            const url = form.action;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the card from DOM with animation
+                    const card = form.closest('.post-card-modern');
+                    card.style.opacity = '0.5';
+                    card.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        card.remove();
+                        
+                        // Update saved posts badge count
+                        const savedTab = document.querySelector('[data-target="saved-posts"] .profile-tab-badge');
+                        if (savedTab) {
+                            const currentCount = parseInt(savedTab.textContent);
+                            savedTab.textContent = Math.max(0, currentCount - 1);
+                        }
+                        
+                        // Update stats count
+                        const savedStat = document.querySelector('.profile-stat-item:nth-child(5) strong');
+                        if (savedStat) {
+                            const currentCount = parseInt(savedStat.textContent);
+                            savedStat.textContent = Math.max(0, currentCount - 1);
+                        }
+                        
+                        // Show message if no more saved posts
+                        const savedPostsSection = document.getElementById('saved-posts');
+                        const savedPostsGrid = savedPostsSection.querySelector('.posts-grid');
+                        if (savedPostsGrid && savedPostsGrid.children.length === 0) {
+                            savedPostsGrid.innerHTML = `
+                                <div class="no-shared-posts">
+                                    <div class="no-shared-posts-icon no-saved-posts-icon">
+                                        <i class="fas fa-bookmark"></i>
+                                    </div>
+                                    <h3>No Saved Posts</h3>
+                                    <p>You haven't saved any posts yet.</p>
+                                    <a href="{% url 'posts:post_list' %}" class="create-post-btn">
+                                        <i class="fas fa-compass"></i> Explore Posts
+                                    </a>
+                                </div>
+                            `;
+                        }
+                    }, 300);
+                    
+                    // Show success message
+                    showToast('Post removed from saved', 'success');
+                } else {
+                    showToast('Failed to remove post from saved', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred', 'error');
+            });
+        }
+        
+        // Video controls setup
+        function setupVideoControls() {
+            document.querySelectorAll('.post-video-modern').forEach(videoContainer => {
+                const videoId = videoContainer.dataset.videoId;
+                const video = document.getElementById(`video-${videoId}`);
+                const playPauseBtn = videoContainer.querySelector('.play-pause-btn');
+                const volumeBtn = videoContainer.querySelector('.volume-btn');
+                const fullscreenBtn = videoContainer.querySelector('.fullscreen-btn');
+                const mutedIndicator = document.getElementById(`muted-indicator-${videoId}`);
+                
+                if (!video) return;
+                
+                // Set initial muted state
+                video.muted = true;
+                if (mutedIndicator) mutedIndicator.style.display = 'block';
+                
+                // Play/Pause functionality
+                if (playPauseBtn) {
+                    playPauseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (video.paused) {
+                            video.play();
+                            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        } else {
+                            video.pause();
+                            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        }
+                    });
+                    
+                    video.addEventListener('play', () => {
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    });
+                    
+                    video.addEventListener('pause', () => {
+                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    });
+                }
+                
+                // Volume toggle
+                if (volumeBtn) {
+                    volumeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        video.muted = !video.muted;
+                        if (mutedIndicator) {
+                            mutedIndicator.style.display = video.muted ? 'block' : 'none';
+                        }
+                        volumeBtn.innerHTML = video.muted ? 
+                            '<i class="fas fa-volume-mute"></i>' : 
+                            '<i class="fas fa-volume-up"></i>';
+                    });
+                }
+                
+                // Fullscreen toggle
+                if (fullscreenBtn) {
+                    fullscreenBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!document.fullscreenElement) {
+                            videoContainer.requestFullscreen().catch(err => {
+                                console.log(`Fullscreen error: ${err.message}`);
+                            });
+                            fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                        } else {
+                            document.exitFullscreen();
+                            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                        }
+                    });
+                    
+                    // Update button when exiting fullscreen
+                    document.addEventListener('fullscreenchange', () => {
+                        if (!document.fullscreenElement) {
+                            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                        }
+                    });
+                }
+                
+                // Click video to play/pause
+                video.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (video.paused) {
+                        video.play();
+                    } else {
+                        video.pause();
+                    }
+                });
+                
+                // Show controls on hover
+                videoContainer.addEventListener('mouseenter', () => {
+                    const controls = document.getElementById(`controls-${videoId}`);
+                    if (controls) controls.style.opacity = '1';
+                });
+                
+                videoContainer.addEventListener('mouseleave', () => {
+                    const controls = document.getElementById(`controls-${videoId}`);
+                    if (controls && !videoContainer.matches(':fullscreen')) {
+                        controls.style.opacity = '0';
+                    }
+                });
+                
+                // Autoplay when in viewport
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                // Try to play (muted by default for autoplay)
+                                video.play().catch(e => {
+                                    console.log('Autoplay prevented:', e);
+                                });
+                            } else {
+                                // Pause when not in view
+                                if (!video.paused) {
+                                    video.pause();
+                                }
+                            }
+                        });
+                    },
+                    { threshold: 0.5 }
+                );
+                
+                observer.observe(video);
+            });
+        }
+        
+        // Initialize video controls
+        setupVideoControls();
+        
+        // Expose functions globally
         window.toggleReaction = toggleReaction;
+        window.handleUnsave = handleUnsave;
+        window.toggleSavePost = toggleSavePost;
         
         // Add hover effects to post cards
         const postCards = document.querySelectorAll('.post-card-modern');
         postCards.forEach(card => {
             card.addEventListener('mouseenter', function() {
                 this.style.transform = 'translateY(-8px)';
+                this.style.boxShadow = '0 20px 40px rgba(102, 126, 234, 0.15)';
             });
             
             card.addEventListener('mouseleave', function() {
                 this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
             });
         });
     });
+    
+    // Helper function to get CSRF token
+    function getCSRFToken() {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        return csrfToken ? csrfToken.value : '';
+    }
+    
+    // Toast notification
+    function showToast(message, type = 'info') {
+        // Remove existing toast
+        const existingToast = document.querySelector('.custom-toast');
+        if (existingToast) existingToast.remove();
+        
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `custom-toast alert alert-${type} alert-dismissible fade show`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 250px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        `;
+        
+        // Set icon based on type
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'error') icon = 'exclamation-circle';
+        
+        toast.innerHTML = `
+            <i class="fas fa-${icon} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
 </script>
 {% endblock %}

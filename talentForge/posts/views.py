@@ -10,7 +10,7 @@ from django.core.mail import send_mail
 import json
 from django.core.paginator import Paginator
 
-from .models import Post, Comment, Reaction, JobPost, Share, Report, UserProfile, Message, Notification, Follow, Block
+from .models import Post, Comment, Reaction, JobPost, SavedPost, Share, Report, UserProfile, Message, Notification, Follow, Block
 from .forms import PostForm, CommentForm, ShareForm, ReportForm, UserProfileForm, MessageForm, SearchForm
 
 from utils.moderation import is_toxic_content
@@ -18,7 +18,6 @@ from utils.content_validator import validate_content
 import json
 
 
-# ADD THIS NEW FUNCTION TO views.py (anywhere in the views file)
 @csrf_exempt
 @require_POST
 def check_toxicity_api(request):
@@ -46,30 +45,7 @@ def check_toxicity_api(request):
     })
 
 
-# ============ POSTS ============
 
-# @login_required
-# def post_create(request):
-#     if request.method == 'POST':
-#         form = PostForm(request.POST, request.FILES)
-        
-#         if form.is_valid():
-#             post = form.save(commit=False)
-#             post.author = request.user
-#             post.save()
-            
-#             messages.success(request, 'Your post has been created successfully!')
-#             return redirect('posts:post_detail', pk=post.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         post_type = request.GET.get('type', 'text')
-#         form = PostForm(initial={'type': post_type})
-
-#     return render(request, 'posts/post_create.html', {
-#         'form': form,
-#         'post_type': post_type if 'post_type' in locals() else 'text'
-#     })
 
 @login_required
 def post_create(request):
@@ -113,6 +89,8 @@ def post_create(request):
         'post_type': post_type if 'post_type' in locals() else 'text'
     })
 
+
+@login_required
 def post_list(request):
     # Get all posts with related data
     posts = Post.objects.all().select_related(
@@ -125,6 +103,13 @@ def post_list(request):
         'post_shares'
     ).order_by('-created_at')
     
+    # Get user's saved post IDs
+    user_saved_post_ids = []
+    if request.user.is_authenticated:
+        user_saved_post_ids = SavedPost.objects.filter(
+            user=request.user
+        ).values_list('post_id', flat=True)
+    
     # Pagination
     paginator = Paginator(posts, 12)  # 12 posts per page
     page_number = request.GET.get('page')
@@ -134,49 +119,36 @@ def post_list(request):
         'posts': page_obj,
         'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
+        'user_saved_post_ids': list(user_saved_post_ids),
     })
-
-
-# def post_detail(request, pk):
-#     """View for post details"""
-#     post = get_object_or_404(Post, pk=pk)
-#     comments = post.comments.all().order_by('created_at')
+@login_required
+def saved_posts_view(request):
+    """
+    View for displaying all saved posts by the current user
+    """
+    # Get all saved posts for the current user
+    saved_posts = SavedPost.objects.filter(user=request.user).select_related(
+        'post', 
+        'post__author', 
+        'post__author__userprofile'
+    ).order_by('-saved_at')
     
-#     # Check if user has already reacted to this post
-#     user_reaction = None
-#     if request.user.is_authenticated:
-#         user_reaction = Reaction.objects.filter(post=post, user=request.user).first()
+    # Paginate the results
+    paginator = Paginator(saved_posts, 12)  # 12 posts per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'saved_posts': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'title': 'Saved Posts'
+    }
+    
+    return render(request, 'posts/saved_posts.html', context)
 
-#     if request.method == 'POST' and request.user.is_authenticated:
-#         comment_form = CommentForm(request.POST)
-#         if comment_form.is_valid():
-#             comment = comment_form.save(commit=False)
-#             comment.post = post
-#             comment.author = request.user
-#             comment.save()
-            
-#             # Create notification for post author
-#             if post.author != request.user:
-#                 Notification.objects.create(
-#                     user=post.author,
-#                     from_user=request.user,
-#                     notification_type='comment',
-#                     post=post
-#                 )
-            
-#             messages.success(request, 'Comment added successfully!')
-#             return redirect('posts:post_detail', pk=post.pk)
-#     else:
-#         comment_form = CommentForm()
 
-#     return render(request, 'posts/post_detail.html', {
-#         'post': post,
-#         'comments': comments,
-#         'form': comment_form,
-#         'user_reaction': user_reaction
-#     })
 
-# In the same views.py - MODIFY THE post_detail FUNCTION
 def post_detail(request, pk):
     """View for post details"""
     post = get_object_or_404(Post, pk=pk)
@@ -441,34 +413,6 @@ def test_email_view(request):
         return HttpResponse(f"❌ Failed to send test email: {str(e)}")
 
 
-# @login_required
-# def post_edit(request, pk):
-#     """View for editing an existing post"""
-#     post = get_object_or_404(Post, pk=pk)
-    
-#     # Check if user is authorized to edit
-#     if post.author != request.user and not request.user.is_staff:
-#         messages.error(request, "You don't have permission to edit this post.")
-#         return redirect('posts:post_detail', pk=post.pk)
-    
-#     if request.method == 'POST':
-#         form = PostForm(request.POST, request.FILES, instance=post)
-#         if form.is_valid():
-#             updated_post = form.save()
-#             messages.success(request, 'Post updated successfully!')
-#             return redirect('posts:post_detail', pk=updated_post.pk)
-#         else:
-#             messages.error(request, 'Please correct the errors below.')
-#     else:
-#         form = PostForm(instance=post)
-    
-#     return render(request, 'posts/post_edit.html', {
-#         'form': form,
-#         'post': post
-#     })
-
-
-# MODIFY THE post_edit FUNCTION
 @login_required
 def post_edit(request, pk):
     """View for editing an existing post"""
@@ -540,7 +484,6 @@ def post_update(request, pk):
 
 # ============ PROFILES & SOCIAL FEATURES ============
 
-# In talentForge/posts/views.py
 
 @login_required
 def my_profile(request):
@@ -562,6 +505,7 @@ def my_profile(request):
     return render(request, 'posts/profile.html', context)
 
 
+@login_required
 def user_profile(request, username):
     """Profile of another user"""
     profile_user = get_object_or_404(User, username=username)
@@ -572,11 +516,19 @@ def user_profile(request, username):
         'post', 'post__author', 'post__author__userprofile'
     ).order_by('-created_at')
     
+    # Get saved posts ONLY if viewing own profile (limit to 6 for preview)
+    saved_posts = None
+    if request.user == profile_user:
+        saved_posts = SavedPost.objects.filter(user=request.user).select_related(
+    'post', 'post__author', 'post__author__userprofile'
+).order_by('-saved_at')
+    
     context = {
         'profile_user': profile_user,
         'user_posts': user_posts,
         'shared_posts': shared_posts,
-        'is_own_profile': False
+        'saved_posts': saved_posts,
+        'is_own_profile': (request.user == profile_user)
     }
     
     # Check social relations only if user is logged in
@@ -600,7 +552,6 @@ def user_profile(request, username):
             context['is_blocked'] = False
     
     return render(request, 'posts/profile.html', context)
-
 
 @login_required
 def edit_profile(request):
@@ -859,34 +810,6 @@ def conversation_view(request, username):
     })
 
 
-# ============ NOTIFICATIONS ============
-
-# @login_required
-# def notifications_view(request):
-#     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
-#     unread_count = notifications.filter(is_read=False).count()
-    
-#     # Mark as read when user views notifications
-#     if request.method == 'GET':
-#         notifications.update(is_read=True)
-    
-#     return render(request, 'posts/notifications.html', {
-#         'notifications': notifications,
-#         'unread_count': unread_count
-#     })
-
-
-# @login_required
-# def get_unread_counts(request):
-#     unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
-#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
-    
-#     return JsonResponse({
-#         'unread_messages': unread_messages,
-#         'unread_notifications': unread_notifications
-#     })
-
-# ============ NOTIFICATIONS ============
 
 @login_required
 def notifications_view(request):
@@ -903,15 +826,7 @@ def notifications_view(request):
     })
 
 
-# @login_required
-# def get_unread_counts(request):
-#     unread_messages = Message.objects.filter(receiver=request.user, is_read=False).count()
-#     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
-    
-#     return JsonResponse({
-#         'unread_messages': unread_messages,
-#         'unread_notifications': unread_notifications
-#     })
+
 @login_required
 def get_unread_counts(request):
     """API endpoint to get unread counts for navbar updates"""
@@ -1003,3 +918,122 @@ def check_creative_content(request):
             'success': False,
             'error': str(e)
         })
+    
+@login_required
+def view_profile(request, username=None):
+    # Get the user whose profile we're viewing
+    if username:
+        profile_user = get_object_or_404(User, username=username)
+    else:
+        profile_user = request.user
+    
+    # Get posts, followers, following info
+    user_posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+    
+    # Get shared posts (posts shared by this user)
+    shared_posts = Post.objects.filter(shares__user=profile_user).distinct().order_by('-shares__created_at')
+    
+    # Get saved posts (ONLY for the logged-in user viewing their own profile)
+    saved_posts = []
+    if request.user == profile_user:
+        saved_posts = SavedPost.objects.filter(user=request.user).select_related('post').order_by('-saved_at')
+    
+    # Check if current user is following this profile
+    is_following = False
+    if request.user.is_authenticated and request.user != profile_user:
+        is_following = Follow.objects.filter(follower=request.user, following=profile_user).exists()
+    
+    # Check if blocked
+    is_blocked = False
+    if request.user.is_authenticated and request.user != profile_user:
+        is_blocked = Block.objects.filter(blocker=request.user, blocked=profile_user).exists()
+    
+    context = {
+        'profile_user': profile_user,
+        'user_posts': user_posts,
+        'shared_posts': shared_posts,
+        'saved_posts': saved_posts,  # Add this
+        'is_following': is_following,
+        'is_blocked': is_blocked,
+    }
+    
+    return render(request, 'posts/profile.html', context)
+
+from django.http import JsonResponse
+from .models import SavedPost
+
+@login_required
+def save_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Check if already saved
+    if SavedPost.objects.filter(user=request.user, post=post).exists():
+        return JsonResponse({'success': False, 'error': 'Post already saved'})
+    
+    # Save the post
+    saved_post = SavedPost.objects.create(user=request.user, post=post)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': 'Post saved successfully',
+            'saved_id': saved_post.id
+        })
+    
+    return redirect('posts:post_detail', pk=post_id)
+
+@login_required
+def unsave_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Try to unsave
+    deleted_count, _ = SavedPost.objects.filter(user=request.user, post=post).delete()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': deleted_count > 0,
+            'message': 'Post unsaved successfully' if deleted_count > 0 else 'Post was not saved'
+        })
+    
+    return redirect('posts:post_detail', pk=post_id)
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from .models import Post, Reaction
+import json
+
+@login_required
+@require_POST
+def remove_reaction(request, post_id):
+    """Remove a reaction from a post (for unlike functionality)"""
+    try:
+        post = Post.objects.get(id=post_id)
+        data = json.loads(request.body)
+        reaction_type = data.get('reaction_type', 'like')
+        
+        # Find and delete the reaction
+        reaction = Reaction.objects.filter(
+            post=post, 
+            user=request.user,
+            reaction_type=reaction_type
+        ).first()
+        
+        if reaction:
+            reaction.delete()
+            return JsonResponse({
+                'success': True,
+                'action': 'removed',
+                'total_reactions': post.reactions.count(),
+                'user_reaction': None
+            })
+        else:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Reaction not found'
+            })
+            
+    except Post.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Post not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

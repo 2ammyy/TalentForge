@@ -1,6 +1,6 @@
 """
 AI Content Validator for Creative Fields
-Checks if posts are related to creative/artistic fields
+Improved version with better job detection
 """
 
 import os
@@ -16,55 +16,69 @@ except ImportError:
     print("Warning: transformers not installed. Using manual validation only.")
     TRANSFORMERS_AVAILABLE = False
 
-# Default creative categories (used if database is not available)
+# Enhanced creative categories with more comprehensive keywords
 DEFAULT_CREATIVE_CATEGORIES = {
     'visual_arts': [
         'painting', 'drawing', 'sculpture', 'illustration', 'digital art', 
         'photography', 'graphic design', 'animation', '3d modeling', 'concept art',
         'watercolor', 'oil painting', 'sketch', 'portrait', 'landscape',
-        'character design', 'storyboard', 'comic', 'manga', 'anime'
+        'character design', 'storyboard', 'comic', 'manga', 'anime',
+        'fine arts', 'mixed media', 'printmaking', 'textile art', 'installation art',
+        'art direction', 'art curation', 'exhibition design'
     ],
     'design': [
         'ui/ux design', 'web design', 'product design', 'fashion design', 
         'interior design', 'graphic design', 'industrial design', 'logo design',
         'brand identity', 'typography', 'layout', 'packaging design',
-        'motion design', 'exhibition design', 'set design', 'costume design'
+        'motion design', 'exhibition design', 'set design', 'costume design',
+        'game design', 'level design', 'environment design', 'character design',
+        'user interface', 'user experience', 'interactive design'
     ],
     'culinary_arts': [
         'cooking', 'baking', 'pastry', 'food styling', 'culinary arts', 
         'cake design', 'chocolate art', 'food photography', 'recipe development',
-        'plating', 'gastronomy', 'mixology', 'food art', 'culinary arts'
+        'plating', 'gastronomy', 'mixology', 'food art', 'culinary arts',
+        'chef', 'sous chef', 'pastry chef', 'culinary artist', 'food preparation'
     ],
     'performing_arts': [
         'music', 'dance', 'theater', 'acting', 'singing', 'instrument', 
         'performance art', 'stand-up comedy', 'orchestra', 'choir',
         'piano', 'guitar', 'violin', 'drums', 'composition', 'songwriting',
-        'choreography', 'directing', 'producing', 'screenwriting'
+        'choreography', 'directing', 'producing', 'screenwriting',
+        'musician', 'vocalist', 'dancer', 'actor', 'performer',
+        'director', 'producer', 'stage manager', 'lighting design', 'sound design',
+        'pianist', 'guitarist', 'violinist', 'drummer', 'saxophonist', 'cellist',
+        'opera', 'ballet', 'musical theater', 'improv', 'storytelling'
     ],
     'literary_arts': [
         'writing', 'poetry', 'fiction', 'creative writing', 'screenwriting', 
         'copywriting', 'storytelling', 'novel', 'short story', 'playwriting',
-        'blogging', 'journalism', 'editing', 'publishing', 'translation'
+        'blogging', 'journalism', 'editing', 'publishing', 'translation',
+        'author', 'writer', 'poet', 'editor', 'content creator',
+        'scriptwriting', 'ghostwriting', 'technical writing', 'creative non-fiction'
     ],
     'crafts': [
         'pottery', 'woodworking', 'jewelry making', 'textile arts', 
         'calligraphy', 'glass blowing', 'ceramics', 'knitting', 'crochet',
         'embroidery', 'weaving', 'leatherworking', 'metalworking', 'origami',
-        'arabic calligraphy', 'خط عربي'
+        'arabic calligraphy', 'خط عربي', 'handmade', 'artisan', 'craftsmanship'
     ],
     'media_entertainment': [
         'film making', 'video editing', 'game design', 'animation', 
         'video production', 'sound design', 'vfx', 'cinematography',
-        'documentary', 'short film', 'music video', 'podcast', 'streaming'
+        'documentary', 'short film', 'music video', 'podcast', 'streaming',
+        'film production', 'video editing', 'sound engineering', 'audio production',
+        'cinematographer', 'editor', 'producer', 'director'
     ],
     'digital_creativity': [
         'motion graphics', 'digital painting', 'web design', 'app design', 
         'ar/vr design', 'interactive media', '3d animation', 'game development',
-        'coding creative', 'creative coding', 'generative art', 'digital art'
+        'coding creative', 'creative coding', 'generative art', 'digital art',
+        'ui design', 'ux design', 'interaction design', 'experience design'
     ]
 }
 
-# Job-specific keywords to identify creative jobs
+# Enhanced job-specific keywords
 CREATIVE_JOB_KEYWORDS = [
     'artist', 'designer', 'creative', 'animator', 'illustrator', 'photographer',
     'musician', 'writer', 'chef', 'baker', 'stylist', 'director', 'editor',
@@ -73,21 +87,33 @@ CREATIVE_JOB_KEYWORDS = [
     'content creator', 'copywriter', 'artisan', 'craftsman', 'maker',
     'painter', 'sculptor', 'ceramist', 'calligrapher', 'filmmaker',
     'composer', 'choreographer', 'dancer', 'actor', 'performer',
-    'pastry chef', 'food stylist', 'culinary artist', 'mixologist'
+    'pastry chef', 'food stylist', 'culinary artist', 'mixologist',
+    'pianist', 'guitarist', 'violinist', 'drummer', 'singer', 'vocalist',
+    'author', 'poet', 'playwright', 'screenwriter', 'novelist',
+    'producer', 'cinematographer', 'sound engineer', 'lighting designer',
+    'stage manager', 'costume designer', 'set designer', 'production designer',
+    'creative director', 'art curator', 'exhibition designer', 'gallery manager'
 ]
 
-# Negative keywords (non-creative fields)
-NON_CREATIVE_KEYWORDS = [
-    'business intelligence', 'business', 'finance', 'accounting', 'sales', 'marketing', 'real estate',
-    'insurance', 'banking', 'stock', 'investment', 'trading', 'crypto', 'bitcoin',
-    'medical', 'healthcare', 'doctor', 'nurse', 'hospital', 'pharmacy', 'surgery',
-    'engineering', 'mechanical', 'civil', 'electrical', 'construction', 'architecture (non-art)',
-    'logistics', 'supply chain', 'manufacturing', 'factory', 'production', 'assembly',
-    'legal', 'lawyer', 'attorney', 'court', 'law', 'regulation', 'contract',
-    'science', 'research', 'laboratory', 'chemistry', 'physics', 'biology', 'mathematics',
-    'administration', 'management', 'hr', 'human resources', 'recruitment', 'operations',
-    'data analysis', 'data science', 'machine learning', 'ai engineering', 'software development',
-    'customer service', 'support', 'technical support', 'it support'
+# More specific creative action verbs
+CREATIVE_ACTION_VERBS = [
+    'create', 'design', 'develop', 'compose', 'produce', 'direct',
+    'perform', 'illustrate', 'animate', 'photograph', 'sculpt',
+    'choreograph', 'arrange', 'orchestrate', 'write', 'paint',
+    'edit', 'curate', 'style', 'craft', 'build', 'make',
+    'innovate', 'imagine', 'visualize', 'conceptualize', 'storyboard'
+]
+
+# Creative skills and tools
+CREATIVE_SKILLS = [
+    'photoshop', 'illustrator', 'premiere pro', 'after effects', 'final cut',
+    'maya', 'blender', 'unity', 'unreal engine', 'autocad', 'sketchup',
+    'pro tools', 'logic pro', 'ableton', 'fl studio', 'cubase',
+    'adobe creative suite', 'creative cloud', 'figma', 'sketch',
+    'sight-reading', 'improvisation', 'composition', 'arrangement',
+    'storytelling', 'character development', 'world building',
+    'color theory', 'typography', 'layout', 'composition',
+    'voice training', 'dance technique', 'acting method'
 ]
 
 class ContentValidator:
@@ -101,57 +127,33 @@ class ContentValidator:
         self.text_classifier = None
         self.creative_categories = DEFAULT_CREATIVE_CATEGORIES.copy()
         self.creative_job_keywords = CREATIVE_JOB_KEYWORDS.copy()
-        self.non_creative_keywords = NON_CREATIVE_KEYWORDS.copy()
+        self.creative_action_verbs = CREATIVE_ACTION_VERBS.copy()
+        self.creative_skills = CREATIVE_SKILLS.copy()
         
         # Initialize AI model if available
-        if TRANSFORMERS_AVAILABLE:
+        if TRANSFORMERS_AVAILABLE and not use_lightweight_model:
             try:
-                # Use a MUCH SMALLER model (only 44MB instead of 1.63GB!)
-                # This model is specifically trained for zero-shot classification
-                if use_lightweight_model:
-                    # OPTION 1: Tiny model (fastest)
-                    model_name = "facebook/bart-large-mnli"
-                    # Actually, let's use manual for now to avoid downloads
-                    print("⚠️ Using manual validation to avoid model downloads")
-                    self.model_loaded = False
-                else:
-                    # OPTION 2: Small efficient model
-                    model_name = "typeform/distilbert-base-uncased-mnli"
-                    self.text_classifier = pipeline(
-                        "zero-shot-classification",
-                        model=model_name,
-                        device=-1  # Use CPU (faster for small models)
-                    )
-                    self.model_loaded = True
-                    print(f"✅ AI model loaded successfully: {model_name}")
+                model_name = "facebook/bart-large-mnli"
+                self.text_classifier = pipeline(
+                    "zero-shot-classification",
+                    model=model_name,
+                    device=-1  # Use CPU
+                )
+                self.model_loaded = True
+                print(f"✅ AI model loaded successfully: {model_name}")
             except Exception as e:
                 print(f"⚠️ Could not load AI model: {e}")
-                print("   Using manual validation only")
                 self.model_loaded = False
         else:
-            print("⚠️ Transformers library not installed")
-            print("   Using manual validation only")
             self.model_loaded = False
         
-        # Validation thresholds
-        self.threshold_approve = 0.5  # Score >= 0.5 = approved
-        self.threshold_warning = 0.3  # Score >= 0.3 = warning, < 0.3 = rejected
+        # Validation thresholds - Adjusted for better job detection
+        self.threshold_approve = 0.3  # Lower threshold for approval
+        self.threshold_warning = 0.2  # Warning threshold
     
     def validate_post(self, post_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Main validation function for posts
-        
-        Args:
-            post_data: Dictionary containing post information
-                - type: 'text', 'image', 'video', 'job'
-                - title: post title
-                - content: post content
-                - image: image file (optional)
-                - video: video file (optional)
-                - job_fields: dictionary with job-specific fields (for job posts)
-        
-        Returns:
-            Dictionary with validation results
         """
         post_type = post_data.get('type', 'text')
         
@@ -184,8 +186,7 @@ class ContentValidator:
                 'detected_categories': []
             }
         
-        # Always use manual classification for now (FASTER)
-        # We can enable AI later if needed
+        # Manual classification
         ai_result = self._manual_classify_text(full_text)
         
         # Check against non-creative keywords
@@ -198,12 +199,14 @@ class ContentValidator:
         is_valid = final_score >= self.threshold_approve
         
         # Generate reason based on score
-        if final_score >= 0.7:
+        if final_score >= 0.6:
             reason = "Excellent creative content!"
-        elif final_score >= 0.5:
+        elif final_score >= 0.4:
             reason = "Good creative content"
         elif final_score >= 0.3:
-            reason = "Some creative elements, could be improved"
+            reason = "Some creative elements"
+        elif final_score >= 0.2:
+            reason = "Limited creative elements, could be improved"
         else:
             reason = "Not creative enough for our platform"
         
@@ -216,192 +219,195 @@ class ContentValidator:
             'detected_categories': ai_result['categories'][:3] if ai_result['categories'] else []
         }
     
-    def _validate_image_post(self, post_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate image posts"""
-        title = post_data.get('title', '')
-        content = post_data.get('content', '')
-        
-        # First validate text content
-        text_result = self._validate_text_post({'title': title, 'content': content, 'type': 'text'})
-        
-        # For now, we'll rely on text analysis
-        image_score = 0.5  # Default neutral score
-        
-        # Combine scores (heavier weight on text)
-        final_score = (text_result['score'] * 0.8) + (image_score * 0.2)
-        is_valid = final_score >= self.threshold_approve
-        
-        result = {
-            'is_valid': is_valid,
-            'score': round(final_score, 3),
-            'confidence': text_result['confidence'],
-            'reason': text_result['reason'] + " (Image analysis limited)",
-            'suggestions': text_result['suggestions'],
-            'detected_categories': text_result.get('detected_categories', [])
-        }
-        
-        return result
-    
-    def _validate_video_post(self, post_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate video posts"""
-        title = post_data.get('title', '')
-        content = post_data.get('content', '')
-        
-        # First validate text content
-        text_result = self._validate_text_post({'title': title, 'content': content, 'type': 'text'})
-        
-        # For now, we'll rely on text analysis and filename
-        video_score = 0.5
-        
-        # Check video filename for creative hints
-        if 'video' in post_data and post_data['video']:
-            filename = str(post_data['video']).lower()
-            video_keywords = ['art', 'design', 'music', 'tutorial', 'demo', 'showcase', 'creative', 'animation']
-            if any(keyword in filename for keyword in video_keywords):
-                video_score = 0.7
-        
-        # Combine scores
-        final_score = (text_result['score'] * 0.7) + (video_score * 0.3)
-        is_valid = final_score >= self.threshold_approve
-        
-        result = {
-            'is_valid': is_valid,
-            'score': round(final_score, 3),
-            'confidence': text_result['confidence'],
-            'reason': text_result['reason'] + " (Video analysis limited)",
-            'suggestions': text_result['suggestions'],
-            'detected_categories': text_result.get('detected_categories', [])
-        }
-        
-        return result
-    
     def _validate_job_post(self, post_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate job posts"""
+        """Validate job posts - IMPROVED VERSION"""
         title = post_data.get('title', '')
         content = post_data.get('content', '')
         job_fields = post_data.get('job_fields', {})
         
-        # Check for creative job keywords in title
-        title_score = self._score_creative_content(title, is_job=True)
+        # Combine all text for analysis
+        full_text = f"{title} {content} {job_fields.get('company', '')} {job_fields.get('skills_required', '')}".lower()
         
-        # Check job description
-        content_score = self._score_creative_content(content, is_job=True)
+        if not full_text.strip():
+            return {
+                'is_valid': True,
+                'score': 0.0,
+                'confidence': 0.0,
+                'reason': "Empty job post - cannot validate",
+                'suggestions': [],
+                'detected_categories': []
+            }
         
-        # Check company name and skills
-        company = job_fields.get('company', '').lower()
-        skills = job_fields.get('skills_required', '').lower()
+        # Enhanced scoring for job posts
+        scores = self._calculate_job_scores(title, content, job_fields)
         
-        # Extract skills and check for creative skills
-        creative_skills_count = 0
-        total_skills = 0
+        # Calculate final score with adjusted weights for jobs
+        final_score = (
+            scores['title_score'] * 0.25 +
+            scores['content_score'] * 0.35 +
+            scores['skills_score'] * 0.25 +
+            scores['action_verbs_score'] * 0.15
+        )
         
-        if skills:
-            skill_list = [s.strip() for s in skills.split('\n') if s.strip()]
-            total_skills = len(skill_list)
-            for skill in skill_list:
-                if self._is_creative_keyword(skill):
-                    creative_skills_count += 1
+        # Normalize score (make it easier for jobs to pass)
+        normalized_score = min(1.0, final_score * 1.5)  # Boost job scores
         
-        # Calculate skill score
-        skill_score = creative_skills_count / max(total_skills, 1)
+        # Get categories from the full text
+        categories = self._extract_categories_from_text(full_text)
         
-        # Company score (check if company name suggests creative industry)
-        company_score = 0.1 if self._is_creative_company(company) else 0
-        
-        # Combine scores with weights
-        scores = {
-            'title': title_score * 0.3,
-            'content': content_score * 0.4,
-            'skills': skill_score * 0.2,
-            'company': company_score * 0.1
-        }
-        
-        final_score = sum(scores.values())
-        is_valid = final_score >= self.threshold_warning  # Lower threshold for jobs
+        # Determine if valid - LOWER THRESHOLD FOR JOBS
+        is_valid = normalized_score >= 0.2  # Only 20% needed for jobs
         
         # Generate reason
-        if final_score >= 0.6:
+        if normalized_score >= 0.6:
             reason = "Excellent creative job posting!"
-        elif final_score >= 0.4:
+        elif normalized_score >= 0.4:
             reason = "Good creative job posting"
-        elif final_score >= 0.3:
-            reason = "Some creative elements in job posting"
+        elif normalized_score >= 0.2:
+            reason = "Creative job posting"
         else:
-            reason = "Job posting doesn't appear to be for creative/artistic roles"
+            reason = "Job posting may not be for creative/artistic roles"
         
-        # Generate suggestions
+        # Generate suggestions if score is low
         suggestions = []
-        if final_score < 0.4:
-            suggestions = [
-                "Use more specific creative job titles (e.g., 'Graphic Designer' instead of 'Designer')",
-                "Mention creative skills required (e.g., 'Photoshop', 'Illustration', 'UI Design')",
-                "Specify creative tools or software used in the role",
-                "Highlight creative benefits (e.g., 'creative freedom', 'artistic collaboration')",
-                "Include examples of creative work expected"
-            ]
+        if normalized_score < 0.4:
+            suggestions = self._generate_job_suggestions(title, content, job_fields, normalized_score)
         
         return {
             'is_valid': is_valid,
-            'score': round(final_score, 3),
-            'confidence': round(final_score, 3),
+            'score': round(normalized_score, 3),
+            'confidence': round(normalized_score, 3),
             'reason': reason,
             'suggestions': suggestions,
-            'detected_categories': self._extract_categories_from_job(full_text=f"{title} {content}"),
-            'score_breakdown': {k: round(v, 3) for k, v in scores.items()}
+            'detected_categories': categories[:3],
+            'score_breakdown': {
+                'title': round(scores['title_score'], 3),
+                'content': round(scores['content_score'], 3),
+                'skills': round(scores['skills_score'], 3),
+                'verbs': round(scores['action_verbs_score'], 3)
+            }
         }
     
-    def _ai_classify_text(self, text: str) -> Dict[str, Any]:
-        """Use AI model to classify text"""
-        try:
-            if not self.text_classifier:
-                return self._manual_classify_text(text)
+    def _calculate_job_scores(self, title: str, content: str, job_fields: Dict) -> Dict[str, float]:
+        """Calculate detailed scores for job posts"""
+        
+        # Combine all text for analysis
+        all_text = f"{title} {content} {job_fields.get('skills_required', '')}".lower()
+        company = job_fields.get('company', '').lower()
+        
+        # 1. Title score - check for creative job titles
+        title_score = self._score_creative_content(title, is_job=True)
+        
+        # 2. Content score - enhanced with context analysis
+        content_score = self._score_creative_content(content, is_job=True)
+        
+        # 3. Skills score
+        skills = job_fields.get('skills_required', '')
+        skill_score = self._calculate_skills_score(skills)
+        
+        # 4. Action verbs score - check for creative action verbs
+        action_verbs_score = self._score_action_verbs(all_text)
+        
+        # 5. Company name bonus
+        company_bonus = 0.1 if self._is_creative_company(company) else 0
+        
+        return {
+            'title_score': title_score,
+            'content_score': content_score + company_bonus,
+            'skills_score': skill_score,
+            'action_verbs_score': action_verbs_score
+        }
+    
+    def _score_action_verbs(self, text: str) -> float:
+        """Score based on creative action verbs in text"""
+        if not text:
+            return 0.0
+        
+        text_lower = text.lower()
+        verb_count = 0
+        
+        for verb in self.creative_action_verbs:
+            if verb in text_lower:
+                verb_count += 1
+        
+        # Normalize score
+        return min(1.0, verb_count / 3)  # 3 verbs = 100% score
+    
+    def _calculate_skills_score(self, skills: str) -> float:
+        """Calculate score based on creative skills mentioned"""
+        if not skills:
+            return 0.3  # Default score if no skills specified
+        
+        skills_lower = skills.lower()
+        creative_skill_count = 0
+        total_skills = 0
+        
+        # Count lines as potential skills
+        skill_lines = [s.strip() for s in skills_lower.split('\n') if s.strip()]
+        total_skills = len(skill_lines)
+        
+        for skill in skill_lines:
+            # Check if this skill contains any creative keyword
+            if any(keyword in skill for keyword in self.creative_skills):
+                creative_skill_count += 1
+            elif any(keyword in skill for keyword in self.creative_job_keywords):
+                creative_skill_count += 0.5  # Partial credit for job keywords
+        
+        if total_skills == 0:
+            return 0.3
+        
+        return creative_skill_count / max(total_skills, 1)
+    
+    def _extract_categories_from_text(self, text: str) -> List[str]:
+        """Extract creative categories from text"""
+        text_lower = text.lower()
+        categories = []
+        category_scores = {}
+        
+        for category, keywords in self.creative_categories.items():
+            score = 0
+            for keyword in keywords:
+                if keyword in text_lower:
+                    score += 1
             
-            # Define candidate labels based on creative categories
-            candidate_labels = list(self.creative_categories.keys())
-            
-            # Add some negative labels
-            candidate_labels.extend(['business', 'technology', 'science', 'other', 'education'])
-            
-            # Run classification
-            result = self.text_classifier(
-                text,
-                candidate_labels,
-                multi_label=False  # Single best label
-            )
-            
-            # Get creative labels (filter out non-creative)
-            creative_labels = []
-            creative_scores = []
-            
-            for label, score in zip(result['labels'], result['scores']):
-                if label in self.creative_categories:
-                    creative_labels.append(label)
-                    creative_scores.append(score)
-            
-            # Calculate average creative score
-            creative_score = sum(creative_scores) / len(creative_scores) if creative_scores else 0
-            
-            # Get top 3 creative categories
-            top_categories = creative_labels[:3]
-            
-            # Generate reason
-            if creative_score > 0.7:
-                reason = f"Strong creative content detected in: {', '.join(top_categories[:2])}"
-            elif creative_score > 0.4:
-                reason = f"Creative content detected in: {', '.join(top_categories[:1]) if top_categories else 'general creative'}"
-            else:
-                reason = "Little creative content detected"
-            
-            return {
-                'score': creative_score,
-                'confidence': max(creative_scores) if creative_scores else 0,
-                'reason': reason,
-                'categories': top_categories
-            }
-            
-        except Exception as e:
-            print(f"AI classification failed: {e}")
-            return self._manual_classify_text(text)
+            if score > 0:
+                categories.append(category)
+                category_scores[category] = score
+        
+        # Sort by score
+        categories.sort(key=lambda x: category_scores.get(x, 0), reverse=True)
+        return categories[:3]
+    
+    def _score_creative_content(self, text: str, is_job: bool = False) -> float:
+        """Score how creative a piece of text is - IMPROVED"""
+        if not text:
+            return 0.0
+        
+        text_lower = text.lower()
+        
+        # Count matches from multiple sources
+        matches = 0
+        
+        if is_job:
+            # For jobs, check job keywords
+            for keyword in self.creative_job_keywords:
+                if keyword in text_lower:
+                    matches += 1
+        else:
+            # For regular posts, check all creative keywords
+            for keywords in self.creative_categories.values():
+                for keyword in keywords:
+                    if keyword in text_lower:
+                        matches += 1
+        
+        # Also check for creative action verbs
+        for verb in self.creative_action_verbs:
+            if verb in text_lower:
+                matches += 0.5  # Half weight for verbs
+        
+        # Normalize score
+        max_matches = 5  # Cap at 5 matches for 100% score
+        return min(matches / max_matches, 1.0)
     
     def _manual_classify_text(self, text: str) -> Dict[str, Any]:
         """Manual text classification using keywords"""
@@ -424,22 +430,21 @@ class ContentValidator:
                 category_matches[category] = category_match_count
         
         # Calculate score based on matches
-        total_keywords_checked = sum(len(keywords) for keywords in self.creative_categories.values())
-        score = min(creative_matches / 5, 1.0)  # Cap at 5 matches = 100%
+        score = min(creative_matches / 3, 1.0)  # Cap at 3 matches = 100%
         
         # Sort categories by match count
         detected_categories.sort(key=lambda x: category_matches.get(x, 0), reverse=True)
         
         if score > 0.5:
-            reason = f"Creative content detected in: {', '.join(detected_categories[:2])}"
+            reason = f"Strong creative content detected"
         elif score > 0.2:
-            reason = "Some creative elements detected"
+            reason = f"Creative content detected"
         else:
             reason = "Little to no creative content detected"
         
         return {
             'score': score,
-            'confidence': score,  # Use score as confidence for manual classification
+            'confidence': score,
             'reason': reason,
             'categories': detected_categories[:3]
         }
@@ -448,61 +453,26 @@ class ContentValidator:
         """Check for non-creative keywords (returns penalty score)"""
         text_lower = text.lower()
         
+        non_creative_keywords = [
+            'business intelligence', 'business', 'finance', 'accounting', 'sales', 'marketing', 'real estate',
+            'insurance', 'banking', 'stock', 'investment', 'trading', 'crypto', 'bitcoin',
+            'medical', 'healthcare', 'doctor', 'nurse', 'hospital', 'pharmacy', 'surgery',
+            'engineering', 'mechanical', 'civil', 'electrical', 'construction',
+            'logistics', 'supply chain', 'manufacturing', 'factory', 'production', 'assembly',
+            'legal', 'lawyer', 'attorney', 'court', 'law', 'regulation', 'contract',
+            'science', 'research', 'laboratory', 'chemistry', 'physics', 'biology', 'mathematics',
+            'administration', 'management', 'hr', 'human resources', 'recruitment', 'operations',
+            'data analysis', 'data science', 'machine learning', 'ai engineering', 'software development',
+            'customer service', 'support', 'technical support', 'it support'
+        ]
+        
         penalty = 0
-        for keyword in self.non_creative_keywords:
+        for keyword in non_creative_keywords:
             if keyword in text_lower:
-                penalty += 0.2  # 20% penalty per non-creative keyword
-                
-                # Extra penalty for business/tech terms
-                if keyword in ['business intelligence', 'data science', 'software development']:
-                    penalty += 0.3
+                penalty += 0.1  # 10% penalty per non-creative keyword
         
         # Convert penalty to score (1 - penalty, min 0)
-        return max(1.0 - min(penalty, 1.0), 0.0)
-    
-    def _score_creative_content(self, text: str, is_job: bool = False) -> float:
-        """Score how creative a piece of text is"""
-        if not text:
-            return 0.0
-        
-        text_lower = text.lower()
-        
-        # Count creative keyword matches
-        creative_matches = 0
-        
-        if is_job:
-            keywords = self.creative_job_keywords
-        else:
-            # Flatten all creative category keywords
-            keywords = []
-            for cat_keywords in self.creative_categories.values():
-                keywords.extend(cat_keywords)
-        
-        # Check for keyword matches
-        for keyword in keywords:
-            if keyword in text_lower:
-                creative_matches += 1
-        
-        # Normalize score (0-1)
-        max_matches = 5  # Cap at 5 matches for 100% score
-        score = min(creative_matches / max_matches, 1.0)
-        
-        return score
-    
-    def _is_creative_keyword(self, text: str) -> bool:
-        """Check if text contains creative keywords"""
-        text_lower = text.lower()
-        
-        # Check all creative categories
-        for keywords in self.creative_categories.values():
-            if any(keyword in text_lower for keyword in keywords):
-                return True
-        
-        # Check creative job keywords
-        if any(keyword in text_lower for keyword in self.creative_job_keywords):
-            return True
-        
-        return False
+        return max(1.0 - min(penalty, 0.5), 0.0)  # Max 50% penalty
     
     def _is_creative_company(self, company_name: str) -> bool:
         """Check if company name suggests creative industry"""
@@ -514,23 +484,42 @@ class ContentValidator:
             'studio', 'creative', 'design', 'art', 'media', 'production',
             'gallery', 'atelier', 'workshop', 'lab', 'collective', 'agency',
             'arts', 'creative', 'designs', 'productions', 'films', 'music',
-            'publishing', 'fashion', 'interior', 'architecture', 'culinary'
+            'publishing', 'fashion', 'interior', 'architecture', 'culinary',
+            'theater', 'theatre', 'orchestra', 'opera', 'ballet', 'dance',
+            'record', 'label', 'entertainment', 'creative', 'innovation'
         ]
         
         return any(keyword in company_lower for keyword in creative_company_keywords)
     
-    def _extract_categories_from_job(self, full_text: str) -> List[str]:
-        """Extract creative categories from job text"""
-        text_lower = full_text.lower()
-        categories = []
+    def _generate_job_suggestions(self, title: str, content: str, job_fields: Dict, score: float) -> List[str]:
+        """Generate suggestions for job posts"""
+        suggestions = []
+        full_text = f"{title} {content}".lower()
         
-        for category, keywords in self.creative_categories.items():
-            for keyword in keywords:
-                if keyword in text_lower and category not in categories:
-                    categories.append(category)
-                    break  # Found one keyword, move to next category
+        # Check for missing elements
+        has_specific_title = any(keyword in title.lower() for keyword in self.creative_job_keywords)
+        has_creative_verbs = any(verb in full_text for verb in self.creative_action_verbs)
+        has_skills = bool(job_fields.get('skills_required', '').strip())
+        has_tools = any(tool in full_text for tool in self.creative_skills)
         
-        return categories[:3]
+        if not has_specific_title:
+            suggestions.append("Use a more specific creative job title (e.g., 'Pianist', 'Graphic Designer', 'Content Writer')")
+        
+        if not has_creative_verbs:
+            suggestions.append("Include creative action verbs like 'create', 'design', 'compose', 'perform', 'develop'")
+        
+        if not has_skills:
+            suggestions.append("List specific creative skills required (e.g., 'sight-reading', 'composition', 'improvisation')")
+        
+        if not has_tools:
+            suggestions.append("Mention creative tools or software (e.g., 'Pro Tools', 'Adobe Creative Suite', 'specific instruments')")
+        
+        # Add general suggestions if still needed
+        if len(suggestions) < 2:
+            suggestions.append("Highlight creative benefits like artistic freedom, creative collaboration, or portfolio building")
+            suggestions.append("Mention opportunities for creative growth or skill development")
+        
+        return suggestions[:3]
     
     def _generate_suggestions(self, text: str, categories: List[str], score: float) -> List[str]:
         """Generate suggestions to make content more creative"""
@@ -584,7 +573,7 @@ class ContentValidator:
             # High score - minimal suggestions
             suggestions.append("Great job! Your content is already very creative.")
         
-        return suggestions[:3]  # Return top 3 suggestions
+        return suggestions[:3]
 
 # Singleton instance
 _validator_instance = None
@@ -593,7 +582,7 @@ def get_validator():
     """Get or create validator instance"""
     global _validator_instance
     if _validator_instance is None:
-        _validator_instance = ContentValidator(use_lightweight_model=False)  # No AI model for now
+        _validator_instance = ContentValidator(use_lightweight_model=True)
     return _validator_instance
 
 def validate_content(content_data: Dict[str, Any]) -> Dict[str, Any]:

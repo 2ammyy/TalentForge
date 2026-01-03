@@ -474,3 +474,17 @@ class ContentValidationLog(models.Model):
     
     def __str__(self):
         return f"Validation {self.id} - Score: {self.score:.2f}"
+
+
+
+class SavedPost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_posts')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='saved_by')
+    saved_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['user', 'post']  # Prevent duplicate saves
+        ordering = ['-saved_at']
+        
+    def __str__(self):
+        return f"{self.user.username} saved {self.post.title}"
