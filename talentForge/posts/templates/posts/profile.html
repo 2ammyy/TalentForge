@@ -1055,11 +1055,7 @@
                         <a href="{% url 'base:edit_profile' %}" class="profile-action-btn edit">
                             <i class="fas fa-edit"></i> Edit Profile
                         </a>
-                        {% if saved_posts and saved_posts.count > 0 %}
-                        <a href="{% url 'posts:saved_posts' %}" class="profile-action-btn view-saved">
-                            <i class="fas fa-bookmark"></i> View All Saved
-                        </a>
-                        {% endif %}
+                        
                     </div>
                 {% endif %}
             </div>
@@ -1212,7 +1208,7 @@
 
                         <!-- Post Actions -->
                         <div class="post-actions-modern">
-                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-comment"></i>
                                 <span class="action-count">{{ post.comments.count }}</span>
                             </a>
@@ -1223,7 +1219,7 @@
                                 <span class="action-count">{{ post.reactions.count }}</span>
                             </button>
                             
-                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none" >
                                 <i class="fas fa-share"></i>
                                 <span class="action-count">{{ post.post_shares.count }}</span>
                             </a>
@@ -1270,7 +1266,7 @@
                 {% for share in shared_posts %}
                     <div class="post-card-modern">
                         <!-- Shared Indicator -->
-                        <div class="shared-indicator">
+                        <div class="shared-indicator text-decoration-none">
                             <i class="fas fa-share-alt"></i> Shared
                         </div>
                         
@@ -1379,7 +1375,7 @@
                         <!-- Post Content -->
                         <div class="post-content-modern">
                             <h3 class="post-title-modern">
-                                <a href="{% url 'posts:post_detail' post.pk %}">{{ post.title|default:"Untitled Post" }}</a>
+                                <a href="{% url 'posts:post_detail' post.pk %} text-decoration-none">{{ post.title|default:"Untitled Post" }}</a>
                             </h3>
                             
                             {% if post.content %}
@@ -1398,7 +1394,7 @@
 
                         <!-- Post Actions -->
                         <div class="post-actions-modern">
-                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-comment"></i>
                                 <span class="action-count">{{ post.comments.count }}</span>
                             </a>
@@ -1409,7 +1405,7 @@
                                 <span class="action-count">{{ post.reactions.count }}</span>
                             </button>
                             
-                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-share"></i>
                                 <span class="action-count">{{ post.post_shares.count }}</span>
                             </a>
@@ -1446,9 +1442,7 @@
     <div id="saved-posts" class="content-section">
         <div class="section-header">
             <h2>Saved Posts</h2>
-            <a href="{% url 'posts:saved_posts' %}" class="create-post-btn">
-                <i class="fas fa-external-link-alt"></i> View All Saved
-            </a>
+            
         </div>
 
         {% if saved_posts %}
@@ -1563,7 +1557,7 @@
 
                         <!-- Post Actions -->
                         <div class="post-actions-modern">
-                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:post_detail' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-comment"></i>
                                 <span class="action-count">{{ post.comments.count }}</span>
                             </a>
@@ -1574,7 +1568,7 @@
                                 <span class="action-count">{{ post.reactions.count }}</span>
                             </button>
                             
-                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern">
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-share"></i>
                                 <span class="action-count">{{ post.post_shares.count }}</span>
                             </a>
@@ -1587,9 +1581,7 @@
             <!-- View All Link -->
             {% if saved_posts.count > 6 %}
             <div class="view-all-link">
-                <a href="{% url 'posts:saved_posts' %}" class="btn btn-outline-primary">
-                    <i class="fas fa-book-open"></i> View All Saved Posts
-                </a>
+               
             </div>
             {% endif %}
             
