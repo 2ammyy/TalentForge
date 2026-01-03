@@ -1,29 +1,18 @@
-﻿# Django core
-Django
+﻿Django
 asgiref
 sqlparse
-
-# Database
 psycopg2-binary
-
-# AI/ML
-torch
-transformers
-
-# Django extensions
 django-cors-headers
 django-allauth
-
-# Utilities
 PyJWT
 cryptography
 requests
 python-dotenv
-
-# Production
 gunicorn
-
 Pillow
+torch
+transformers
 sentencepiece
-accelerate
 protobuf
+accelerate
+profanity-check

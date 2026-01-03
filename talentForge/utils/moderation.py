@@ -27,7 +27,8 @@ def get_toxicity_model():
             # Use simpler pipeline without top_k=None initially
             _toxicity_model = pipeline(
                 "text-classification",
-                model="unitary/toxic-bert",
+                #model="unitary/toxic-bert",
+                model="mrm8488/bert-tiny-finetuned-spam",
                 device=-1,  # CPU
                 max_length=512,
                 truncation=True,

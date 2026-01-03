@@ -4,6 +4,8 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
+from ..utils.api_views import check_content_safety
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('base.urls')),
@@ -40,6 +42,7 @@ urlpatterns = [
     path('creator/', include('creator.urls', namespace='creator')),
     path('word_prediction/', include('word_prediction.urls')),
     # path('api/get-unread-count/', include('word_prediction.urls')),  # New URL for unread counts
+    path('api/check-content-safety/', check_content_safety, name='check_content_safety'),
 ]
 
 # Servir les fichiers médias en mode développement

@@ -13,31 +13,140 @@
     
     <!-- CSS Personnalisé -->
     <link href="{% static 'css/main.css' %}" rel="stylesheet">
-
-    <!-- Preconnect to video CDN if you're using one -->
-    <link rel="preconnect" href="https://your-video-cdn.com">
-    <link rel="dns-prefetch" href="https://your-video-cdn.com">
-
-    <!-- Word Prediction CSS -->
-    <!-- <link href="{% static 'css/word-prediction.css' %}" rel="stylesheet"> -->
-    
     <link href="{% static 'css/moderation.css' %}" rel="stylesheet">
 
     {% block extra_css %}{% endblock %}
+    
+    <!-- Style pour la modération en temps réel -->
+    <style>
+        .content-moderation-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+            padding: 15px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #ffc107;
+            color: #856404;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            backdrop-filter: blur(5px);
+        }
+        
+        .content-moderation-alert.danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .content-moderation-alert.warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .content-moderation-alert.info {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            border-color: #0dcaf0;
+            color: #0c5460;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                transform: translateX(100%) translateY(-20px); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateX(0) translateY(0); 
+                opacity: 1; 
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .content-moderation-alert.shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .toxic-field {
+            border-color: #dc3545 !important;
+            background-color: rgba(220, 53, 69, 0.05) !important;
+            animation: pulseRed 2s infinite;
+        }
+        
+        .warning-field {
+            border-color: #ffc107 !important;
+            background-color: rgba(255, 193, 7, 0.05) !important;
+        }
+        
+        @keyframes pulseRed {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        
+        .moderation-feedback {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .toxicity-score-bar {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+        
+        .toxicity-score-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        
+        .score-low { background: #28a745; }
+        .score-medium { background: #ffc107; }
+        .score-high { background: #dc3545; }
+    </style>
 </head>
 <body>
+    <!-- Modération Alert (sera affiché par JavaScript) -->
+    <div id="contentModerationAlert" class="content-moderation-alert" role="alert">
+        <div class="d-flex align-items-start">
+            <span class="alert-icon me-2" style="font-size: 20px;"></span>
+            <div class="flex-grow-1">
+                <strong class="alert-title d-block mb-1"></strong>
+                <div class="alert-message small"></div>
+                <div class="toxicity-score-bar mt-2">
+                    <div class="toxicity-score-fill"></div>
+                </div>
+                <small class="score-text text-muted d-block mt-1"></small>
+            </div>
+            <button type="button" class="close-alert btn-close ms-2" style="margin-top: -5px;"></button>
+        </div>
+    </div>
+
     <!-- Navbar -->
     {% include 'includes/navbar.html' %}
 
     <!-- Main Content -->
-    <div class="main-content" style="padding-top: 80px;"> <!-- Ajout du padding pour compenser la navbar fixe -->
+    <main class="main-content" style="padding-top: 80px;">
         <div class="container">
-            <!-- Messages -->
+            <!-- Django Messages -->
             {% if messages %}
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
             {% endif %}
@@ -46,8 +155,7 @@
             {% block content %}
             {% endblock %}
         </div>
-        
-    </div>
+    </main>
 
     <!-- Footer -->
     {% include 'includes/footer.html' %}
@@ -55,40 +163,88 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- JS Personnalisé -->
+    <!-- Main JS -->
     <script src="{% static 'js/main.js' %}"></script>
     
     <!-- Word Prediction JS -->
-    <!-- <script src="{% static 'js/google-predictor.js' %}"></script> -->
     <script src="{% static 'js/google-predictor.js' %}?v=2.0"></script>
-     <script>
-        console.log('=== AFTER ALL SCRIPTS LOADED ===');
-        console.log('fetchPredictions defined:', typeof fetchPredictions !== 'undefined');
-        console.log('showPredictions defined:', typeof showPredictions !== 'undefined');
-        
-        // Test if we can call it
-        if (typeof fetchPredictions !== 'undefined') {
-            console.log('✓ SUCCESS: Functions are available');
-            // Auto-test after 2 seconds
-            setTimeout(() => {
-                console.log('Auto-testing with "art"...');
-                fetchPredictions('art');
-            }, 2000);
-        } else {
-            console.error('✗ ERROR: Functions are NOT defined!');
+    
+    <!-- Modération en temps réel JS -->
+    <script src="{% static 'js/moderation.js' %}"></script>
+    
+    <!-- Initialisation de la modération -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser le système de modération
+            if (typeof window.ContentModerator !== 'undefined') {
+                window.contentModerator = new window.ContentModerator({
+                    inputSelector: '#id_content, #id_body, #id_message, #id_comment, #id_title, .content-input, [data-moderation="true"]',
+                    endpoint: '/api/check-content-safety/',
+                    minLength: 3,
+                    checkInterval: 800
+                });
+                console.log('✅ Content moderation system initialized');
+            } else {
+                console.warn('⚠️ Content moderation system not available');
+            }
             
-            // Try to find the issue
-            console.log('Checking window object...');
-            for (let key in window) {
-                if (key.toLowerCase().includes('predict')) {
-                    console.log('Found:', key);
+            // Test du système de prédiction
+            console.log('=== Testing Prediction System ===');
+            console.log('fetchPredictions defined:', typeof fetchPredictions !== 'undefined');
+            
+            if (typeof fetchPredictions !== 'undefined') {
+                console.log('✓ Word prediction functions available');
+            }
+            
+            // Gestionnaire pour fermer l'alerte de modération
+            document.querySelector('.close-alert')?.addEventListener('click', function() {
+                document.getElementById('contentModerationAlert').style.display = 'none';
+            });
+            
+            // Fermer automatiquement après 8 secondes
+            setInterval(() => {
+                const alert = document.getElementById('contentModerationAlert');
+                if (alert.style.display === 'block') {
+                    alert.style.display = 'none';
+                }
+            }, 8000);
+        });
+        
+        // Fonction utilitaire pour vérifier le contenu (accessible depuis la console)
+        window.checkContentSafety = async function(text) {
+            try {
+                const response = await fetch('/api/check-content-safety/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Content safety check failed:', error);
+                return { error: error.message };
+            }
+        };
+        
+        // Fonction pour récupérer le token CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
+            return cookieValue;
         }
     </script>
+    
     {% block extra_js %}{% endblock %}
-
-    <script src="{% static 'js/moderation.js' %}"></script>
 </body>
 </html>
-

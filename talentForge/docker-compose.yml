@@ -1,4 +1,10 @@
-﻿services:
+﻿version: '3.8'
+
+services:
+  # Base de données (externe dans votre cas)
+  # Vous utilisez déjà une DB externe sur 192.168.0.60
+  
+  # Service IA - Ollama
   ollama:
     image: ollama/ollama:latest
     container_name: talentforge_ollama
@@ -6,14 +12,17 @@
     volumes:
       - ollama_data:/root/.ollama
     ports:
-      - "11435:11434"
+      - "11435:11434"  # Externe:11435 → Interne:11434
+    environment:
+      - OLLAMA_HOST=0.0.0.0
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 4G  # Réduit de 8G à 4G
         reservations:
-          memory: 4G
+          memory: 2G
 
+  # Application Django
   web:
     build: .
     container_name: talentforge_web
@@ -21,38 +30,97 @@
     volumes:
       - .:/app
       - huggingface_cache:/root/.cache/huggingface
-      - torch_cache:/root/.cache/torch
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
     ports:
-      - "8001:8000"
+      - "8000:8000"
     environment:
-      - DEBUG=1
+      # Django
+      - DEBUG=0  # Changé à 0 pour la production
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,192.168.0.60
+      
+      # Database (votre configuration existante)
       - DB_HOST=192.168.0.60
       - DB_PORT=5432
       - DB_NAME=djangodb
       - DB_USER=django_user
       - DB_PASSWORD=DjangoSecurePass123!
+      
+      # Ollama
       - OLLAMA_BASE_URL=http://ollama:11434
-      # Variables pour l'IA
+      
+      # Hugging Face / Transformers
       - TRANSFORMERS_CACHE=/root/.cache/huggingface
       - HF_HOME=/root/.cache/huggingface
       - TORCH_HOME=/root/.cache/torch
       - HF_DATASETS_CACHE=/root/.cache/huggingface/datasets
+      
+      # Optimisation IA
+      - USE_LIGHTWEIGHT_MODELS=true  # Utiliser vos modèles légers
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+      
+      # Performance
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    
     depends_on:
       ollama:
         condition: service_started
+    
     deploy:
       resources:
         limits:
-          memory: 3G
-          cpus: '2.0'
+          memory: 2G  # Augmenté pour l'IA
+          cpus: '1.5'
     
-    # COMMANDE COMPLÈTE ET CORRECTE
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
     command: >
-      sh -c "python manage.py collectstatic --noinput &&
-             python manage.py migrate &&
-             gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 talentForge.wsgi:application"
+      sh -c "
+      echo '=== Démarrage TalentForge ===' &&
+      echo '1. Collecting static files...' &&
+      python manage.py collectstatic --noinput --clear &&
+      echo '2. Applying migrations...' &&
+      python manage.py migrate --noinput &&
+      echo '3. Testing AI models...' &&
+      python -c '
+      import os
+      os.environ[\"HF_HOME\"] = \"/root/.cache/huggingface\"
+      try:
+          from profanity_check import predict_prob
+          result = predict_prob([\"test\"])[0]
+          print(f\"✅ profanity-check: {result:.3f}\")
+      except Exception as e:
+          print(f\"⚠️ profanity-check: {e}\")
+      try:
+          from transformers import pipeline
+          pipe = pipeline(\"text-classification\", 
+                        model=\"mrm8488/bert-tiny-finetuned-spam\",
+                        device=-1)
+          test = pipe(\"Hello\")
+          print(f\"✅ transformers: Model loaded\")
+      except Exception as e:
+          print(f\"⚠️ transformers: {str(e)[:100]}\")
+      ' &&
+            echo '4. Starting Gunicorn...' &&
+            gunicorn --bind 0.0.0.0:8000 \
+                    --workers 3 \
+                    --threads 2 \
+                    --timeout 120 \
+                    --access-logfile - \
+                    --error-logfile - \
+                    --log-level info \
+                    talentForge.wsgi:application
+            "
 
 volumes:
   ollama_data:
   huggingface_cache:
-  torch_cache:
+  static_volume:
+  media_volume:
