@@ -520,8 +520,8 @@ def user_profile(request, username):
     saved_posts = None
     if request.user == profile_user:
         saved_posts = SavedPost.objects.filter(user=request.user).select_related(
-            'post', 'post__author', 'post__author__userprofile'
-        ).order_by('-saved_at')[:6]  # Limite à 6 pour l'aperçu
+    'post', 'post__author', 'post__author__userprofile'
+).order_by('-saved_at')
     
     context = {
         'profile_user': profile_user,
