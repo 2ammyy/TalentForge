@@ -905,15 +905,15 @@
                             </a>
                             
                             <!-- Save Button -->
-                            <button class="pin-action-btn save-btn {% if post.id in saved_post_ids %}saved{% endif %}" 
-                                    data-post-id="{{ post.id }}" 
-                                    id="save-btn-{{ post.id }}">
-                                {% if post.id in saved_post_ids %}
-                                    <i class="fas fa-bookmark"></i> Saved
-                                {% else %}
-                                    <i class="far fa-bookmark"></i> Save
-                                {% endif %}
-                            </button>
+<button class="pin-action-btn save-btn {% if post.id in saved_post_ids %}saved{% endif %}" 
+        data-post-id="{{ post.id }}" 
+        id="save-btn-{{ post.id }}">
+    {% if post.id in saved_post_ids %}
+        <i class="fas fa-bookmark"></i> Saved
+    {% else %}
+        <i class="far fa-bookmark"></i> Save
+    {% endif %}
+</button>
                         </div>
                     </div>
                 </div>
@@ -1023,7 +1023,7 @@
 
 {% block extra_js %}
 <script>
-console.log("Home page JavaScript loading...");
+    console.log("Home page JavaScript loading...");
 
 // Masonry-like Pinterest grid effect
 function arrangePinterestGrid() {
@@ -1061,14 +1061,12 @@ function getCSRFToken() {
 function initializeEventListeners() {
     console.log("Initializing event listeners...");
     
-    // Like buttons
+    // Remove existing listeners to prevent duplicates
     document.querySelectorAll('.like-btn').forEach(btn => {
-        // Remove existing listeners to prevent duplicates
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
     });
     
-    // Save buttons
     document.querySelectorAll('.save-btn').forEach(btn => {
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
@@ -1100,7 +1098,7 @@ function initializeEventListeners() {
     }, 100);
 }
 
-// Toggle like/unlike - UPDATED FOR INSTANT FEEDBACK
+// Toggle like/unlike
 function toggleLike(postId, buttonElement) {
     console.log(`toggleLike called for post ${postId}`);
     
@@ -1224,7 +1222,7 @@ function revertLikeButton(like, buttonElement, wasLiked) {
     }
 }
 
-// Toggle save/unsave - UPDATED FOR INSTANT FEEDBACK
+// Toggle save/unsave - FIXED VERSION
 function toggleSave(postId, buttonElement) {
     console.log(`toggleSave called for post ${postId}`);
     
@@ -1233,36 +1231,44 @@ function toggleSave(postId, buttonElement) {
     
     // ===== IMMEDIATE VISUAL FEEDBACK =====
     if (isSaved) {
-        console.log(`Removing save from post ${postId}`);
+        console.log(`Unsaving post ${postId}`);
+        // Currently saved, so we want to unsave
         buttonElement.classList.remove('saved');
         buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
+        
+        // Send unsave request
+        sendUnsaveRequest(postId, buttonElement);
     } else {
-        console.log(`Adding save to post ${postId}`);
+        console.log(`Saving post ${postId}`);
+        // Currently not saved, so we want to save
         buttonElement.classList.add('saved');
         buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
         
         // Add animation for save
         const icon = buttonElement.querySelector('i');
-        icon.style.animation = 'bookmarkPop 0.4s ease';
-        setTimeout(() => {
-            icon.style.animation = '';
-        }, 400);
+        if (icon) {
+            icon.style.animation = 'bookmarkPop 0.4s ease';
+            setTimeout(() => {
+                icon.style.animation = '';
+            }, 400);
+        }
+        
+        // Send save request
+        sendSaveRequest(postId, buttonElement);
     }
-    
-    // ===== SEND REQUEST TO SERVER =====
-    sendSaveRequest(postId, !isSaved, buttonElement, isSaved);
 }
 
-// Send save/unsave request
-function sendSaveRequest(postId, save, buttonElement, wasSaved) {
-    const url = save ? `/posts/save/${postId}/` : `/posts/unsave/${postId}/`;
-    console.log(`Sending save request to: ${url}, action: ${save ? 'save' : 'unsave'}`);
+// Send save request
+function sendSaveRequest(postId, buttonElement) {
+    const url = `/posts/save/${postId}/`;
+    console.log(`Sending save request to: ${url}`);
     
     fetch(url, {
         method: 'POST',
         headers: {
             'X-CSRFToken': getCSRFToken(),
             'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({})
     })
@@ -1275,34 +1281,102 @@ function sendSaveRequest(postId, save, buttonElement, wasSaved) {
     })
     .then(data => {
         console.log('Save response data:', data);
-        if (data.success) {
-            showToast(save ? 'Post saved!' : 'Post removed from saved', 'success');
+        
+        // Check for success or "already saved" condition
+        if (data.success === true) {
+            showToast('Post saved!', 'success');
+            // Ensure button shows saved state
+            buttonElement.classList.add('saved');
+            buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+        } else if (data.error && data.error.includes('already saved')) {
+            // Post was already saved - keep button in saved state
+            console.log('Post already saved, updating UI');
+            buttonElement.classList.add('saved');
+            buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+            showToast('Post already saved', 'info');
         } else {
             console.error('Server returned error:', data.error);
-            // Revert button state if error
-            revertSaveButton(save, buttonElement, wasSaved);
+            // For other errors, revert to unsaved state
+            buttonElement.classList.remove('saved');
+            buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
             showToast('Error: ' + (data.error || 'Unknown error'), 'error');
         }
     })
     .catch(error => {
         console.error('Fetch error:', error);
-        // Revert button state on network error
-        revertSaveButton(save, buttonElement, wasSaved);
+        // On network error, revert to unsaved state
+        buttonElement.classList.remove('saved');
+        buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
         showToast('Network error. Please try again.', 'error');
     });
 }
 
-// Helper to revert save button state
-function revertSaveButton(save, buttonElement, wasSaved) {
-    console.log(`Reverting save button to previous state: ${wasSaved}`);
-    if (save) {
-        // We tried to save but failed
-        buttonElement.classList.remove('saved');
-        buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
-    } else {
-        // We tried to unsave but failed
+// Send unsave request
+function sendUnsaveRequest(postId, buttonElement) {
+    const url = `/posts/unsave/${postId}/`;
+    console.log(`Sending unsave request to: ${url}`);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => {
+        console.log(`Response status: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Unsave response data:', data);
+        
+        if (data.success === true || data.success === false) {
+            // Django returns success: false if post wasn't saved
+            if (data.success === true) {
+                showToast('Post removed from saved', 'info');
+                // Keep button in unsaved state
+                buttonElement.classList.remove('saved');
+                buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
+            } else {
+                // Post wasn't saved to begin with
+                showToast('Post was not saved', 'info');
+                // Ensure button shows unsaved state
+                buttonElement.classList.remove('saved');
+                buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
+            }
+        } else {
+            console.error('Unexpected response:', data);
+            // Revert to saved state on unexpected response
+            buttonElement.classList.add('saved');
+            buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+            showToast('Error processing request', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        // On network error, revert to saved state
         buttonElement.classList.add('saved');
         buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+        showToast('Network error. Please try again.', 'error');
+    });
+}
+// Helper to revert save state
+function revertSaveState(buttonElement, wasSaved) {
+    console.log(`Reverting save button to: ${wasSaved ? 'saved' : 'unsaved'}`);
+    
+    if (wasSaved) {
+        // Was saved, revert to saved state
+        buttonElement.classList.add('saved');
+        buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+    } else {
+        // Was not saved, revert to unsaved state
+        buttonElement.classList.remove('saved');
+        buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
     }
 }
 
@@ -1385,6 +1459,43 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Initialize videos to autoplay
+function initializeVideos() {
+    document.querySelectorAll('video').forEach(video => {
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', '');
+        
+        const playPromise = video.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Video autoplay failed:", error);
+                document.addEventListener('click', function playVideoOnInteraction() {
+                    video.play().catch(e => console.log("Still failed:", e));
+                    document.removeEventListener('click', playVideoOnInteraction);
+                }, { once: true });
+            });
+        }
+        
+        video.addEventListener('play', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-pause';
+            }
+        });
+        
+        video.addEventListener('pause', function() {
+            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
+            if (playBtn) {
+                playBtn.className = 'fas fa-play';
+            }
+        });
+    });
+}
+
 // Handle post interactions
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM Content Loaded");
@@ -1428,43 +1539,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeVideos();
 });
 
-// Initialize videos to autoplay
-function initializeVideos() {
-    document.querySelectorAll('video').forEach(video => {
-        video.autoplay = true;
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.setAttribute('playsinline', '');
-        
-        const playPromise = video.play();
-        
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.log("Video autoplay failed:", error);
-                document.addEventListener('click', function playVideoOnInteraction() {
-                    video.play().catch(e => console.log("Still failed:", e));
-                    document.removeEventListener('click', playVideoOnInteraction);
-                }, { once: true });
-            });
-        }
-        
-        video.addEventListener('play', function() {
-            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
-            if (playBtn) {
-                playBtn.className = 'fas fa-pause';
-            }
-        });
-        
-        video.addEventListener('pause', function() {
-            const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
-            if (playBtn) {
-                playBtn.className = 'fas fa-play';
-            }
-        });
-    });
-}
-
 // Intersection Observer for videos - play only when visible
 if ('IntersectionObserver' in window) {
     const videoObserver = new IntersectionObserver((entries) => {
@@ -1486,5 +1560,5 @@ if ('IntersectionObserver' in window) {
         videoObserver.observe(video);
     });
 }
-</script>
+</script>>
 {% endblock %}
