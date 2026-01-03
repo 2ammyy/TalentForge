@@ -649,6 +649,118 @@
         display: block;
     }
 
+    /* Video Styling */
+    .post-video-modern {
+        width: 100%;
+        height: 200px;
+        position: relative;
+        background: #000;
+        overflow: hidden;
+    }
+    
+    .post-video-modern video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    
+    .video-controls {
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 10;
+    }
+    
+    .post-video-modern:hover .video-controls {
+        opacity: 1;
+    }
+    
+    .video-control-btn {
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .video-control-btn:hover {
+        background: rgba(102, 126, 234, 0.9);
+    }
+    
+    .video-muted-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        z-index: 5;
+        display: none;
+    }
+    
+    .video-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+    }
+    
+    .video-play-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    
+    .play-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #667eea;
+        font-size: 1.5rem;
+        transition: transform 0.3s;
+    }
+    
+    .play-icon:hover {
+        transform: scale(1.1);
+    }
+    
+    .video-placeholder {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
     /* Post Actions */
     .post-actions-modern {
         padding: 1rem 1.5rem;
@@ -874,8 +986,32 @@
         border-top: 1px solid #e5e7eb;
     }
 
-    /* Responsive */
-    @media (max-width: 640px) {
+    /* Mobile video controls */
+    @media (max-width: 768px) {
+        .video-controls {
+            opacity: 1 !important;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 20px;
+            bottom: 20px;
+        }
+        
+        .video-control-btn {
+            width: 35px;
+            height: 35px;
+            font-size: 0.9rem;
+        }
+        
+        .video-muted-indicator {
+            font-size: 0.7rem;
+            padding: 3px 6px;
+        }
+        
+        .post-video-modern {
+            touch-action: manipulation;
+        }
+        
+        /* Responsive adjustments */
         .profile-hero {
             padding: 3rem 0;
         }
@@ -930,7 +1066,7 @@
         }
         
         .save-time {
-            display: none; /* Hide time on mobile to save space */
+            display: none;
         }
     }
 </style>
@@ -1055,7 +1191,11 @@
                         <a href="{% url 'base:edit_profile' %}" class="profile-action-btn edit">
                             <i class="fas fa-edit"></i> Edit Profile
                         </a>
-                        
+                        {% if saved_posts %}
+                        <button class="profile-action-btn view-saved" data-target="saved-posts">
+                            <i class="fas fa-bookmark"></i> View Saved Posts
+                        </button>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>
@@ -1200,9 +1340,40 @@
                         </div>
 
                         <!-- Post Media -->
-                        {% if post.image %}
+                        {% if post.image or post.video %}
                         <div class="post-media-modern">
-                            <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% elif post.video %}
+                                <div class="post-video-modern" data-video-id="{{ post.id }}">
+                                    <video 
+                                        id="video-{{ post.id }}" 
+                                        class="video-thumbnail"
+                                        muted 
+                                        loop
+                                        playsinline
+                                        preload="metadata"
+                                        poster="{% static 'img/video-placeholder.jpg' %}"
+                                    >
+                                        <source src="{{ post.video.url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <div class="video-muted-indicator" id="muted-indicator-{{ post.id }}">
+                                        <i class="fas fa-volume-mute"></i> Muted
+                                    </div>
+                                    <div class="video-controls" id="controls-{{ post.id }}">
+                                        <button class="video-control-btn play-pause-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button class="video-control-btn volume-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                        <button class="video-control-btn fullscreen-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -1219,10 +1390,17 @@
                                 <span class="action-count">{{ post.reactions.count }}</span>
                             </button>
                             
-                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none" >
+                            <a href="{% url 'posts:share_post' post.pk %}" class="action-btn-modern text-decoration-none">
                                 <i class="fas fa-share"></i>
                                 <span class="action-count">{{ post.post_shares.count }}</span>
                             </a>
+                            
+                            {% if request.user.is_authenticated and not is_own_profile %}
+                            <button class="action-btn-modern save-post-btn" data-post-id="{{ post.id }}">
+                                <i class="fas fa-bookmark"></i>
+                                <span class="action-count">Save</span>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 {% endfor %}
@@ -1375,7 +1553,7 @@
                         <!-- Post Content -->
                         <div class="post-content-modern">
                             <h3 class="post-title-modern">
-                                <a href="{% url 'posts:post_detail' post.pk %} text-decoration-none">{{ post.title|default:"Untitled Post" }}</a>
+                                <a href="{% url 'posts:post_detail' post.pk %}">{{ post.title|default:"Untitled Post" }}</a>
                             </h3>
                             
                             {% if post.content %}
@@ -1386,9 +1564,40 @@
                         </div>
 
                         <!-- Post Media -->
-                        {% if post.image %}
+                        {% if post.image or post.video %}
                         <div class="post-media-modern">
-                            <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% elif post.video %}
+                                <div class="post-video-modern" data-video-id="{{ post.id }}">
+                                    <video 
+                                        id="video-{{ post.id }}" 
+                                        class="video-thumbnail"
+                                        muted 
+                                        loop
+                                        playsinline
+                                        preload="metadata"
+                                        poster="{% static 'img/video-placeholder.jpg' %}"
+                                    >
+                                        <source src="{{ post.video.url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <div class="video-muted-indicator" id="muted-indicator-{{ post.id }}">
+                                        <i class="fas fa-volume-mute"></i> Muted
+                                    </div>
+                                    <div class="video-controls" id="controls-{{ post.id }}">
+                                        <button class="video-control-btn play-pause-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button class="video-control-btn volume-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                        <button class="video-control-btn fullscreen-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -1442,7 +1651,9 @@
     <div id="saved-posts" class="content-section">
         <div class="section-header">
             <h2>Saved Posts</h2>
-            
+            <a href="{% url 'posts:post_list' %}" class="create-post-btn">
+                <i class="fas fa-compass"></i> Explore More
+            </a>
         </div>
 
         {% if saved_posts %}
@@ -1479,7 +1690,7 @@
                                             <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
                                             {% endif %}
                                         </strong>
-                                        <!-- Save Indicator - FIXED POSITION (now inline with username) -->
+                                        <!-- Save Indicator -->
                                         <div class="save-indicator">
                                             <i class="fas fa-bookmark"></i> Saved
                                             <span class="save-time">{{ saved.saved_at|timesince }} ago</span>
@@ -1549,9 +1760,40 @@
                         </div>
 
                         <!-- Post Media -->
-                        {% if post.image %}
+                        {% if post.image or post.video %}
                         <div class="post-media-modern">
-                            <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% if post.image %}
+                                <img src="{{ post.image.url }}" alt="Post image" class="post-image-modern">
+                            {% elif post.video %}
+                                <div class="post-video-modern" data-video-id="{{ post.id }}">
+                                    <video 
+                                        id="video-{{ post.id }}" 
+                                        class="video-thumbnail"
+                                        muted 
+                                        loop
+                                        playsinline
+                                        preload="metadata"
+                                        poster="{% static 'img/video-placeholder.jpg' %}"
+                                    >
+                                        <source src="{{ post.video.url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                    <div class="video-muted-indicator" id="muted-indicator-{{ post.id }}">
+                                        <i class="fas fa-volume-mute"></i> Muted
+                                    </div>
+                                    <div class="video-controls" id="controls-{{ post.id }}">
+                                        <button class="video-control-btn play-pause-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button class="video-control-btn volume-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                        <button class="video-control-btn fullscreen-btn" data-video-id="{{ post.id }}">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -1581,7 +1823,9 @@
             <!-- View All Link -->
             {% if saved_posts.count > 6 %}
             <div class="view-all-link">
-               
+                <a href="{% url 'posts:saved_posts' %}" class="create-post-btn">
+                    <i class="fas fa-list"></i> View All Saved Posts
+                </a>
             </div>
             {% endif %}
             
@@ -1642,6 +1886,8 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
 {% block extra_js %}
 <script>
     // Tab switching functionality
@@ -1667,6 +1913,18 @@
                 });
             });
         });
+        
+        // Add click handler for "View Saved Posts" button
+        const viewSavedBtn = document.querySelector('.profile-action-btn.view-saved');
+        if (viewSavedBtn) {
+            viewSavedBtn.addEventListener('click', function() {
+                const targetId = this.dataset.target;
+                const savedTab = document.querySelector(`[data-target="${targetId}"]`);
+                if (savedTab) {
+                    savedTab.click();
+                }
+            });
+        }
         
         // Toggle reaction with animation
         function toggleReaction(postId, button) {
@@ -1711,6 +1969,46 @@
                   }
               });
         }
+        
+        // Save post functionality
+        function toggleSavePost(postId, button) {
+            const url = `/posts/save/${postId}/`;
+            const isSaved = button.classList.contains('saved');
+            
+            fetch(url, {
+                method: isSaved ? 'DELETE' : 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.classList.toggle('saved');
+                    const icon = button.querySelector('i');
+                    const text = button.querySelector('.action-count');
+                    
+                    if (button.classList.contains('saved')) {
+                        icon.className = 'fas fa-bookmark';
+                        text.textContent = 'Saved';
+                        showToast('Post saved successfully', 'success');
+                    } else {
+                        icon.className = 'fas fa-bookmark';
+                        text.textContent = 'Save';
+                        showToast('Post removed from saved', 'info');
+                    }
+                }
+            });
+        }
+        
+        // Add save button listeners
+        document.querySelectorAll('.save-post-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                toggleSavePost(postId, this);
+            });
+        });
         
         // Handle unsave from saved posts section
         function handleUnsave(event, postId) {
@@ -1782,9 +2080,135 @@
             });
         }
         
+        // Video controls setup
+        function setupVideoControls() {
+            document.querySelectorAll('.post-video-modern').forEach(videoContainer => {
+                const videoId = videoContainer.dataset.videoId;
+                const video = document.getElementById(`video-${videoId}`);
+                const playPauseBtn = videoContainer.querySelector('.play-pause-btn');
+                const volumeBtn = videoContainer.querySelector('.volume-btn');
+                const fullscreenBtn = videoContainer.querySelector('.fullscreen-btn');
+                const mutedIndicator = document.getElementById(`muted-indicator-${videoId}`);
+                
+                if (!video) return;
+                
+                // Set initial muted state
+                video.muted = true;
+                if (mutedIndicator) mutedIndicator.style.display = 'block';
+                
+                // Play/Pause functionality
+                if (playPauseBtn) {
+                    playPauseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (video.paused) {
+                            video.play();
+                            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        } else {
+                            video.pause();
+                            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        }
+                    });
+                    
+                    video.addEventListener('play', () => {
+                        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    });
+                    
+                    video.addEventListener('pause', () => {
+                        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    });
+                }
+                
+                // Volume toggle
+                if (volumeBtn) {
+                    volumeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        video.muted = !video.muted;
+                        if (mutedIndicator) {
+                            mutedIndicator.style.display = video.muted ? 'block' : 'none';
+                        }
+                        volumeBtn.innerHTML = video.muted ? 
+                            '<i class="fas fa-volume-mute"></i>' : 
+                            '<i class="fas fa-volume-up"></i>';
+                    });
+                }
+                
+                // Fullscreen toggle
+                if (fullscreenBtn) {
+                    fullscreenBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!document.fullscreenElement) {
+                            videoContainer.requestFullscreen().catch(err => {
+                                console.log(`Fullscreen error: ${err.message}`);
+                            });
+                            fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                        } else {
+                            document.exitFullscreen();
+                            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                        }
+                    });
+                    
+                    // Update button when exiting fullscreen
+                    document.addEventListener('fullscreenchange', () => {
+                        if (!document.fullscreenElement) {
+                            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                        }
+                    });
+                }
+                
+                // Click video to play/pause
+                video.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (video.paused) {
+                        video.play();
+                    } else {
+                        video.pause();
+                    }
+                });
+                
+                // Show controls on hover
+                videoContainer.addEventListener('mouseenter', () => {
+                    const controls = document.getElementById(`controls-${videoId}`);
+                    if (controls) controls.style.opacity = '1';
+                });
+                
+                videoContainer.addEventListener('mouseleave', () => {
+                    const controls = document.getElementById(`controls-${videoId}`);
+                    if (controls && !videoContainer.matches(':fullscreen')) {
+                        controls.style.opacity = '0';
+                    }
+                });
+                
+                // Autoplay when in viewport
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                // Try to play (muted by default for autoplay)
+                                video.play().catch(e => {
+                                    console.log('Autoplay prevented:', e);
+                                });
+                            } else {
+                                // Pause when not in view
+                                if (!video.paused) {
+                                    video.pause();
+                                }
+                            }
+                        });
+                    },
+                    { threshold: 0.5 }
+                );
+                
+                observer.observe(video);
+            });
+        }
+        
+        // Initialize video controls
+        setupVideoControls();
+        
         // Expose functions globally
         window.toggleReaction = toggleReaction;
         window.handleUnsave = handleUnsave;
+        window.toggleSavePost = toggleSavePost;
         
         // Add hover effects to post cards
         const postCards = document.querySelectorAll('.post-card-modern');
@@ -1844,5 +2268,4 @@
         }, 3000);
     }
 </script>
-{% endblock %}
 {% endblock %}
