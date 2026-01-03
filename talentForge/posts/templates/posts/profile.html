@@ -226,7 +226,7 @@
         position: relative;
     }
 
-    .profile-stat-item.followers strong::after {
+    .profile-stat-item.followers.has-followers strong::after {
         content: '';
         position: absolute;
         top: -5px;
@@ -235,10 +235,6 @@
         height: 8px;
         background: #FF6B6B;
         border-radius: 50%;
-        display: none;
-    }
-
-    .profile-stat-item.followers.has-followers strong::after {
         display: block;
         animation: blink 1.5s infinite;
     }
@@ -475,28 +471,35 @@
         box-shadow: 0 20px 40px rgba(102, 126, 234, 0.15);
     }
 
-    /* Save Indicator */
+    /* Save Indicator - FIXED POSITION */
     .save-indicator {
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        background: var(--save-gradient);
-        color: white;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         gap: 0.3rem;
-        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        background: var(--save-gradient);
+        color: white;
+        padding: 0.25rem 0.7rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
         z-index: 10;
         animation: pulse 2s infinite;
-        border: 2px solid white;
+        border: 1px solid white;
+        white-space: nowrap;
+        vertical-align: middle;
+        margin-left: 0.5rem;
+        margin-top: -0.2rem;
     }
 
     .save-indicator i {
-        font-size: 0.7rem;
+        font-size: 0.6rem;
+    }
+
+    .save-time {
+        font-size: 0.65rem;
+        opacity: 0.9;
+        margin-left: 0.3rem;
     }
 
     .post-header-modern {
@@ -565,11 +568,19 @@
         flex: 1;
     }
 
+    .author-header-line {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.3rem;
+    }
+
     .post-author-modern strong {
-        display: block;
+        display: inline-block;
         font-size: 1rem;
         color: #333;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0;
     }
 
     .post-date-modern {
@@ -797,13 +808,6 @@
         content: "💬 ";
     }
 
-    /* Save time */
-    .save-time {
-        font-size: 0.7rem;
-        opacity: 0.9;
-        margin-left: 0.5rem;
-    }
-
     /* Empty State for Saved/Shared Posts */
     .no-shared-posts {
         text-align: center;
@@ -918,6 +922,15 @@
         .profile-tab {
             padding: 0.8rem 1rem;
             justify-content: space-between;
+        }
+        
+        .save-indicator {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+        }
+        
+        .save-time {
+            display: none; /* Hide time on mobile to save space */
         }
     }
 </style>
@@ -1111,12 +1124,14 @@
                                     {% endif %}
                                 </div>
                                 <div class="post-author-modern">
-                                    <strong>
-                                        {{ post.author.get_full_name|default:post.author.username }}
-                                        {% if post.author.user_followers.count > 0 %}
-                                        <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
-                                        {% endif %}
-                                    </strong>
+                                    <div class="author-header-line">
+                                        <strong>
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% if post.author.user_followers.count > 0 %}
+                                            <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
+                                            {% endif %}
+                                        </strong>
+                                    </div>
                                     <div class="post-date-modern">
                                         {{ post.created_at|timesince }} ago
                                         {% if post.updated_at != post.created_at %}
@@ -1307,12 +1322,14 @@
                                     {% endif %}
                                 </div>
                                 <div class="post-author-modern">
-                                    <strong>
-                                        {{ post.author.get_full_name|default:post.author.username }}
-                                        {% if post.author.user_followers.count > 0 %}
-                                        <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
-                                        {% endif %}
-                                    </strong>
+                                    <div class="author-header-line">
+                                        <strong>
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% if post.author.user_followers.count > 0 %}
+                                            <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
+                                            {% endif %}
+                                        </strong>
+                                    </div>
                                     <div class="post-date-modern">
                                         {{ post.created_at|timesince }} ago
                                         {% if post.updated_at != post.created_at %}
@@ -1438,12 +1455,6 @@
             <div class="posts-grid">
                 {% for saved in saved_posts %}
                     <div class="post-card-modern">
-                        <!-- Save Indicator -->
-                        <div class="save-indicator">
-                            <i class="fas fa-bookmark"></i> Saved
-                            <span class="save-time">{{ saved.saved_at|timesince }} ago</span>
-                        </div>
-
                         <!-- Original Post Content -->
                         {% with post=saved.post %}
                         <div class="post-header-modern">
@@ -1467,12 +1478,19 @@
                                     {% endif %}
                                 </div>
                                 <div class="post-author-modern">
-                                    <strong>
-                                        {{ post.author.get_full_name|default:post.author.username }}
-                                        {% if post.author.user_followers.count > 0 %}
-                                        <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
-                                        {% endif %}
-                                    </strong>
+                                    <div class="author-header-line">
+                                        <strong>
+                                            {{ post.author.get_full_name|default:post.author.username }}
+                                            {% if post.author.user_followers.count > 0 %}
+                                            <span style="color: #FF6B6B; font-size: 0.8rem;">★</span>
+                                            {% endif %}
+                                        </strong>
+                                        <!-- Save Indicator - FIXED POSITION (now inline with username) -->
+                                        <div class="save-indicator">
+                                            <i class="fas fa-bookmark"></i> Saved
+                                            <span class="save-time">{{ saved.saved_at|timesince }} ago</span>
+                                        </div>
+                                    </div>
                                     <div class="post-date-modern">
                                         {{ post.created_at|timesince }} ago
                                         {% if post.updated_at != post.created_at %}
