@@ -1,4 +1,4 @@
-<!-- talentForge\base\templates\base\home.html - VERSION CORRIGÉE -->
+<!-- talentForge\base\templates\base\home.html -->
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Home - TalentForge{% endblock %}
@@ -136,11 +136,6 @@
         background: #f8f9fa;
         border-color: #d0d0d0;
         text-decoration: none;
-    }
-
-    .pin-action-btn.active {
-        background: #f0f2f5;
-        border-color: #c0c0c0;
     }
 
     .pin-type-badge {
@@ -484,6 +479,34 @@
 
     .like-btn.liked i {
         color: #dc3545;
+    }
+    
+    /* Save button styling */
+    .save-btn.saved {
+        background: #fff8e1;
+        border-color: #ffc107;
+        color: #ff9800;
+    }
+
+    .save-btn.saved i {
+        color: #ff9800;
+    }
+
+    /* Save button animation */
+    @keyframes bookmarkPop {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.3);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .save-btn.saved i {
+        animation: bookmarkPop 0.4s ease;
     }
     
     /* Video styling */
@@ -860,15 +883,37 @@
                         
                         <!-- Post Actions -->
                         <div class="pin-actions">
-                            <button class="pin-action-btn like-btn" data-post-id="{{ post.id }}" id="like-btn-{{ post.id }}">
-                                <i class="far fa-heart"></i> Like
+                            <!-- Like Button -->
+                            <button class="pin-action-btn like-btn {% if post.id in liked_post_ids %}liked{% endif %}" 
+                                    data-post-id="{{ post.id }}" 
+                                    id="like-btn-{{ post.id }}">
+                                {% if post.id in liked_post_ids %}
+                                    <i class="fas fa-heart"></i> Liked
+                                {% else %}
+                                    <i class="far fa-heart"></i> Like
+                                {% endif %}
                             </button>
+                            
+                            <!-- Comment Button -->
                             <a href="{% url 'posts:post_detail' post.pk %}#comments" class="pin-action-btn">
                                 <i class="fas fa-comment"></i> Comment
                             </a>
+                            
+                            <!-- Share Button -->
                             <a href="{% url 'posts:share_post' post.pk %}" class="pin-action-btn">
                                 <i class="fas fa-share"></i> Share
                             </a>
+                            
+                            <!-- Save Button -->
+                            <button class="pin-action-btn save-btn {% if post.id in saved_post_ids %}saved{% endif %}" 
+                                    data-post-id="{{ post.id }}" 
+                                    id="save-btn-{{ post.id }}">
+                                {% if post.id in saved_post_ids %}
+                                    <i class="fas fa-bookmark"></i> Saved
+                                {% else %}
+                                    <i class="far fa-bookmark"></i> Save
+                                {% endif %}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -971,10 +1016,15 @@
         </div>
     </div>
 </div>
+
+<!-- CSRF Token (hidden) -->
+{% csrf_token %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
+console.log("Home page JavaScript loading...");
+
 // Masonry-like Pinterest grid effect
 function arrangePinterestGrid() {
     const grid = document.getElementById('postsGrid');
@@ -990,23 +1040,360 @@ function arrangePinterestGrid() {
     grid.style.columnCount = columns;
 }
 
+// Get CSRF token
+function getCSRFToken() {
+    // Try to get from form input
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        return csrfToken.value;
+    }
+    
+    // Try to get from cookies (fallback)
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    
+    return cookieValue || '';
+}
+
+// Initialize all event listeners
+function initializeEventListeners() {
+    console.log("Initializing event listeners...");
+    
+    // Like buttons
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        // Remove existing listeners to prevent duplicates
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+    });
+    
+    // Save buttons
+    document.querySelectorAll('.save-btn').forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+    });
+    
+    // Add event listeners to the new buttons
+    setTimeout(() => {
+        // Like buttons
+        document.querySelectorAll('.like-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                console.log("Like button clicked for post", this.getAttribute('data-post-id'));
+                toggleLike(this.getAttribute('data-post-id'), this);
+            });
+        });
+        
+        // Save buttons
+        document.querySelectorAll('.save-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                console.log("Save button clicked for post", this.getAttribute('data-post-id'));
+                toggleSave(this.getAttribute('data-post-id'), this);
+            });
+        });
+        
+        console.log("Event listeners initialized successfully");
+    }, 100);
+}
+
+// Toggle like/unlike - UPDATED FOR INSTANT FEEDBACK
+function toggleLike(postId, buttonElement) {
+    console.log(`toggleLike called for post ${postId}`);
+    
+    const isLiked = buttonElement.classList.contains('liked');
+    console.log(`Current liked state: ${isLiked}`);
+    
+    // ===== IMMEDIATE VISUAL FEEDBACK =====
+    if (isLiked) {
+        console.log(`Removing like from post ${postId}`);
+        buttonElement.classList.remove('liked');
+        buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
+        
+        // Update count immediately
+        const likeCountElement = document.querySelector(`.like-count-${postId}`);
+        if (likeCountElement) {
+            const currentCount = parseInt(likeCountElement.textContent) || 0;
+            const newCount = Math.max(0, currentCount - 1);
+            likeCountElement.textContent = `${newCount} likes`;
+            
+            // Add animation
+            likeCountElement.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                likeCountElement.style.transform = 'scale(1)';
+            }, 300);
+        }
+    } else {
+        console.log(`Adding like to post ${postId}`);
+        buttonElement.classList.add('liked');
+        buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
+        
+        // Update count immediately
+        const likeCountElement = document.querySelector(`.like-count-${postId}`);
+        if (likeCountElement) {
+            const currentCount = parseInt(likeCountElement.textContent) || 0;
+            const newCount = currentCount + 1;
+            likeCountElement.textContent = `${newCount} likes`;
+            
+            // Add animation
+            likeCountElement.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                likeCountElement.style.transform = 'scale(1)';
+            }, 300);
+        }
+    }
+    
+    // ===== SEND REQUEST TO SERVER =====
+    sendLikeRequest(postId, !isLiked, buttonElement, isLiked);
+}
+
+// Send like/unlike request
+function sendLikeRequest(postId, like, buttonElement, wasLiked) {
+    const url = `/posts/reaction/${postId}/`;
+    console.log(`Sending like request to: ${url}, action: ${like ? 'like' : 'unlike'}`);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'reaction_type': 'like'
+        })
+    })
+    .then(response => {
+        console.log(`Response status: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Like response data:', data);
+        if (data.success) {
+            // Update like count with actual server value
+            const likeCountElement = document.querySelector(`.like-count-${postId}`);
+            if (likeCountElement && data.total_reactions !== undefined) {
+                likeCountElement.textContent = `${data.total_reactions} likes`;
+            }
+            
+            // Show appropriate toast
+            if (data.action === 'removed') {
+                showToast('Post unliked', 'info');
+            } else {
+                showToast('Post liked!', 'success');
+            }
+        } else {
+            console.error('Server returned error:', data.error);
+            // Revert button state if error
+            revertLikeButton(like, buttonElement, wasLiked);
+            showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        // Revert button state on network error
+        revertLikeButton(like, buttonElement, wasLiked);
+        showToast('Network error. Please try again.', 'error');
+    });
+}
+
+// Helper to revert like button state
+function revertLikeButton(like, buttonElement, wasLiked) {
+    console.log(`Reverting like button to previous state: ${wasLiked}`);
+    if (like) {
+        // We tried to like but failed - go back to unliked
+        buttonElement.classList.remove('liked');
+        buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
+    } else {
+        // We tried to unlike but failed - go back to liked
+        buttonElement.classList.add('liked');
+        buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
+    }
+    
+    // Revert count too
+    const likeCountElement = document.querySelector(`.like-count-${buttonElement.getAttribute('data-post-id')}`);
+    if (likeCountElement) {
+        const currentCount = parseInt(likeCountElement.textContent) || 0;
+        const revertedCount = like ? Math.max(0, currentCount - 1) : currentCount + 1;
+        likeCountElement.textContent = `${revertedCount} likes`;
+    }
+}
+
+// Toggle save/unsave - UPDATED FOR INSTANT FEEDBACK
+function toggleSave(postId, buttonElement) {
+    console.log(`toggleSave called for post ${postId}`);
+    
+    const isSaved = buttonElement.classList.contains('saved');
+    console.log(`Current saved state: ${isSaved}`);
+    
+    // ===== IMMEDIATE VISUAL FEEDBACK =====
+    if (isSaved) {
+        console.log(`Removing save from post ${postId}`);
+        buttonElement.classList.remove('saved');
+        buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
+    } else {
+        console.log(`Adding save to post ${postId}`);
+        buttonElement.classList.add('saved');
+        buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+        
+        // Add animation for save
+        const icon = buttonElement.querySelector('i');
+        icon.style.animation = 'bookmarkPop 0.4s ease';
+        setTimeout(() => {
+            icon.style.animation = '';
+        }, 400);
+    }
+    
+    // ===== SEND REQUEST TO SERVER =====
+    sendSaveRequest(postId, !isSaved, buttonElement, isSaved);
+}
+
+// Send save/unsave request
+function sendSaveRequest(postId, save, buttonElement, wasSaved) {
+    const url = save ? `/posts/save/${postId}/` : `/posts/unsave/${postId}/`;
+    console.log(`Sending save request to: ${url}, action: ${save ? 'save' : 'unsave'}`);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => {
+        console.log(`Response status: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Save response data:', data);
+        if (data.success) {
+            showToast(save ? 'Post saved!' : 'Post removed from saved', 'success');
+        } else {
+            console.error('Server returned error:', data.error);
+            // Revert button state if error
+            revertSaveButton(save, buttonElement, wasSaved);
+            showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        // Revert button state on network error
+        revertSaveButton(save, buttonElement, wasSaved);
+        showToast('Network error. Please try again.', 'error');
+    });
+}
+
+// Helper to revert save button state
+function revertSaveButton(save, buttonElement, wasSaved) {
+    console.log(`Reverting save button to previous state: ${wasSaved}`);
+    if (save) {
+        // We tried to save but failed
+        buttonElement.classList.remove('saved');
+        buttonElement.innerHTML = '<i class="far fa-bookmark"></i> Save';
+    } else {
+        // We tried to unsave but failed
+        buttonElement.classList.add('saved');
+        buttonElement.innerHTML = '<i class="fas fa-bookmark"></i> Saved';
+    }
+}
+
+// Load more posts
+function loadMorePosts() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (!loadMoreBtn) return;
+    
+    loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    loadMoreBtn.disabled = true;
+    
+    setTimeout(() => {
+        loadMoreBtn.style.display = 'none';
+        showToast('No more posts to load', 'info');
+    }, 1000);
+}
+
+// Toggle video play/pause
+function toggleVideoPlayPause(overlay) {
+    const video = overlay.previousElementSibling;
+    const playBtn = overlay.querySelector('.video-play-btn i');
+    
+    if (!video) return;
+    
+    if (video.paused) {
+        video.play();
+        if (playBtn) playBtn.className = 'fas fa-pause';
+    } else {
+        video.pause();
+        if (playBtn) playBtn.className = 'fas fa-play';
+    }
+    
+    const controls = overlay.querySelector('.video-controls');
+    if (controls) {
+        controls.style.opacity = '0.8';
+        setTimeout(() => {
+            if (!overlay.matches(':hover') && !controls.matches(':hover')) {
+                controls.style.opacity = '0';
+            }
+        }, 2000);
+    }
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Remove existing toast
+    const existingToast = document.querySelector('.custom-toast');
+    if (existingToast) existingToast.remove();
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `custom-toast alert alert-${type} alert-dismissible fade show`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 250px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    `;
+    
+    let icon = 'info-circle';
+    if (type === 'success') icon = 'check-circle';
+    if (type === 'error') icon = 'exclamation-circle';
+    if (type === 'warning') icon = 'exclamation-triangle';
+    
+    toast.innerHTML = `
+        <i class="fas fa-${icon} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
 // Handle post interactions
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM Content Loaded");
+    
     arrangePinterestGrid();
     window.addEventListener('resize', arrangePinterestGrid);
     
-    // Initialize like buttons with current state
-    document.querySelectorAll('.like-btn').forEach(btn => {
-        const postId = btn.getAttribute('data-post-id');
-        // Check if user has already liked this post
-        checkLikeStatus(postId, btn);
-        
-        // Add click event
-        btn.addEventListener('click', function() {
-            const postId = this.getAttribute('data-post-id');
-            toggleLike(postId, this);
-        });
-    });
+    // Initialize event listeners
+    initializeEventListeners();
     
     // Load More Button
     const loadMoreBtn = document.getElementById('loadMoreBtn');
@@ -1028,7 +1415,6 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('mouseleave', function() {
             const controls = this.querySelector('.video-controls');
             if (controls) {
-                // Hide controls after delay
                 setTimeout(() => {
                     if (!this.matches(':hover') && !controls.matches(':hover')) {
                         controls.style.opacity = '0';
@@ -1045,21 +1431,17 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize videos to autoplay
 function initializeVideos() {
     document.querySelectorAll('video').forEach(video => {
-        // Set attributes for autoplay
         video.autoplay = true;
         video.muted = true;
         video.loop = true;
         video.playsInline = true;
         video.setAttribute('playsinline', '');
         
-        // Try to play the video
         const playPromise = video.play();
         
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 console.log("Video autoplay failed:", error);
-                // Some browsers require user interaction first
-                // Add event listeners to play on user interaction
                 document.addEventListener('click', function playVideoOnInteraction() {
                     video.play().catch(e => console.log("Still failed:", e));
                     document.removeEventListener('click', playVideoOnInteraction);
@@ -1067,7 +1449,6 @@ function initializeVideos() {
             });
         }
         
-        // Update play button icon
         video.addEventListener('play', function() {
             const playBtn = this.nextElementSibling?.querySelector('.video-play-btn i');
             if (playBtn) {
@@ -1081,204 +1462,29 @@ function initializeVideos() {
                 playBtn.className = 'fas fa-play';
             }
         });
-        
-        // Handle loading states
-        video.addEventListener('waiting', function() {
-            this.style.opacity = '0.7';
-        });
-        
-        video.addEventListener('playing', function() {
-            this.style.opacity = '1';
-        });
-        
-        // Handle video errors
-        video.addEventListener('error', function() {
-            console.error('Video error:', this.error);
-        });
     });
-}
-
-// Check if user has liked the post
-function checkLikeStatus(postId, buttonElement) {
-    // In a real app, you would fetch this from your API
-    // For now, we'll assume not liked initially
-}
-
-// Toggle like/unlike
-function toggleLike(postId, buttonElement) {
-    const icon = buttonElement.querySelector('i');
-    const isLiked = buttonElement.classList.contains('liked');
-    
-    if (isLiked) {
-        // Unlike
-        buttonElement.classList.remove('liked');
-        icon.classList.remove('fas');
-        icon.classList.add('far');
-        buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
-        sendLikeRequest(postId, false, buttonElement);
-    } else {
-        // Like
-        buttonElement.classList.add('liked');
-        icon.classList.remove('far');
-        icon.classList.add('fas');
-        buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
-        sendLikeRequest(postId, true, buttonElement);
-    }
-}
-
-// Send like/unlike request
-function sendLikeRequest(postId, like, buttonElement) {
-    const url = like ? `/posts/reaction/${postId}/` : `/posts/unreaction/${postId}/`;
-    
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCSRFToken(),
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            'reaction_type': 'like'
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Update like count in the UI
-            const likeCountElement = document.querySelector(`.like-count-${postId}`);
-            if (likeCountElement) {
-                const currentCount = parseInt(likeCountElement.textContent);
-                const newCount = like ? currentCount + 1 : currentCount - 1;
-                likeCountElement.textContent = `${newCount} likes`;
-                
-                // Add animation
-                likeCountElement.style.transform = 'scale(1.2)';
-                setTimeout(() => {
-                    likeCountElement.style.transform = 'scale(1)';
-                }, 300);
-            }
-        } else {
-            // Revert button state if error
-            if (like) {
-                buttonElement.classList.remove('liked');
-                buttonElement.querySelector('i').classList.remove('fas');
-                buttonElement.querySelector('i').classList.add('far');
-                buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
-            } else {
-                buttonElement.classList.add('liked');
-                buttonElement.querySelector('i').classList.remove('far');
-                buttonElement.querySelector('i').classList.add('fas');
-                buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
-            }
-            alert('Error: ' + (data.error || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // Revert button state
-        if (like) {
-            buttonElement.classList.remove('liked');
-            buttonElement.querySelector('i').classList.remove('fas');
-            buttonElement.querySelector('i').classList.add('far');
-            buttonElement.innerHTML = '<i class="far fa-heart"></i> Like';
-        } else {
-            buttonElement.classList.add('liked');
-            buttonElement.querySelector('i').classList.remove('far');
-            buttonElement.querySelector('i').classList.add('fas');
-            buttonElement.innerHTML = '<i class="fas fa-heart"></i> Liked';
-        }
-    });
-}
-
-// Load more posts
-function loadMorePosts() {
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    if (!loadMoreBtn) return;
-    
-    loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-    loadMoreBtn.disabled = true;
-    
-    const currentCount = document.querySelectorAll('.pin').length;
-    
-    // In a real app, you would fetch from your API
-    // For now, just simulate loading
-    setTimeout(() => {
-        // Simulate no more posts
-        loadMoreBtn.style.display = 'none';
-        alert('No more posts to load');
-    }, 1000);
-}
-
-// Helper function to get CSRF token
-function getCSRFToken() {
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-    return csrfToken ? csrfToken.value : '';
-}
-
-// Toggle video play/pause
-function toggleVideoPlayPause(overlay) {
-    const video = overlay.previousElementSibling;
-    const playBtn = overlay.querySelector('.video-play-btn i');
-    
-    if (!video) return;
-    
-    if (video.paused) {
-        video.play();
-        if (playBtn) playBtn.className = 'fas fa-pause';
-    } else {
-        video.pause();
-        if (playBtn) playBtn.className = 'fas fa-play';
-    }
-    
-    // Keep controls visible after click
-    const controls = overlay.querySelector('.video-controls');
-    if (controls) {
-        controls.style.opacity = '0.8';
-        setTimeout(() => {
-            if (!overlay.matches(':hover') && !controls.matches(':hover')) {
-                controls.style.opacity = '0';
-            }
-        }, 2000);
-    }
 }
 
 // Intersection Observer for videos - play only when visible
-let videoObserver;
 if ('IntersectionObserver' in window) {
-    videoObserver = new IntersectionObserver((entries) => {
+    const videoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target;
             if (entry.isIntersecting) {
-                // Video is visible - try to play
                 if (video.paused) {
                     video.play().catch(e => console.log("Play failed:", e));
                 }
             } else {
-                // Video is not visible - pause it
                 if (!video.paused) {
                     video.pause();
                 }
             }
         });
-    }, { threshold: 0.1 }); // 10% visible
+    }, { threshold: 0.1 });
     
-    // Observe all videos
     document.querySelectorAll('video').forEach(video => {
         videoObserver.observe(video);
     });
 }
-
-// Cleanup observer on page unload
-window.addEventListener('beforeunload', function() {
-    if (videoObserver) {
-        document.querySelectorAll('video').forEach(video => {
-            videoObserver.unobserve(video);
-        });
-    }
-});
 </script>
 {% endblock %}

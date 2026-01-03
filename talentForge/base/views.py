@@ -121,10 +121,9 @@ The TalentForge Team
         print(f"DEVELOPMENT MODE - Deletion code for {email}: {code}")
 
 # talentForge/base/views.py - Updated home function
-
 @login_required
 def home(request):
-    from posts.models import Post  # Import here to avoid circular imports
+    from posts.models import Post, SavedPost, Reaction
     from creator.models import CreatorProfile
     
     # Get all posts from all users, ordered by newest first
@@ -135,17 +134,140 @@ def home(request):
     ).prefetch_related(
         'reactions',
         'comments',
-        'shares'
+        'post_shares'
+    ).order_by('-created_at')[:50]
+    
+    # Get lists of post IDs that are saved/liked by current user
+    saved_post_ids = []
+    liked_post_ids = []
+    
+    if request.user.is_authenticated:
+        # Get saved post IDs
+        saved_post_ids = SavedPost.objects.filter(
+            user=request.user
+        ).values_list('post_id', flat=True)
+        
+        # Get liked post IDs
+        liked_post_ids = Reaction.objects.filter(
+            user=request.user,
+            post__in=all_posts,
+            reaction_type='like'
+        ).values_list('post_id', flat=True)
+        
+        # Get creator profile if exists
+        try:
+            creator_profile = CreatorProfile.objects.get(user=request.user)
+        except CreatorProfile.DoesNotExist:
+            creator_profile = None
+    else:
+        creator_profile = None
+    
+    # Set follower_count to 0 for now
+    follower_count = 0
+    
+    context = {
+        'posts': all_posts,
+        'saved_post_ids': list(saved_post_ids),  # Convert to list
+        'liked_post_ids': list(liked_post_ids),  # Convert to list
+        'follower_count': follower_count,
+        'creator_profile': creator_profile,
+    }
+    
+    return render(request, 'base/home.html', context)
+
+    from posts.models import Post, SavedPost, Reaction
+    from creator.models import CreatorProfile
+    from accounts.models import Follow # type: ignore
+    
+    # Get all posts from all users, ordered by newest first
+    all_posts = Post.objects.all().select_related(
+        'author', 
+        'author__userprofile',
+        'job_details'
+    ).prefetch_related(
+        'reactions',
+        'comments',
+        'post_shares'
+    ).order_by('-created_at')[:50]
+    
+    # Get lists of post IDs that are saved/liked by current user
+    saved_post_ids = []
+    liked_post_ids = []
+    
+    if request.user.is_authenticated:
+        # Get saved post IDs
+        saved_post_ids = SavedPost.objects.filter(
+            user=request.user
+        ).values_list('post_id', flat=True)
+        
+        # Get liked post IDs (assuming Reaction model with 'like' type)
+        liked_post_ids = Reaction.objects.filter(
+            user=request.user,
+            post__in=all_posts,
+            reaction_type='like'
+        ).values_list('post_id', flat=True)
+        
+        # Get follower count
+        try:
+            follower_count = Follow.objects.filter(following=request.user).count()
+        except:
+            follower_count = 0
+        
+        # Get creator profile if exists
+        try:
+            creator_profile = CreatorProfile.objects.get(user=request.user)
+        except CreatorProfile.DoesNotExist:
+            creator_profile = None
+    else:
+        follower_count = 0
+        creator_profile = None
+    
+    context = {
+        'posts': all_posts,
+        'saved_post_ids': list(saved_post_ids),  # Convert to list
+        'liked_post_ids': list(liked_post_ids),  # Convert to list
+        'follower_count': follower_count,
+        'creator_profile': creator_profile,
+    }
+    
+    return render(request, 'base/home.html', context)
+    from posts.models import Post  # Import here to avoid circular imports
+    from creator.models import CreatorProfile
+    from posts.models import SavedPost  # Import SavedPost model
+    
+    # Get all posts from all users, ordered by newest first
+    all_posts = Post.objects.all().select_related(
+        'author', 
+        'author__userprofile',
+        'job_details'
+    ).prefetch_related(
+        'reactions',
+        'comments',
+        'post_shares'  # Fixed: Changed from 'shares' to 'post_shares'
     ).order_by('-created_at')[:50]  # Limit to 50 most recent
+    
+    # Get saved posts for the current user
+    if request.user.is_authenticated:
+        saved_posts = SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True)
+        user_saved_posts = Post.objects.filter(id__in=saved_posts)
+    else:
+        user_saved_posts = []
+    
+    # Get follower count
+    follower_count = 0
+    if request.user.is_authenticated:
+        try:
+            follower_count = Follow.objects.filter(following=request.user).count()
+        except:
+            follower_count = 0
     
     context = {
         'posts': all_posts,  # Pass all posts to template
+        'user_saved_pposts': user_saved_posts,
+        'follower_count': follower_count,
     }
     
     if request.user.is_authenticated:
-        # Add user-specific context
-        context['follower_count'] = request.user.user_followers.count()
-        
         # Get creator profile if exists
         try:
             creator_profile = CreatorProfile.objects.get(user=request.user)
@@ -154,16 +276,6 @@ def home(request):
             context['creator_profile'] = None
     
     return render(request, 'base/home.html', context)
-    context = {}
-    if request.user.is_authenticated:
-        # Obtenir le nombre de followers depuis le modèle Follow
-        try:
-            follower_count = Follow.objects.filter(following=request.user).count()
-        except:
-            follower_count = 0
-        context['follower_count'] = follower_count
-    return render(request, 'base/home.html', context)
-
 def authView(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)

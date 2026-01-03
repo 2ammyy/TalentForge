@@ -64,4 +64,13 @@ urlpatterns = [
     path('save/<int:post_id>/', views.save_post, name='save_post'),
     path('unsave/<int:post_id>/', views.unsave_post, name='unsave_post'),
     path('saved/', views.saved_posts_view, name='saved_posts'),
+
+
+
+    path('reaction/<int:post_id>/', views.add_reaction, name='add_reaction'),
+    path('unreaction/<int:post_id>/', views.add_reaction, name='remove_reaction'),  # Note: uses same view
+    
+    # Save URLs
+    path('save/<int:post_id>/', views.save_post, name='save_post'),
+    path('unsave/<int:post_id>/', views.unsave_post, name='unsave_post'),
 ]

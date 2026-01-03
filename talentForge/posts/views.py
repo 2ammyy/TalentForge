@@ -996,3 +996,44 @@ def unsave_post(request, post_id):
         })
     
     return redirect('posts:post_detail', pk=post_id)
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from .models import Post, Reaction
+import json
+
+@login_required
+@require_POST
+def remove_reaction(request, post_id):
+    """Remove a reaction from a post (for unlike functionality)"""
+    try:
+        post = Post.objects.get(id=post_id)
+        data = json.loads(request.body)
+        reaction_type = data.get('reaction_type', 'like')
+        
+        # Find and delete the reaction
+        reaction = Reaction.objects.filter(
+            post=post, 
+            user=request.user,
+            reaction_type=reaction_type
+        ).first()
+        
+        if reaction:
+            reaction.delete()
+            return JsonResponse({
+                'success': True,
+                'action': 'removed',
+                'total_reactions': post.reactions.count(),
+                'user_reaction': None
+            })
+        else:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Reaction not found'
+            })
+            
+    except Post.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Post not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
