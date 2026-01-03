@@ -268,6 +268,24 @@ class Message(models.Model):
     def __str__(self):
         return f"From {self.sender} to {self.receiver}"
 
+class Mention(models.Model):
+    """Model to track user mentions in posts and comments"""
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, null=True, blank=True, related_name='mentions')
+    comment = models.ForeignKey('Comment', on_delete=models.CASCADE, null=True, blank=True, related_name='mentions')
+    mentioned_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mentions')
+    created_at = models.DateTimeField(auto_now_add=True)
+    position = models.PositiveIntegerField(help_text="Position in the text where mention occurs", default=0)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Mention"
+        verbose_name_plural = "Mentions"
+    
+    def __str__(self):
+        if self.post:
+            return f"{self.mentioned_user.username} mentioned in Post #{self.post.id}"
+        else:
+            return f"{self.mentioned_user.username} mentioned in Comment #{self.comment.id}"
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
@@ -277,6 +295,7 @@ class Notification(models.Model):
         ('follow', 'Follow'),
         ('view', 'Profile View'),
         ('report', 'Report'),
+        ('mention', 'Mention'),
     )
     
     user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)

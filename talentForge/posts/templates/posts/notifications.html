@@ -60,6 +60,12 @@
                                 </a>
                             </div>
                             {% endif %}
+                            {% if notification.notification_type == 'mention' %}
+    <div class="notification-type mention">
+        <i class="fas fa-at"></i>
+        <span>mentioned you in a {% if notification.post %}post{% else %}comment{% endif %}</span>
+    </div>
+{% endif %}
                         </div>
                     </div>
                 </div>

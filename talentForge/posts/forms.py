@@ -1,7 +1,11 @@
+# talentForge/posts/forms.py - CORRECTED VERSION
 from django import forms
-from .models import Post, Comment, JobPost, Share, Report, UserProfile, Message
+from django.contrib.auth.models import User  # CORRECT IMPORT
 from django.core.validators import validate_email
 from utils.content_validator import validate_content
+import re
+from .models import Post, Comment, JobPost, Share, Report, UserProfile, Message, Mention, Notification
+
 
 class PostForm(forms.ModelForm):
     # Job-specific fields
@@ -103,7 +107,7 @@ class PostForm(forms.ModelForm):
                 'class': 'form-control'
             }),
             'content': forms.Textarea(attrs={
-                'placeholder': "What's on your mind?",
+                'placeholder': "What's on your mind? Use @ to mention someone...",
                 'rows': 4,
                 'class': 'form-control',
                 'id': 'post-content'
@@ -226,6 +230,11 @@ class PostForm(forms.ModelForm):
         if commit:
             post.save()
             
+            # Process mentions after saving the post
+            content = self.cleaned_data.get('content', '')
+            if content:
+                self.process_mentions(post, content)
+            
             # Create JobPost if it's a job post
             if post_type == 'job':
                 job_data = {
@@ -249,6 +258,34 @@ class PostForm(forms.ModelForm):
                     JobPost.objects.create(post=post, **job_data)
         
         return post
+    
+    def process_mentions(self, post, content):
+        """Extract mentions from content and create Mention objects"""
+        # Find all @username patterns
+        mention_pattern = r'@([a-zA-Z0-9_]+)'
+        mentions = re.findall(mention_pattern, content)
+        
+        for username in set(mentions):  # Use set to avoid duplicates
+            try:
+                user = User.objects.get(username=username)
+                # Don't create mention if it's the author mentioning themselves
+                if user != post.author:
+                    Mention.objects.create(
+                        post=post,
+                        mentioned_user=user,
+                        position=content.find(f"@{username}")
+                    )
+                    
+                    # Create notification
+                    Notification.objects.create(
+                        user=user,
+                        from_user=post.author,
+                        notification_type='mention',
+                        post=post
+                    )
+            except User.DoesNotExist:
+                continue
+
 
 class CommentForm(forms.ModelForm):
     class Meta:
@@ -256,11 +293,56 @@ class CommentForm(forms.ModelForm):
         fields = ['text']
         widgets = {
             'text': forms.Textarea(attrs={
-                'placeholder': 'Write a comment...',
+                'placeholder': 'Write a comment... (use @ to mention someone)',
                 'rows': 2,
-                'class': 'form-control'
+                'class': 'form-control',
+                'id': 'comment-text'
             }),
         }
+    
+    def save(self, commit=True, post=None, author=None):
+        comment = super().save(commit=False)
+        
+        if post:
+            comment.post = post
+        if author:
+            comment.author = author
+        
+        if commit:
+            comment.save()
+            
+            # Process mentions
+            content = self.cleaned_data.get('text', '')
+            if content:
+                self.process_mentions(comment, content)
+        
+        return comment
+    
+    def process_mentions(self, comment, content):
+        """Extract mentions from comment and create Mention objects"""
+        mention_pattern = r'@([a-zA-Z0-9_]+)'
+        mentions = re.findall(mention_pattern, content)
+        
+        for username in set(mentions):
+            try:
+                user = User.objects.get(username=username)
+                # Don't create mention if it's the author mentioning themselves
+                if user != comment.author:
+                    Mention.objects.create(
+                        comment=comment,
+                        mentioned_user=user,
+                        position=content.find(f"@{username}")
+                    )
+                    
+                    # Create notification
+                    Notification.objects.create(
+                        user=user,
+                        from_user=comment.author,
+                        notification_type='mention',
+                        post=comment.post
+                    )
+            except User.DoesNotExist:
+                continue
 
 
 class ShareForm(forms.ModelForm):
