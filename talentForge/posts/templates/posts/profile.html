@@ -1820,14 +1820,7 @@
                 {% endfor %}
             </div>
             
-            <!-- View All Link -->
-            {% if saved_posts.count > 6 %}
-            <div class="view-all-link">
-                <a href="{% url 'posts:saved_posts' %}" class="create-post-btn">
-                    <i class="fas fa-list"></i> View All Saved Posts
-                </a>
-            </div>
-            {% endif %}
+            
             
         {% else %}
             <!-- No Saved Posts -->
