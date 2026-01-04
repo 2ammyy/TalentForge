@@ -55,3 +55,52 @@ def log_content_validation_on_post_save(sender, instance, created, **kwargs):
                 print(f"❌ Error logging validation for post {instance.id}: {e}")
     except ImportError as e:
         print(f"❌ Could not import validation module: {e}")
+# talentForge/posts/signals.py
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from .models import Post, Mention, Notification
+import re
+from django.contrib.auth.models import User
+
+@receiver(post_save, sender=Post)
+def process_post_mentions(sender, instance, created, **kwargs):
+    """Process mentions when a post is created or updated"""
+    if created or instance.content:  # Only process if new or content exists
+        print(f"DEBUG: Processing mentions for post {instance.id} (created: {created})")
+        
+        # Find all @username patterns
+        mention_pattern = r'@([a-zA-Z0-9_]+)'
+        mentions = re.findall(mention_pattern, instance.content or '')
+        
+        for username in set(mentions):  # Use set to avoid duplicates
+            try:
+                user = User.objects.get(username=username)
+                # Don't create mention if it's the author mentioning themselves
+                if user != instance.author:
+                    # Check if mention already exists
+                    existing_mention = Mention.objects.filter(
+                        post=instance,
+                        mentioned_user=user
+                    ).first()
+                    
+                    if not existing_mention:
+                        # Create mention
+                        Mention.objects.create(
+                            post=instance,
+                            mentioned_user=user,
+                            position=(instance.content or '').find(f"@{username}")
+                        )
+                        
+                        # Create notification
+                        Notification.objects.create(
+                            user=user,
+                            from_user=instance.author,
+                            notification_type='mention',
+                            post=instance
+                        )
+                        print(f"DEBUG: Created mention notification for {username}")
+                        
+            except User.DoesNotExist:
+                continue
+            except Exception as e:
+                print(f"ERROR: Failed to process mention for {username}: {e}")

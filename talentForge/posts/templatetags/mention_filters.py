@@ -4,7 +4,6 @@ from django.utils.safestring import mark_safe
 import re
 
 register = template.Library()
-
 @register.filter
 def render_mentions(text):
     """Convert @username in text to clickable links"""

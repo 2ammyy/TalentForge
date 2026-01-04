@@ -1,3 +1,4 @@
+<!-- talentForge\posts\templates\posts\notifications.html - FIXED VERSION -->
 {% extends 'base.html' %}
 {% load static %} 
 {% block subtitle %}Notifications{% endblock %}
@@ -13,73 +14,185 @@
         {% if notifications %}
         <div class="notifications-count">
             <span class="count-badge">{{ notifications|length }}</span>
-            <span class="unread-count">
-                {% with unread_notifications=notifications|slice:":0" %}
-                    {% for notification in notifications %}
-                        {% if not notification.is_read %}
-                            {% with unread_count=forloop.counter0|add:1 %}
-                                {{ unread_count }} unread
-                            {% endwith %}
-                        {% endif %}
-                    {% endfor %}
-                {% endwith %}
-            </span>
+            {% comment %} Calculate unread count in template {% endcomment %}
+            {% with unread_count=0 %}
+                {% for notification in notifications %}
+                    {% if not notification.is_read %}
+                        {% with unread_count=forloop.counter0|add:1 %}
+                            {% if forloop.last %}
+                                {% if unread_count > 0 %}
+                                <span class="unread-count">{{ unread_count }} unread</span>
+                                {% endif %}
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+            {% endwith %}
         </div>
         {% endif %}
+        
+        <!-- Action Buttons -->
+        <div class="notification-actions-header">
+            {% if notifications %}
+            <a href="{% url 'posts:clear_all_notifications' %}" class="clear-all-btn" onclick="return confirm('Mark all notifications as read?')">
+                <i class="fas fa-check-double"></i> Mark All Read
+            </a>
+            {% endif %}
+        </div>
     </div>
     
     <!-- Notifications List -->
     {% if notifications %}
         <div class="notifications-list">
             {% for notification in notifications %}
-                <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+                <div class="notification-item {% if not notification.is_read %}unread{% endif %}" data-notification-id="{{ notification.id }}">
                     <div class="notification-content">
                         <div class="notification-header">
                             <div class="notification-user">
                                 <div class="user-avatar-small">
-                                    {{ notification.from_user.username|first|upper }}
+                                    {% if notification.from_user.profile.avatar %}
+                                        <img src="{{ notification.from_user.profile.avatar.url }}" alt="{{ notification.from_user.username }}">
+                                    {% else %}
+                                        {{ notification.from_user.username|first|upper }}
+                                    {% endif %}
                                 </div>
                                 <span class="username">{{ notification.from_user.username }}</span>
                             </div>
-                            <span class="notification-time">{{ notification.timestamp|timesince }} ago</span>
+                            <div class="notification-meta">
+                                <span class="notification-time">{{ notification.timestamp|timesince }} ago</span>
+                                {% if not notification.is_read %}
+                                <span class="notification-status">NEW</span>
+                                {% endif %}
+                            </div>
                         </div>
                         
                         <div class="notification-body">
-                            <p class="notification-text">
-                                {{ notification.get_notification_type_display|lower }}
-                                {% if notification.post %}
-                                <span class="post-title">"{{ notification.post.title }}"</span>
+                            <!-- Notification Message based on type -->
+                            <div class="notification-message">
+                                {% if notification.notification_type == 'mention' %}
+                                    <div class="notification-type mention">
+                                        <i class="fas fa-at"></i>
+                                        <span>
+                                            <strong>{{ notification.from_user.username }}</strong> mentioned you in a 
+                                            {% if notification.post %}<strong>post</strong>{% else %}<strong>comment</strong>{% endif %}
+                                        </span>
+                                    </div>
+                                
+                                {% elif notification.notification_type == 'comment' %}
+                                    <div class="notification-type comment">
+                                        <i class="fas fa-comment"></i>
+                                        <span>
+                                            <strong>{{ notification.from_user.username }}</strong> commented on your post
+                                        </span>
+                                    </div>
+                                
+                                {% elif notification.notification_type == 'like' %}
+                                    <div class="notification-type like">
+                                        <i class="fas fa-heart"></i>
+                                        <span>
+                                            <strong>{{ notification.from_user.username }}</strong> liked your post
+                                        </span>
+                                    </div>
+                                
+                                {% elif notification.notification_type == 'share' %}
+                                    <div class="notification-type share">
+                                        <i class="fas fa-share"></i>
+                                        <span>
+                                            <strong>{{ notification.from_user.username }}</strong> shared your post
+                                        </span>
+                                    </div>
+                                
+                                {% elif notification.notification_type == 'follow' %}
+                                    <div class="notification-type follow">
+                                        <i class="fas fa-user-plus"></i>
+                                        <span>
+                                            <strong>{{ notification.from_user.username }}</strong> started following you
+                                        </span>
+                                    </div>
+                                
+                                {% elif notification.notification_type == 'report' %}
+                                    <div class="notification-type report">
+                                        <i class="fas fa-flag"></i>
+                                        <span>
+                                            <strong>{{ notification.from_user.username }}</strong> reported content
+                                        </span>
+                                    </div>
+                                
+                                {% else %}
+                                    <div class="notification-type default">
+                                        <i class="fas fa-bell"></i>
+                                        <span>
+                                            {{ notification.get_notification_type_display }}
+                                        </span>
+                                    </div>
                                 {% endif %}
-                            </p>
-                            
-                            {% if notification.post %}
-                            <div class="notification-actions">
-                                <a href="{% url 'posts:post_detail' notification.post.pk %}" class="view-button">
-                                    View Post
-                                    <span class="button-icon">→</span>
-                                </a>
+                                
+                                <!-- Post title if available -->
+                                {% if notification.post and notification.post.title %}
+                                <div class="post-preview">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span class="post-title">"{{ notification.post.title|truncatechars:50 }}"</span>
+                                </div>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                            {% if notification.notification_type == 'mention' %}
-    <div class="notification-type mention">
-        <i class="fas fa-at"></i>
-        <span>mentioned you in a {% if notification.post %}post{% else %}comment{% endif %}</span>
-    </div>
-{% endif %}
+                            
+                            <!-- Actions -->
+                            <div class="notification-actions">
+                                {% if notification.post %}
+                                <a href="{% url 'posts:post_detail' notification.post.pk %}" class="view-button">
+                                    <i class="fas fa-eye"></i> View Post
+                                </a>
+                                {% endif %}
+                                
+                                {% if notification.notification_type == 'follow' %}
+                                <a href="{% url 'posts:user_profile' notification.from_user.username %}" class="view-button">
+                                    <i class="fas fa-user"></i> View Profile
+                                </a>
+                                {% endif %}
+                                
+                                <button class="mark-read-btn" onclick="markNotificationRead({{ notification.id }})">
+                                    <i class="fas fa-check"></i> Mark Read
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             {% endfor %}
         </div>
+        
+        <!-- Pagination or Load More -->
+        {% if is_paginated %}
+        <div class="notifications-pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="pagination-btn">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </a>
+            {% endif %}
+            
+            <span class="current-page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="pagination-btn">
+                    Next <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
     {% else %}
         <!-- Empty State -->
         <div class="empty-notifications">
             <div class="empty-icon">✨</div>
             <h3>No notifications yet</h3>
-            <p>When you receive likes, comments, or mentions, they'll appear here.</p>
-            <a href="{% url 'posts:post_list' %}" class="explore-button">
-                Explore Content
-            </a>
+            <p>When you receive likes, comments, mentions, or follows, they'll appear here.</p>
+            <div class="empty-actions">
+                <a href="{% url 'posts:post_list' %}" class="explore-button">
+                    <i class="fas fa-compass"></i> Explore Content
+                </a>
+                <a href="{% url 'posts:feed' %}" class="explore-button secondary">
+                    <i class="fas fa-rss"></i> View Feed
+                </a>
+            </div>
         </div>
     {% endif %}
 </div>
@@ -90,6 +203,12 @@
     max-width: 800px;
     margin: 2rem auto;
     padding: 0 1rem;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Header */
@@ -99,7 +218,19 @@
     align-items: flex-start;
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+    position: relative;
+}
+
+.notifications-header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100px;
+    height: 2px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 2px;
 }
 
 .notifications-title {
@@ -131,12 +262,40 @@
     border-radius: 20px;
     font-size: 0.875rem;
     font-weight: 600;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .unread-count {
     font-size: 0.8rem;
     color: #e53e3e;
     font-weight: 500;
+}
+
+.notification-actions-header {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.clear-all-btn {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.clear-all-btn:hover {
+    background: rgba(102, 126, 234, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
 }
 
 /* Notifications List */
@@ -214,6 +373,13 @@
     font-weight: bold;
     font-size: 0.9rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.user-avatar-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .username {
@@ -222,10 +388,26 @@
     font-size: 1rem;
 }
 
+.notification-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
 .notification-time {
     font-size: 0.8rem;
     color: #a0aec0;
     font-weight: 500;
+}
+
+.notification-status {
+    font-size: 0.7rem;
+    color: #e53e3e;
+    font-weight: 600;
+    background: rgba(229, 62, 62, 0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
 }
 
 /* Notification Body */
@@ -235,38 +417,78 @@
     gap: 1rem;
 }
 
-.notification-text {
-    margin: 0;
-    color: #4a5568;
+.notification-message {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.notification-type {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.95rem;
-    line-height: 1.5;
+    color: #4a5568;
+}
+
+.notification-type i {
+    font-size: 1rem;
+    width: 20px;
+}
+
+.notification-type.mention i { color: #667eea; }
+.notification-type.comment i { color: #38a169; }
+.notification-type.like i { color: #e53e3e; }
+.notification-type.share i { color: #d69e2e; }
+.notification-type.follow i { color: #805ad5; }
+.notification-type.report i { color: #718096; }
+.notification-type.default i { color: #4a5568; }
+
+.post-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
+}
+
+.post-preview i {
+    color: #667eea;
+    font-size: 0.9rem;
 }
 
 .post-title {
-    color: #667eea;
-    font-weight: 500;
+    color: #4a5568;
     font-style: italic;
+    font-size: 0.9rem;
 }
 
 /* Actions */
 .notification-actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
 }
 
-.view-button {
+.view-button, .mark-read-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    text-decoration: none;
-    padding: 0.5rem 1.25rem;
-    border-radius: 12px;
-    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
     font-weight: 500;
     transition: all 0.3s ease;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+}
+
+.view-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
@@ -275,13 +497,15 @@
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
 }
 
-.button-icon {
-    font-size: 1rem;
-    transition: transform 0.3s ease;
+.mark-read-btn {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    border: 1px solid rgba(102, 126, 234, 0.3);
 }
 
-.view-button:hover .button-icon {
-    transform: translateX(3px);
+.mark-read-btn:hover {
+    background: rgba(102, 126, 234, 0.2);
+    transform: translateY(-1px);
 }
 
 /* Empty State */
@@ -291,13 +515,22 @@
     background: white;
     border-radius: 20px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-    border: 2px dashed #e2e8f0;
+    border: 2px dashed rgba(102, 126, 234, 0.3);
+    animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .empty-icon {
     font-size: 4rem;
     margin-bottom: 1.5rem;
     opacity: 0.6;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .empty-notifications h3 {
@@ -316,12 +549,21 @@
     line-height: 1.6;
 }
 
+.empty-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 .explore-button {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     text-decoration: none;
-    padding: 0.75rem 2rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 50px;
     font-weight: 600;
     font-size: 0.95rem;
@@ -332,6 +574,52 @@
 .explore-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.explore-button.secondary {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    box-shadow: none;
+}
+
+.explore-button.secondary:hover {
+    background: rgba(102, 126, 234, 0.2);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+/* Pagination */
+.notifications-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.pagination-btn:hover {
+    background: rgba(102, 126, 234, 0.2);
+    transform: translateY(-1px);
+}
+
+.current-page {
+    color: #718096;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 /* Responsive Design */
@@ -351,6 +639,11 @@
         align-items: flex-start;
     }
     
+    .notification-actions-header {
+        position: static;
+        margin-top: 0.5rem;
+    }
+    
     .notifications-title {
         font-size: 1.75rem;
     }
@@ -365,26 +658,204 @@
         align-items: flex-start;
     }
     
+    .notification-meta {
+        align-items: flex-start;
+    }
+    
     .notification-time {
         align-self: flex-start;
     }
-}
-
-/* Animation for new notifications */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
+    
+    .empty-actions {
+        flex-direction: column;
     }
-    to {
-        opacity: 1;
-        transform: translateX(0);
+    
+    .explore-button {
+        width: 100%;
+        justify-content: center;
     }
 }
 
-.notification-item {
-    animation: slideIn 0.3s ease-out;
+@media (max-width: 480px) {
+    .notification-actions {
+        flex-direction: column;
+    }
+    
+    .view-button, .mark-read-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 </style>
+
+<script>
+// JavaScript for notification interactions
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Notifications page loaded');
+    
+    // Mark notification as read when clicked
+    const notificationItems = document.querySelectorAll('.notification-item');
+    notificationItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Don't mark as read if clicking on links or buttons
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || 
+                e.target.closest('a') || e.target.closest('button')) {
+                return;
+            }
+            
+            const notificationId = this.dataset.notificationId;
+            if (notificationId && this.classList.contains('unread')) {
+                markNotificationRead(notificationId, this);
+            }
+        });
+    });
+    
+    // Count unread notifications for display
+    updateUnreadCount();
+});
+
+// Function to mark notification as read
+async function markNotificationRead(notificationId, element = null) {
+    try {
+        const csrfToken = getCookie('csrftoken');
+        if (!csrfToken) {
+            console.error('CSRF token not found');
+            return;
+        }
+        
+        const response = await fetch(`/posts/notifications/mark-read/${notificationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                // Update UI
+                if (element) {
+                    element.classList.remove('unread');
+                    const statusElement = element.querySelector('.notification-status');
+                    if (statusElement) {
+                        statusElement.remove();
+                    }
+                    
+                    // Update unread count
+                    updateUnreadCount();
+                }
+                
+                // Show success feedback
+                showToast('Notification marked as read', 'success');
+            }
+        } else {
+            console.error('Failed to mark notification as read:', response.status);
+            showToast('Failed to mark notification as read', 'error');
+        }
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+        showToast('Failed to mark notification as read', 'error');
+    }
+}
+
+// Function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Function to update unread count
+function updateUnreadCount() {
+    const unreadItems = document.querySelectorAll('.notification-item.unread');
+    const unreadCount = unreadItems.length;
+    
+    // Update or create unread count element
+    let unreadCountElement = document.querySelector('.unread-count');
+    
+    if (unreadCount > 0) {
+        if (!unreadCountElement) {
+            // Create new element
+            const notificationsCount = document.querySelector('.notifications-count');
+            if (notificationsCount) {
+                unreadCountElement = document.createElement('span');
+                unreadCountElement.className = 'unread-count';
+                notificationsCount.appendChild(unreadCountElement);
+            }
+        }
+        if (unreadCountElement) {
+            unreadCountElement.textContent = `${unreadCount} unread`;
+        }
+    } else if (unreadCountElement) {
+        // Remove if no unread notifications
+        unreadCountElement.remove();
+    }
+}
+
+// Function to show toast message
+function showToast(message, type = 'info') {
+    // Remove existing toast
+    const existingToast = document.querySelector('.toast-message');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create toast
+    const toast = document.createElement('div');
+    toast.className = `toast-message toast-${type}`;
+    toast.textContent = message;
+    
+    // Style toast
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        background: ${type === 'success' ? '#38a169' : type === 'error' ? '#e53e3e' : '#667eea'};
+        color: white;
+        font-weight: 500;
+        z-index: 9999;
+        animation: slideInRight 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Add CSS animations for toast
+if (!document.querySelector('#toast-animations')) {
+    const style = document.createElement('style');
+    style.id = 'toast-animations';
+    style.textContent = `
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+</script>
 
 {% endblock %}

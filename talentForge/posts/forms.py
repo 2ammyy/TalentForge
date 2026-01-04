@@ -318,32 +318,35 @@ class CommentForm(forms.ModelForm):
         
         return comment
     
-    def process_mentions(self, comment, content):
-        """Extract mentions from comment and create Mention objects"""
-        mention_pattern = r'@([a-zA-Z0-9_]+)'
-        mentions = re.findall(mention_pattern, content)
-        
-        for username in set(mentions):
-            try:
-                user = User.objects.get(username=username)
-                # Don't create mention if it's the author mentioning themselves
-                if user != comment.author:
-                    Mention.objects.create(
-                        comment=comment,
-                        mentioned_user=user,
-                        position=content.find(f"@{username}")
-                    )
-                    
-                    # Create notification
-                    Notification.objects.create(
-                        user=user,
-                        from_user=comment.author,
-                        notification_type='mention',
-                        post=comment.post
-                    )
-            except User.DoesNotExist:
-                continue
-
+def process_mentions(self, comment, content):
+    """Extract mentions from comment and create Mention objects"""
+    mention_pattern = r'@([a-zA-Z0-9_]+)'
+    mentions = re.findall(mention_pattern, content)
+    
+    print(f"DEBUG: Found mentions in comment: {mentions}")  # Add this line
+    
+    for username in set(mentions):
+        try:
+            user = User.objects.get(username=username)
+            # Don't create mention if it's the author mentioning themselves
+            if user != comment.author:
+                Mention.objects.create(
+                    comment=comment,
+                    mentioned_user=user,
+                    position=content.find(f"@{username}")
+                )
+                
+                # Create notification
+                Notification.objects.create(
+                    user=user,
+                    from_user=comment.author,
+                    notification_type='mention',
+                    post=comment.post
+                )
+                print(f"DEBUG: Created mention notification for {username} in comment")  # Add this line
+        except User.DoesNotExist:
+            print(f"DEBUG: User {username} not found")  # Add this line
+            continue
 
 class ShareForm(forms.ModelForm):
     class Meta:
