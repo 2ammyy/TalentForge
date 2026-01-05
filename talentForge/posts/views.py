@@ -148,7 +148,8 @@ def saved_posts_view(request):
     return render(request, 'posts/saved_posts.html', context)
 
 
-
+# In the post_detail view, replace the comment creation section:
+@login_required
 def post_detail(request, pk):
     """View for post details"""
     post = get_object_or_404(Post, pk=pk)
@@ -163,7 +164,7 @@ def post_detail(request, pk):
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
             # --- ADD TOXICITY CHECK FOR COMMENTS ---
-            comment_content = comment_form.cleaned_data.get('content', '')
+            comment_content = comment_form.cleaned_data.get('text', '')  # Changed from 'content' to 'text'
             is_toxic, score = is_toxic_content(comment_content)
             
             if is_toxic:
@@ -181,10 +182,18 @@ def post_detail(request, pk):
                 })
             # --- END TOXICITY CHECK ---
             
+            # Use the form's save method which processes mentions
             comment = comment_form.save(commit=False)
             comment.post = post
             comment.author = request.user
+            
+            # Save the comment first
             comment.save()
+            
+            # Now process mentions using the form's method
+            comment_content = comment_form.cleaned_data.get('text', '')
+            if comment_content:
+                comment_form.process_mentions(comment, comment_content)
             
             # Create notification for post author
             if post.author != request.user:
@@ -206,7 +215,6 @@ def post_detail(request, pk):
         'form': comment_form,
         'user_reaction': user_reaction
     })
-
 @login_required
 def feed(request):
     # Show posts from followed users and popular posts
@@ -814,17 +822,14 @@ def conversation_view(request, username):
 @login_required
 def notifications_view(request):
     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
-    unread_count = notifications.filter(is_read=False).count()
     
-    # Mark as read when user views notifications
-    if request.method == 'GET':
-        notifications.update(is_read=True)
+    # Calculate unread count
+    unread_count = notifications.filter(is_read=False).count()
     
     return render(request, 'posts/notifications.html', {
         'notifications': notifications,
-        'unread_count': unread_count
+        'unread_count': unread_count,  # Pass this to template
     })
-
 
 
 @login_required
@@ -1037,3 +1042,41 @@ def remove_reaction(request, post_id):
         return JsonResponse({'success': False, 'error': 'Post not found'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+    
+# MENTION SEARCH API
+from django.http import JsonResponse
+from django.db.models import Q
+
+@login_required
+@require_POST
+def search_usernames(request):
+    """API endpoint for username search (for @mentions)"""
+    query = request.GET.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    # Exclude blocked users
+    blocked_users = Block.objects.filter(blocker=request.user).values_list('blocked_id', flat=True)
+    
+    # Search users (excluding blocked and current user)
+    users = User.objects.filter(
+        Q(username__icontains=query) |
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query)
+    ).exclude(
+        Q(id__in=blocked_users) |
+        Q(id=request.user.id)
+    ).select_related('posts_profile')[:10]  # Limit to 10 results
+    
+    results = []
+    for user in users:
+        results.append({
+            'id': user.id,
+            'username': user.username,
+            'full_name': f"{user.first_name} {user.last_name}".strip() or user.username,
+            'avatar_url': user.posts_profile.profile_picture.url if hasattr(user, 'posts_profile') and user.posts_profile.profile_picture else None,
+            'initials': user.username[0].upper()
+        })
+    
+    return JsonResponse({'results': results})

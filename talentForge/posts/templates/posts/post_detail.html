@@ -1,11 +1,13 @@
-<!-- talentForge\posts\templates\posts\post_detail.html - VERSION COMPLÈTE AMÉLIORÉE -->
+<!-- talentForge\posts\templates\posts\post_detail.html - ORIGINAL UI WITH MENTIONS -->
 {% extends 'base.html' %}
 {% load static %}
+{% load mention_filters %}
+
 {% block subtitle %}Art by {{ post.author.username }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Styles spécifiques pour les détails de post */
+    /* Your original styles remain exactly the same */
     .post-detail-container {
         max-width: 900px;
         margin: 0 auto;
@@ -425,6 +427,7 @@
 
     .art-form-group {
         margin-bottom: 1.5rem;
+        position: relative;
     }
 
     .art-form-label {
@@ -506,6 +509,114 @@
         transform: translateX(5px);
     }
 
+    /* === ADD MENTION STYLES HERE (KEEP YOUR ORIGINAL STYLES ABOVE) === */
+    .mention {
+        background-color: rgba(102, 126, 234, 0.15);
+        color: var(--accent-primary);
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-block;
+        margin: 0 2px;
+        border: 1px solid rgba(102, 126, 234, 0.3);
+    }
+
+    .mention:hover {
+        background-color: rgba(102, 126, 234, 0.25);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+    /* Mention dropdown styles - matches your artistic theme */
+    .mention-dropdown {
+        position: absolute;
+        background: var(--glass-effect);
+        backdrop-filter: blur(20px);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 99999;
+        display: none;
+        width: 280px;
+        padding: 8px;
+    }
+    
+    .mention-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        margin-bottom: 4px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .mention-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .mention-item:hover {
+        background: rgba(102, 126, 234, 0.15);
+        transform: translateX(5px);
+    }
+    
+    .mention-item.selected {
+        background: rgba(102, 126, 234, 0.2);
+        border-left: 3px solid var(--accent-primary);
+    }
+    
+    .mention-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        margin-right: 12px;
+        background: var(--primary-gradient);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .mention-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .mention-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .mention-username {
+        font-weight: 700;
+        color: var(--text-color);
+        font-size: 0.9rem;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .mention-fullname {
+        font-size: 0.8rem;
+        color: rgba(var(--text-color-rgb), 0.7);
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .post-detail-container {
@@ -545,6 +656,12 @@
         
         .art-reaction-btn {
             justify-content: center;
+        }
+        
+        .mention-dropdown {
+            width: calc(100% - 2rem);
+            left: 1rem !important;
+            right: 1rem !important;
         }
     }
 
@@ -654,7 +771,7 @@
             
             {% if post.content %}
             <div class="art-description">
-                {{ post.content|linebreaks }}
+                {{ post.content|render_mentions|linebreaks }}
             </div>
             {% endif %}
         </div>
@@ -788,7 +905,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="art-comment-text">{{ comment.text }}</p>
+                <p class="art-comment-text">{{ comment.text|render_mentions }}</p>
             </div>
             {% empty %}
             <div class="text-center py-5">
@@ -802,13 +919,25 @@
         <!-- Formulaire de commentaire artistique -->
         {% if user.is_authenticated %}
         <div class="art-comment-form">
-            <form method="post">
+            <form method="post" id="commentForm">
                 {% csrf_token %}
                 <div class="art-form-group">
-                    <label for="{{ form.text.id_for_label }}" class="art-form-label">
+                    <label for="comment-text" class="art-form-label">
                         <i class="fas fa-pen-nib me-2"></i>Add your thoughts
                     </label>
-                    {{ form.text }}
+                    <!-- Updated textarea with mention support -->
+                    <textarea 
+                        name="text" 
+                        id="comment-text" 
+                        class="art-form-textarea"
+                        placeholder="Write a comment... Use @ to mention someone"
+                        rows="3"
+                        autocomplete="off"
+                    >{{ form.text.value|default:'' }}</textarea>
+                    
+                    <!-- Mention dropdown for comments -->
+                    <div id="commentMentionDropdown" class="mention-dropdown"></div>
+                    
                     {% if form.text.errors %}
                         <div class="error mt-2">{{ form.text.errors }}</div>
                     {% endif %}
@@ -981,8 +1110,17 @@ function sendArtReaction(postId, reactionType, add, buttonElement) {
     });
 }
 
-// Initialisation
+// ===== MENTION FUNCTIONALITY =====
+let mentionDropdown = null;
+let currentMention = null;
+let mentionStart = -1;
+let debounceTimer = null;
+let mentionItems = [];
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Post detail page loaded - Initializing mentions...');
+    
     // Auto-play vidéo artistique avec contrôle
     const artVideo = document.querySelector('.art-video');
     if (artVideo) {
@@ -1011,7 +1149,243 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.animationDelay = `${index * 0.1}s`;
         card.classList.add('animate__animated', 'animate__fadeInUp');
     });
+
+    // Initialize mention functionality for comment field
+    const commentField = document.getElementById('comment-text');
+    if (commentField) {
+        console.log('Comment field found, initializing mention system...');
+        mentionDropdown = document.getElementById('commentMentionDropdown');
+        if (mentionDropdown) {
+            initializeMentionSystem(commentField, mentionDropdown);
+        } else {
+            console.error('Mention dropdown element not found!');
+        }
+    } else {
+        console.log('Comment field NOT found! Check if user is authenticated.');
+    }
 });
+
+// Simple mention system functions
+function initializeMentionSystem(textarea, dropdown) {
+    console.log('Initializing mention system...');
+    
+    // Function to search for users
+    async function searchUsers(query) {
+        if (!query || query.length < 1) return [];
+        
+        try {
+            console.log('Searching users for:', query);
+            const response = await fetch(`/posts/search-usernames/?q=${encodeURIComponent(query)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Search results:', data);
+            return data.results || [];
+        } catch (error) {
+            console.error('Error searching users:', error);
+            return [];
+        }
+    }
+    
+    // Function to show mention dropdown
+    function showMentionDropdown(users) {
+        if (!users || users.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+        
+        dropdown.innerHTML = '';
+        mentionItems = [];
+        
+        users.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'mention-item';
+            item.dataset.username = user.username;
+            
+            // Create avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'mention-avatar';
+            if (user.avatar_url) {
+                const img = document.createElement('img');
+                img.src = user.avatar_url;
+                img.alt = user.username;
+                img.onerror = function() {
+                    this.parentElement.textContent = user.initials;
+                };
+                avatar.appendChild(img);
+            } else {
+                avatar.textContent = user.initials;
+            }
+            
+            // Create user info
+            const info = document.createElement('div');
+            info.className = 'mention-info';
+            info.innerHTML = `
+                <span class="mention-username">${user.username}</span>
+                ${user.full_name !== user.username ? `<span class="mention-fullname">${user.full_name}</span>` : ''}
+            `;
+            
+            item.appendChild(avatar);
+            item.appendChild(info);
+            
+            // Add click handler
+            item.addEventListener('click', () => {
+                insertMention(user.username);
+                dropdown.style.display = 'none';
+            });
+            
+            item.addEventListener('mouseenter', () => {
+                mentionItems.forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+            
+            dropdown.appendChild(item);
+            mentionItems.push(item);
+        });
+        
+        // Position dropdown near textarea
+        positionDropdown(textarea, dropdown);
+        dropdown.style.display = 'block';
+        
+        // Select first item
+        if (mentionItems.length > 0) {
+            mentionItems[0].classList.add('selected');
+        }
+    }
+    
+    // Function to insert mention into text
+    function insertMention(username) {
+        const text = textarea.value;
+        const before = text.substring(0, mentionStart);
+        const after = text.substring(currentMention.length + mentionStart + 1);
+        textarea.value = before + '@' + username + ' ' + after;
+        
+        // Focus and move cursor after the mention
+        textarea.focus();
+        const cursorPos = mentionStart + username.length + 2;
+        textarea.setSelectionRange(cursorPos, cursorPos);
+        
+        currentMention = null;
+        mentionStart = -1;
+        mentionItems = [];
+    }
+    
+    // Handle input events for @ detection
+    textarea.addEventListener('input', function(e) {
+        const text = textarea.value;
+        const cursorPos = textarea.selectionStart;
+        
+        // Check for @ symbol
+        const lastAtPos = text.lastIndexOf('@', cursorPos - 1);
+        
+        if (lastAtPos !== -1) {
+            // Check if it's a valid mention (not part of another word)
+            const beforeChar = lastAtPos === 0 ? ' ' : text[lastAtPos - 1];
+            if (beforeChar === ' ' || beforeChar === '\n' || /[.,;!?()]/.test(beforeChar)) {
+                const query = text.substring(lastAtPos + 1, cursorPos);
+                
+                if (query.length > 0 && !/\s/.test(query)) {
+                    currentMention = query;
+                    mentionStart = lastAtPos;
+                    
+                    // Debounce the search
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        searchUsers(query).then(users => {
+                            showMentionDropdown(users);
+                        });
+                    }, 200);
+                    return;
+                }
+            }
+        }
+        
+        // Hide dropdown if no mention
+        dropdown.style.display = 'none';
+        currentMention = null;
+        mentionStart = -1;
+        mentionItems = [];
+    });
+    
+    // Handle keyboard navigation in dropdown
+    textarea.addEventListener('keydown', function(e) {
+        if (dropdown.style.display === 'block') {
+            let selectedIndex = -1;
+            
+            // Find currently selected item
+            mentionItems.forEach((item, index) => {
+                if (item.classList.contains('selected')) {
+                    selectedIndex = index;
+                }
+            });
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex + 1) % mentionItems.length;
+                updateDropdownSelection(selectedIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex - 1 + mentionItems.length) % mentionItems.length;
+                updateDropdownSelection(selectedIndex);
+            } else if (e.key === 'Enter' && selectedIndex !== -1) {
+                e.preventDefault();
+                const username = mentionItems[selectedIndex].dataset.username;
+                insertMention(username);
+                return;
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                dropdown.style.display = 'none';
+                return;
+            } else if (e.key === 'Tab' && selectedIndex !== -1) {
+                e.preventDefault();
+                const username = mentionItems[selectedIndex].dataset.username;
+                insertMention(username);
+            }
+        }
+    });
+    
+    // Update dropdown selection
+    function updateDropdownSelection(selectedIndex) {
+        mentionItems.forEach((item, index) => {
+            item.classList.toggle('selected', index === selectedIndex);
+            if (index === selectedIndex) {
+                item.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    }
+    
+    // Position dropdown
+    function positionDropdown(textarea, dropdown) {
+        const rect = textarea.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        dropdown.style.position = 'absolute';
+        dropdown.style.top = (rect.bottom + scrollTop + 5) + 'px';
+        dropdown.style.left = (rect.left + scrollLeft) + 'px';
+        dropdown.style.width = (textarea.offsetWidth) + 'px';
+    }
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!dropdown.contains(e.target) && e.target !== textarea) {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // Test the API endpoint on load
+    console.log('Testing mention API endpoint...');
+    searchUsers('a').then(users => {
+        console.log('API test successful. Found users:', users.length);
+    });
+}
 </script>
 
 <!-- Include Animate.css for animations -->

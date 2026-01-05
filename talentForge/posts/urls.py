@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from .views_mentions import search_usernames
+
 
 app_name = 'posts'
 
@@ -73,4 +75,6 @@ urlpatterns = [
     # Save URLs
     path('save/<int:post_id>/', views.save_post, name='save_post'),
     path('unsave/<int:post_id>/', views.unsave_post, name='unsave_post'),
+    # Mentions
+    path('search-usernames/', search_usernames, name='search_usernames'),
 ]

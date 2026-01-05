@@ -1,6 +1,7 @@
 <!-- talentForge\posts\templates\posts\post_create.html -->
 {% extends 'base.html' %}
 {% load static %} 
+{% load mention_filters %}
 
 {% block subtitle %}Create Post - TalentForge{% endblock %}
 
@@ -370,6 +371,69 @@
         font-size: 0.8rem;
         font-weight: 600;
     }
+    /* Add these styles for mention dropdown */
+    .mention-dropdown {
+        position: absolute;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+    
+    .mention-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .mention-item:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .mention-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin-right: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+    
+    .mention-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .mention-username {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .mention-fullname {
+        font-size: 0.85rem;
+        color: #666;
+        margin-left: 5px;
+    }
+    
+    .mention-highlight {
+        background-color: rgba(102, 126, 234, 0.1);
+        padding: 2px 4px;
+        border-radius: 4px;
+        color: #667eea;
+    }
 </style>
 {% endblock %}
 
@@ -420,13 +484,17 @@
             {% endif %}
         </div>
         
-        <!-- Content Field -->
-        <div class="form-group" id="contentGroup">
+        <!-- Content Field with mention support-->
+         <div class="form-group" id="contentGroup">
             <label for="id_content" id="contentLabel">Content</label>
             <textarea name="content" id="id_content" class="form-control" 
-                      placeholder="What's on your mind?" rows="4">{{ form.content.value|default:'' }}</textarea>
+                      placeholder="What's on your mind? Use @ to mention someone..." rows="4">{{ form.content.value|default:'' }}</textarea>
             <i class="fas fa-exclamation-circle validation-icon"></i>
             <div class="validation-message" id="contentValidation"></div>
+            
+            <!-- Mention dropdown -->
+            <div id="mentionDropdown" class="mention-dropdown"></div>
+            
             {% if form.content.errors %}
                 <div class="error">{{ form.content.errors }}</div>
             {% endif %}
@@ -938,5 +1006,234 @@
             });
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const contentField = document.getElementById('id_content');
+    const mentionDropdown = document.getElementById('mentionDropdown');
+    let currentMention = null;
+    let mentionStart = -1;
+    
+    // Function to search for users
+    async function searchUsers(query) {
+        try {
+            const response = await fetch(`/posts/search-usernames/?q=${encodeURIComponent(query)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+            const data = await response.json();
+            return data.results;
+        } catch (error) {
+            console.error('Error searching users:', error);
+            return [];
+        }
+    }
+    
+    // Function to show mention dropdown
+    function showMentionDropdown(users, position) {
+        if (users.length === 0) {
+            mentionDropdown.style.display = 'none';
+            return;
+        }
+        
+        mentionDropdown.innerHTML = '';
+        users.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'mention-item';
+            item.dataset.username = user.username;
+            
+            // Create avatar
+            const avatar = document.createElement('div');
+            avatar.className = 'mention-avatar';
+            if (user.avatar_url) {
+                const img = document.createElement('img');
+                img.src = user.avatar_url;
+                img.alt = user.username;
+                avatar.appendChild(img);
+            } else {
+                avatar.textContent = user.initials;
+            }
+            
+            // Create user info
+            const info = document.createElement('div');
+            info.innerHTML = `
+                <span class="mention-username">${user.username}</span>
+                ${user.full_name !== user.username ? `<span class="mention-fullname">(${user.full_name})</span>` : ''}
+            `;
+            
+            item.appendChild(avatar);
+            item.appendChild(info);
+            
+            // Add click handler
+            item.addEventListener('click', () => {
+                insertMention(user.username);
+                mentionDropdown.style.display = 'none';
+            });
+            
+            mentionDropdown.appendChild(item);
+        });
+        
+        // Position dropdown near cursor
+        const textareaRect = contentField.getBoundingClientRect();
+        mentionDropdown.style.position = 'fixed';
+        mentionDropdown.style.left = `${textareaRect.left + position.x}px`;
+        mentionDropdown.style.top = `${textareaRect.top + position.y + 30}px`;
+        mentionDropdown.style.display = 'block';
+    }
+    
+    // Function to insert mention into text
+    function insertMention(username) {
+        const text = contentField.value;
+        const before = text.substring(0, mentionStart);
+        const after = text.substring(currentMention.length + mentionStart);
+        contentField.value = before + '@' + username + ' ' + after;
+        
+        // Focus and move cursor after the mention
+        contentField.focus();
+        const cursorPos = mentionStart + username.length + 2; // +2 for '@' and space
+        contentField.setSelectionRange(cursorPos, cursorPos);
+        
+        currentMention = null;
+        mentionStart = -1;
+    }
+    
+    // Handle @ key press
+    contentField.addEventListener('input', function(e) {
+        const text = contentField.value;
+        const cursorPos = contentField.selectionStart;
+        
+        // Check for @ symbol
+        const lastAtPos = text.lastIndexOf('@', cursorPos - 1);
+        
+        if (lastAtPos !== -1) {
+            // Check if it's a valid mention (not part of another word)
+            const beforeChar = text[lastAtPos - 1] || ' ';
+            if (lastAtPos === 0 || /\s/.test(beforeChar)) {
+                const query = text.substring(lastAtPos + 1, cursorPos);
+                
+                if (query.length > 0 && !/\s/.test(query)) {
+                    currentMention = query;
+                    mentionStart = lastAtPos;
+                    
+                    // Search for users
+                    searchUsers(query).then(users => {
+                        // Get cursor position for dropdown
+                        const range = document.createRange();
+                        const sel = window.getSelection();
+                        const pos = getCursorCoordinates(contentField, lastAtPos + 1);
+                        
+                        showMentionDropdown(users, pos);
+                    });
+                    return;
+                }
+            }
+        }
+        
+        // Hide dropdown if no mention
+        mentionDropdown.style.display = 'none';
+        currentMention = null;
+        mentionStart = -1;
+    });
+    
+    // Handle keyboard navigation in dropdown
+    contentField.addEventListener('keydown', function(e) {
+        if (mentionDropdown.style.display === 'block') {
+            const items = mentionDropdown.querySelectorAll('.mention-item');
+            let selectedIndex = -1;
+            
+            // Find currently selected item
+            items.forEach((item, index) => {
+                if (item.classList.contains('selected')) {
+                    selectedIndex = index;
+                }
+            });
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex + 1) % items.length;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+            } else if (e.key === 'Enter' && selectedIndex !== -1) {
+                e.preventDefault();
+                const username = items[selectedIndex].dataset.username;
+                insertMention(username);
+                return;
+            } else if (e.key === 'Escape') {
+                mentionDropdown.style.display = 'none';
+                return;
+            }
+            
+            // Update selection
+            items.forEach((item, index) => {
+                item.classList.toggle('selected', index === selectedIndex);
+            });
+        }
+    });
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!mentionDropdown.contains(e.target) && e.target !== contentField) {
+            mentionDropdown.style.display = 'none';
+        }
+    });
+    
+    // Function to get cursor coordinates
+    function getCursorCoordinates(textarea, position) {
+        // Create a mirror element
+        const mirror = document.createElement('div');
+        const computed = window.getComputedStyle(textarea);
+        
+        // Copy styles
+        mirror.style.cssText = `
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: ${textarea.offsetWidth}px;
+            font-size: ${computed.fontSize};
+            font-family: ${computed.fontFamily};
+            line-height: ${computed.lineHeight};
+            padding: ${computed.padding};
+            border: ${computed.border};
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        `;
+        
+        // Set text content
+        const text = textarea.value;
+        mirror.textContent = text.substring(0, position);
+        
+        // Create span for the cursor position
+        const span = document.createElement('span');
+        span.textContent = text.substring(position) || '.';
+        mirror.appendChild(span);
+        
+        document.body.appendChild(mirror);
+        
+        // Get coordinates
+        const rect = span.getBoundingClientRect();
+        const coordinates = {
+            x: rect.left - mirror.getBoundingClientRect().left,
+            y: rect.top - mirror.getBoundingClientRect().top
+        };
+        
+        document.body.removeChild(mirror);
+        return coordinates;
+    }
+});
+
+// DEBUG CODE - Add this at the very end of your script
+setTimeout(() => {
+    console.log('=== DEBUG INFO ===');
+    console.log('Comment textarea:', document.getElementById('comment-text'));
+    console.log('Mention dropdown:', document.getElementById('commentMentionDropdown'));
+    console.log('Is user authenticated:', '{{ user.is_authenticated }}' === 'True');
+    
+    // Test the API directly
+    fetch('/posts/search-usernames/?q=test')
+        .then(r => r.json())
+        .then(data => console.log('Direct API test:', data))
+        .catch(err => console.error('API error:', err));
+}, 1000);
 </script>
 {% endblock %}
