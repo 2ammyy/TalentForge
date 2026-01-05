@@ -1,8 +1,49 @@
-# posts/api_views.py ou utils/api_views.py
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from utils.moderation import is_toxic_content, get_toxicity_breakdown
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Fonctions de secours temporaires
+def dummy_is_toxic_content(text, threshold=0.7):
+    """Fonction de secours pour tests"""
+    logger.info(f"DEBUG: Checking toxicity for: {text[:50]}...")
+    # Logique simple de secours
+    bad_words = ['fuck', 'shit', 'stupid', 'idiot', 'kill', 'hate']
+    text_lower = text.lower()
+    
+    for word in bad_words:
+        if word in text_lower:
+            return True, 0.8
+    
+    return False, 0.1
+
+def dummy_get_toxicity_breakdown(text):
+    """Fonction de secours pour tests"""
+    is_toxic, score = dummy_is_toxic_content(text)
+    return {
+        'is_toxic': is_toxic,
+        'overall_score': score,
+        'source': 'dummy_check',
+        'recommendation': 'block' if is_toxic else 'allow',
+        'confidence': 'high' if score > 0.7 else 'low'
+    }
+
+# Essayer d'importer les vraies fonctions, sinon utiliser les fonctions de secours
+try:
+    from utils.moderation import is_toxic_content, get_toxicity_breakdown
+    logger.info("✅ Moderation functions imported successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Could not import moderation functions: {e}")
+    logger.warning("⚠️ Using dummy functions instead")
+    is_toxic_content = dummy_is_toxic_content
+    get_toxicity_breakdown = dummy_get_toxicity_breakdown
+except SyntaxError as e:
+    logger.error(f"❌ Syntax error in moderation module: {e}")
+    logger.warning("⚠️ Using dummy functions instead")
+    is_toxic_content = dummy_is_toxic_content
+    get_toxicity_breakdown = dummy_get_toxicity_breakdown
 
 @csrf_exempt
 def check_content_safety(request):
@@ -27,6 +68,7 @@ def check_content_safety(request):
             })
             
         except Exception as e:
+            logger.error(f"Error in content safety check: {e}")
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)

@@ -1,10 +1,10 @@
-// static/js/moderation.js
+// static/js/moderation.js - MODERATION SYSTEM
 class ContentModerator {
     constructor(options = {}) {
         // Configuration
         this.config = {
             inputSelector: options.inputSelector || '[data-moderation="true"]',
-            endpoint: options.endpoint || '/api/check-content-safety/',
+            endpoint: options.endpoint || '/check_content_safety/',
             minLength: options.minLength || 3,
             checkInterval: options.checkInterval || 800,
             warningThreshold: options.warningThreshold || 0.6,
@@ -24,6 +24,9 @@ class ContentModerator {
     init() {
         console.log('🚀 Initializing Content Moderator');
         
+        // Créer la fenêtre d'alerte
+        this.createAlertModal();
+        
         // Attacher aux champs de formulaire
         this.attachToInputs();
         
@@ -31,6 +34,222 @@ class ContentModerator {
         this.interceptFormSubmissions();
         
         console.log('✅ Content Moderator ready');
+    }
+    
+    createAlertModal() {
+        // Vérifier si la modal existe déjà
+        if (document.getElementById('contentModerationModal')) return;
+        
+        const modalHTML = `
+        <div class="content-moderation-modal" id="contentModerationModal">
+            <div class="moderation-modal-overlay" id="moderationModalOverlay"></div>
+            <div class="moderation-modal-container">
+                <div class="moderation-modal-header">
+                    <h3 class="modal-title">
+                        <span class="modal-icon" id="modalIcon">⚠️</span>
+                        <span id="modalTitle">Content Review</span>
+                    </h3>
+                    <button class="modal-close-btn" id="modalCloseBtn">
+                        <span class="close-icon">✕</span>
+                    </button>
+                </div>
+                
+                <div class="moderation-modal-body">
+                    <div class="alert-message" id="modalMessage">
+                        Your content may violate our community guidelines. Please review and edit before proceeding.
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn-close-modal" id="btnCloseModal">
+                            I understand
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Ajouter les événements
+        document.getElementById('modalCloseBtn').addEventListener('click', () => this.hideModal());
+        document.getElementById('moderationModalOverlay').addEventListener('click', () => this.hideModal());
+        document.getElementById('btnCloseModal').addEventListener('click', () => this.hideModal());
+        
+        // Ajouter les styles CSS
+        this.addModalStyles();
+    }
+    
+    addModalStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+        .content-moderation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .moderation-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+        }
+        
+        .moderation-modal-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 450px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from { 
+                opacity: 0; 
+                transform: translate(-50%, -60%);
+            }
+            to { 
+                opacity: 1; 
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .moderation-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .modal-title {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .modal-icon {
+            font-size: 1.6rem;
+        }
+        
+        .modal-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+        }
+        
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .close-icon {
+            line-height: 1;
+        }
+        
+        .moderation-modal-body {
+            padding: 24px;
+        }
+        
+        .alert-message {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            color: #333;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #1890ff;
+            text-align: center;
+        }
+        
+        .action-buttons {
+            text-align: center;
+        }
+        
+        .btn-close-modal {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-close-modal:hover {
+            background: #1479d8;
+            transform: translateY(-1px);
+        }
+        
+        /* Styles pour les champs */
+        .toxic-field {
+            border: 2px solid #dc3545 !important;
+            background-color: #fff5f5 !important;
+        }
+        
+        .warning-field {
+            border: 2px solid #ffc107 !important;
+            background-color: #fff9db !important;
+        }
+        
+        .moderation-feedback {
+            margin-top: 8px;
+            font-size: 0.875rem;
+            padding: 8px 12px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .moderation-feedback.toxic {
+            background: #fff5f5;
+            border-left: 3px solid #dc3545;
+            color: #dc3545;
+        }
+        
+        .moderation-feedback.warning {
+            background: #fff9db;
+            border-left: 3px solid #ffc107;
+            color: #856404;
+        }
+        
+        .moderation-feedback.safe {
+            background: #d4edda;
+            border-left: 3px solid #28a745;
+            color: #155724;
+        }
+        `;
+        
+        document.head.appendChild(style);
     }
     
     attachToInputs() {
@@ -71,8 +290,7 @@ class ContentModerator {
                         if (result.is_toxic && result.score > this.config.blockThreshold) {
                             toxicFields.push({
                                 input: input,
-                                score: result.score,
-                                message: result.warning
+                                score: result.score
                             });
                         }
                     }
@@ -82,17 +300,8 @@ class ContentModerator {
                 if (toxicFields.length > 0) {
                     e.preventDefault();
                     
-                    // Afficher l'alerte principale
-                    const worstField = toxicFields.reduce((prev, current) => 
-                        prev.score > current.score ? prev : current
-                    );
-                    
-                    this.showAlert(
-                        '🚫 Soumission bloquée',
-                        `Contenu fortement inapproprié détecté. Score: ${(worstField.score * 100).toFixed(1)}%`,
-                        worstField.score,
-                        'danger'
-                    );
+                    // Afficher la modal d'alerte unique
+                    this.showModal();
                     
                     // Mettre en évidence les champs problématiques
                     toxicFields.forEach(field => {
@@ -159,40 +368,21 @@ class ContentModerator {
             : null;
         
         if (result.is_toxic) {
-            // Déterminer le niveau de sévérité
-            let severity = 'info';
-            let icon = 'ℹ️';
-            let title = 'Langage potentiellement offensant';
-            
-            if (result.score > this.config.blockThreshold) {
-                severity = 'danger';
-                icon = '🚫';
-                title = 'Contenu bloqué';
-            } else if (result.score > this.config.warningThreshold) {
-                severity = 'warning';
-                icon = '⚠️';
-                title = 'Contenu inapproprié';
-            }
-            
-            // Afficher l'alerte globale
-            this.showAlert(title, result.warning, result.score, severity);
+            // Afficher la fenêtre modale pour contenu toxique
+            this.showModal();
             
             // Mettre en évidence le champ
+            const severity = result.score > this.config.blockThreshold ? 'toxic' : 'warning';
             this.highlightField(input, severity, result.score);
             
-            // Afficher le feedback local
+            // Afficher le feedback local (sans score)
             if (feedback) {
-                feedback.innerHTML = `
-                    <div class="small text-${severity}">
-                        <i class="fas fa-exclamation-circle me-1"></i>
-                        ${result.warning}
-                        <div class="toxicity-score-bar mt-1">
-                            <div class="toxicity-score-fill score-${result.score > 0.8 ? 'high' : result.score > 0.6 ? 'medium' : 'low'}" 
-                                 style="width: ${result.score * 100}%"></div>
-                        </div>
-                        <small>Toxicité: ${(result.score * 100).toFixed(1)}%</small>
-                    </div>
-                `;
+                feedback.className = `moderation-feedback ${severity}`;
+                if (severity === 'toxic') {
+                    feedback.innerHTML = `<div><strong>🚫 Content blocked:</strong> Please revise your message to comply with community guidelines.</div>`;
+                } else {
+                    feedback.innerHTML = `<div><strong>⚠️ Warning:</strong> Your content may need review.</div>`;
+                }
                 feedback.style.display = 'block';
             }
             
@@ -204,55 +394,29 @@ class ContentModerator {
             this.clearWarning(input);
             
             if (feedback) {
-                feedback.innerHTML = `
-                    <div class="small text-success">
-                        <i class="fas fa-check-circle me-1"></i>
-                        Contenu acceptable
-                    </div>
-                `;
-                setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+                feedback.className = 'moderation-feedback safe';
+                feedback.innerHTML = `<div><strong>✅ Safe:</strong> Content meets community guidelines</div>`;
+                feedback.style.display = 'block';
+                setTimeout(() => { feedback.style.display = 'none'; }, 3000);
             }
         }
     }
     
-    showAlert(title, message, score, severity = 'warning') {
-        const alert = document.getElementById('contentModerationAlert');
-        if (!alert) return;
+    showModal() {
+        const modal = document.getElementById('contentModerationModal');
         
-        // Mettre à jour le contenu
-        alert.querySelector('.alert-title').textContent = title;
-        alert.querySelector('.alert-message').textContent = message;
-        alert.querySelector('.score-text').textContent = `Score: ${(score * 100).toFixed(1)}%`;
+        // Afficher la modal
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
         
-        // Mettre à jour la barre de score
-        const scoreFill = alert.querySelector('.toxicity-score-fill');
-        scoreFill.style.width = `${score * 100}%`;
-        scoreFill.className = `toxicity-score-fill score-${score > 0.8 ? 'high' : score > 0.6 ? 'medium' : 'low'}`;
-        
-        // Mettre à jour l'icône
-        const iconMap = {
-            'danger': '🚫',
-            'warning': '⚠️',
-            'info': 'ℹ️'
-        };
-        alert.querySelector('.alert-icon').textContent = iconMap[severity] || '⚠️';
-        
-        // Appliquer les classes de sévérité
-        alert.className = `content-moderation-alert ${severity}`;
-        if (score > 0.7) {
-            alert.classList.add('shake');
-            setTimeout(() => alert.classList.remove('shake'), 500);
-        }
-        
-        // Afficher
-        alert.style.display = 'block';
-        
-        // Auto-fermeture
-        setTimeout(() => {
-            if (alert.style.display === 'block') {
-                alert.style.display = 'none';
-            }
-        }, 8000);
+        // Fermer automatiquement après 8 secondes
+        setTimeout(() => this.hideModal(), 8000);
+    }
+    
+    hideModal() {
+        const modal = document.getElementById('contentModerationModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
     }
     
     highlightField(input, severity, score) {
@@ -260,7 +424,7 @@ class ContentModerator {
         input.classList.remove('toxic-field', 'warning-field');
         
         // Ajouter la nouvelle classe
-        if (severity === 'danger' || score > this.config.blockThreshold) {
+        if (severity === 'toxic' || score > this.config.blockThreshold) {
             input.classList.add('toxic-field');
         } else if (severity === 'warning' || score > this.config.warningThreshold) {
             input.classList.add('warning-field');
@@ -285,12 +449,7 @@ class ContentModerator {
             ? input.nextElementSibling 
             : null;
         if (feedback) {
-            feedback.innerHTML = `
-                <div class="small text-muted">
-                    <i class="fas fa-spinner fa-spin me-1"></i>
-                    Vérification en cours...
-                </div>
-            `;
+            feedback.innerHTML = `<div>Checking content...</div>`;
             feedback.style.display = 'block';
         }
     }
@@ -305,7 +464,7 @@ class ContentModerator {
         if (shouldDisable) {
             submitBtn.disabled = true;
             submitBtn.classList.add('disabled');
-            submitBtn.title = 'Contenu inapproprié détecté. Veuillez réviser votre message.';
+            submitBtn.title = 'Please revise your message to comply with community guidelines.';
         } else {
             submitBtn.disabled = false;
             submitBtn.classList.remove('disabled');
@@ -328,26 +487,12 @@ class ContentModerator {
         }
         return cookieValue;
     }
-    
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
 }
 
 // Exposer la classe globalement
 window.ContentModerator = ContentModerator;
 
-// Initialisation automatique si configurée
-if (document.currentScript?.hasAttribute('data-auto-init')) {
-    document.addEventListener('DOMContentLoaded', function() {
-        window.contentModerator = new ContentModerator();
-    });
-}
+// Initialisation automatique
+document.addEventListener('DOMContentLoaded', function() {
+    window.contentModerator = new ContentModerator();
+});

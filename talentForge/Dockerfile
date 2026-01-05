@@ -1,60 +1,25 @@
 FROM python:3.11-slim
 
-# ===== VARIABLES D'ENVIRONNEMENT =====
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PIP_NO_CACHE_DIR=1
-
-# Variables pour l'IA
-ENV TRANSFORMERS_CACHE=/root/.cache/huggingface
-ENV HF_HOME=/root/.cache/huggingface
-ENV TORCH_HOME=/root/.cache/torch
-
-# ===== RÉPERTOIRE DE TRAVAIL =====
 WORKDIR /app
 
-# ===== DÉPENDANCES SYSTÈME =====
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        gcc \
-        python3-dev \
-        curl \
-        libpq-dev \
+# Installation des dépendances système
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# ===== CACHE POUR LES MODÈLES IA =====
-RUN mkdir -p /root/.cache/huggingface \
-    && mkdir -p /root/.cache/torch \
-    && chmod -R 777 /root/.cache
-
-# ===== INSTALLATION PYTHON =====
+# Copier requirements d'abord
 COPY requirements.txt .
 
-# Mise à jour pip
-RUN pip install --upgrade pip
+# Installer les dépendances
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Installer les dépendances (SANS versions spécifiques problématiques)
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Installation spécifique IA
-RUN pip install --no-cache-dir \
-    torch --index-url https://download.pytorch.org/whl/cpu
-
-# ===== COPIE DE L'APPLICATION =====
+# Copier l'application
 COPY . .
 
-# ===== CONFIGURATION UTILISATEUR =====
-RUN useradd -m -u 1000 appuser \
-    && chown -R appuser:appuser /app \
-    && chown -R appuser:appuser /root/.cache
-
-# Créer les répertoires nécessaires
-RUN mkdir -p /app/staticfiles /app/media \
-    && chown -R appuser:appuser /app/staticfiles /app/media
-
-# ===== COMMANDES =====
-USER appuser
-
+# Exposer le port
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "talentForge.wsgi:application"]
+# Commande simple
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

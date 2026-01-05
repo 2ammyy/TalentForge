@@ -1,161 +1,173 @@
-# utils/moderation.py
-import torch
-from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
+# utils/moderation.py - VERSION CORRIGÉE
 import logging
 import re
-from typing import Tuple, Dict, List, Optional, Any
+from typing import Tuple, Dict, List, Optional
 import time
 from functools import lru_cache
-import json
 
 logger = logging.getLogger(__name__)
+
+# Essayer d'importer les dépendances IA avec fallback
+try:
+    import torch
+    from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
+    import torch.nn.functional as F
+    AI_AVAILABLE = True
+    logger.info("✅ AI dependencies loaded successfully")
+except ImportError as e:
+    AI_AVAILABLE = False
+    logger.warning(f"⚠️ AI dependencies not available: {e}")
+    logger.warning("⚠️ Using keyword-based detection only")
+
+try:
+    from better_profanity import profanity
+    PROFANITY_AVAILABLE = True
+    profanity.load_censor_words()
+    logger.info("✅ Better-profanity loaded successfully")
+except ImportError:
+    PROFANITY_AVAILABLE = False
+    logger.warning("⚠️ Better-profanity not available")
 
 # Global model instances
 _toxicity_model = None
 _model_loaded = False
-_device = None
+
+def get_lightweight_toxicity_scores(text: str) -> Dict[str, float]:
+    """Alternative légère utilisant better-profanity"""
+    if not PROFANITY_AVAILABLE:
+        return {}
+    
+    try:
+        # better-profanity donne juste un booléen
+        has_profanity = profanity.contains_profanity(text)
+        
+        # Retourner un score simulé
+        if has_profanity:
+            return {
+                'toxic': 0.8,
+                'profanity': 0.7,
+                'offensive': 0.6
+            }
+        else:
+            return {
+                'non-toxic': 0.9,
+                'clean': 0.8
+            }
+    except Exception as e:
+        logger.error(f"Error in lightweight profanity check: {e}")
+        return {}
 
 def get_device():
     """Determine and set device properly"""
-    global _device
+    if not AI_AVAILABLE:
+        return "cpu"
     
-    if _device is None:
-        try:
-            # First try to use MPS (Apple Silicon) if available
-            if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-                _device = torch.device("mps")
-                logger.info("Using MPS (Apple Silicon) device")
-            # Then try CUDA
-            elif torch.cuda.is_available():
-                _device = torch.device("cuda")
-                logger.info(f"Using CUDA device: {torch.cuda.get_device_name(0)}")
-            else:
-                _device = torch.device("cpu")
-                logger.info("Using CPU device")
-        except Exception as e:
-            logger.warning(f"Error detecting device, falling back to CPU: {e}")
-            _device = torch.device("cpu")
-    
-    return _device
+    try:
+        # First try to use MPS (Apple Silicon) if available
+        if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            return torch.device("mps")
+        # Then try CUDA
+        elif torch.cuda.is_available():
+            return torch.device("cuda")
+        else:
+            return torch.device("cpu")
+    except Exception as e:
+        logger.warning(f"Error detecting device: {e}")
+        return torch.device("cpu")
 
 def get_toxicity_model():
     """Lazy load model with proper device handling"""
     global _toxicity_model, _model_loaded
+    
+    if not AI_AVAILABLE:
+        return None
     
     if _model_loaded and _toxicity_model is None:
         return None
     
     if _toxicity_model is None and not _model_loaded:
         try:
-            device = get_device()
-            logger.info(f"Loading toxicity model on {device}...")
+            logger.info("Loading toxicity model...")
             
-            # Determine device index for pipeline
-            device_idx = 0 if device.type == "cuda" else -1
-            
-            # Force model to specific device with proper configuration
-            _toxicity_model = pipeline(
-                "text-classification",
-<<<<<<< HEAD
-                #model="unitary/toxic-bert",
-                model="mrm8488/bert-tiny-finetuned-spam",
-                device=-1,  # CPU
-=======
-                model="unitary/toxic-bert",
-                device=device_idx,  # 0 for GPU, -1 for CPU/MPS
-                framework="pt",
->>>>>>> amiraBranch2
-                max_length=512,
-                truncation=True
-            )
-            
-            # Test the model with a simple prediction
+            # ESSAYER LE MODÈLE LÉGER D'ABORD
             try:
-                test_result = _toxicity_model("test", top_k=2)
-                logger.info(f"✅ Toxicity model loaded successfully on {device}")
-                logger.debug(f"Model test result: {test_result}")
-            except Exception as test_error:
-                logger.warning(f"Model test failed but model loaded: {test_error}")
+                # Modèle très léger
+                _toxicity_model = pipeline(
+                    "text-classification",
+                    model="mrm8488/bert-tiny-finetuned-spam",
+                    device=-1,  # Toujours CPU pour éviter les problèmes
+                    max_length=128,  # Plus court pour être plus rapide
+                    truncation=True
+                )
+                logger.info("✅ Lightweight toxicity model loaded successfully")
+                
+            except Exception as light_error:
+                logger.warning(f"Lightweight model failed: {light_error}")
+                
+                # ESSAYER UN MODÈLE ENCORE PLUS SIMPLE
+                try:
+                    tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-roberta-base-offensive")
+                    model = AutoModelForSequenceClassification.from_pretrained("cardiffnlp/twitter-roberta-base-offensive")
+                    
+                    # Créer une fonction personnalisée
+                    def custom_pipeline(text):
+                        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
+                        with torch.no_grad():
+                            outputs = model(**inputs)
+                        probs = F.softmax(outputs.logits, dim=-1)
+                        return [{'label': model.config.id2label[i], 'score': prob.item()} 
+                                for i, prob in enumerate(probs[0])]
+                    
+                    _toxicity_model = custom_pipeline
+                    logger.info("✅ Custom lightweight model loaded")
+                    
+                except Exception as custom_error:
+                    logger.error(f"Custom model also failed: {custom_error}")
+                    _toxicity_model = None
             
             _model_loaded = True
             
         except Exception as e:
-            logger.error(f"❌ Failed to load toxicity model with pipeline: {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
-            
-            # Try alternative approach with explicit model loading
-            try:
-                logger.info("Trying alternative loading method...")
-                
-                # Load model and tokenizer separately
-                tokenizer = AutoTokenizer.from_pretrained("unitary/toxic-bert")
-                model = AutoModelForSequenceClassification.from_pretrained("unitary/toxic-bert")
-                
-                # Move to appropriate device
-                device = get_device()
-                model.to(device)
-                
-                # Create pipeline with the loaded model
-                _toxicity_model = pipeline(
-                    "text-classification",
-                    model=model,
-                    tokenizer=tokenizer,
-                    device=0 if device.type == "cuda" else -1,
-                    framework="pt",
-                    max_length=512,
-                    truncation=True
-                )
-                
-                logger.info(f"✅ Toxicity model loaded via alternative method on {device}")
-                _model_loaded = True
-                
-            except Exception as alt_e:
-                logger.error(f"❌ Alternative loading also failed: {alt_e}")
-                _model_loaded = True  # Mark as loaded even if failed
-                _toxicity_model = None
+            logger.error(f"❌ All model loading attempts failed: {str(e)[:200]}")
+            _model_loaded = True
+            _toxicity_model = None
     
     return _toxicity_model
 
 def get_enhanced_toxicity_scores(text: str) -> Dict[str, float]:
     """Get detailed toxicity scores with proper error handling"""
-    model = get_toxicity_model()
-    if not model:
-        logger.warning("Model not available for toxicity scoring")
-        return {}
+    # Essayer d'abord better-profanity
+    light_scores = get_lightweight_toxicity_scores(text)
+    if light_scores:
+        return light_scores
     
-    try:
-        # Clean the text
-        if not text or len(text.strip()) < 3:
+    # Essayer le modèle AI
+    if AI_AVAILABLE:
+        model = get_toxicity_model()
+        if not model:
+            logger.warning("Model not available for toxicity scoring")
             return {}
         
-        text = text.strip()
-        
-        # Use top_k=None instead of return_all_scores (deprecated)
         try:
-            results = model(text, top_k=None)
+            # Clean the text
+            if not text or len(text.strip()) < 3:
+                return {}
             
-            if results and isinstance(results, list):
-                # Convert to dictionary format
-                scores = {}
-                for item in results:
-                    scores[item['label']] = item['score']
-                return scores
-                
-        except Exception as e:
-            logger.warning(f"top_k=None failed, trying top_k=6: {e}")
+            text = text.strip()
             
-            # Fallback to getting top 6 scores (all labels)
+            # Use top_k=6 (plus stable que top_k=None)
             try:
                 results = model(text, top_k=6)
                 
                 if results and isinstance(results, list):
+                    # Convert to dictionary format
                     scores = {}
                     for item in results:
                         scores[item['label']] = item['score']
                     return scores
                     
-            except Exception as inner_e:
-                logger.warning(f"top_k=6 failed, trying default: {inner_e}")
+            except Exception as e:
+                logger.warning(f"top_k=6 failed: {e}")
                 
                 # Final fallback to single prediction
                 try:
@@ -169,10 +181,11 @@ def get_enhanced_toxicity_scores(text: str) -> Dict[str, float]:
                 except Exception as final_e:
                     logger.error(f"Even default prediction failed: {final_e}")
                     return {}
-            
-    except Exception as e:
-        logger.error(f"Error getting toxicity scores: {str(e)[:200]}")
-        return {}
+                
+        except Exception as e:
+            logger.error(f"Error getting toxicity scores: {str(e)[:200]}")
+    
+    return {}
 
 def is_context_safe(text: str) -> Tuple[bool, str]:
     """Check if text is in a safe context that might cause false positives"""
@@ -336,29 +349,14 @@ def _is_toxic_content_impl(text: str, threshold: float = 0.7) -> Tuple[bool, flo
     # Check for safe context first
     is_safe, context_type = is_context_safe(text)
     
-    try:
-        # Try to get scores from model
-        scores = get_enhanced_toxicity_scores(text)
-        
-        if not scores:
-            # Model failed, use intelligent keyword check
-            logger.warning("Model unavailable, using intelligent keyword check")
-            is_toxic, keyword_score, matched = intelligent_keyword_check(text)
-            
-            # Log the matched keywords for debugging
-            if matched:
-                logger.debug(f"Keyword check matched: {matched}")
-            
-            return is_toxic, keyword_score
-        
+    # Try to get scores from AI model or better-profanity
+    scores = get_enhanced_toxicity_scores(text)
+    
+    if scores:
         # Extract toxic scores
-        toxic_labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
+        toxic_labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate', 'profanity', 'offensive']
         
-        toxic_scores = {label: scores.get(label, 0.0) for label in toxic_labels}
-        non_toxic_scores = {label: score for label, score in scores.items() 
-                           if label not in toxic_labels}
-        
-        # Get maximum toxic score
+        toxic_scores = {label: scores.get(label, 0.0) for label in toxic_labels if label in scores}
         max_toxic_score = max(toxic_scores.values()) if toxic_scores else 0.0
         
         # Adjust threshold based on context
@@ -388,11 +386,15 @@ def _is_toxic_content_impl(text: str, threshold: float = 0.7) -> Tuple[bool, flo
                        f"Context: {context_type if is_safe else 'unsafe'}")
         
         return is_toxic, max_toxic_score
-        
-    except Exception as e:
-        logger.error(f"Error in toxicity check: {e}")
-        # Fallback to intelligent keyword check
+    else:
+        # Model failed, use intelligent keyword check
+        logger.warning("Model unavailable, using intelligent keyword check")
         is_toxic, keyword_score, matched = intelligent_keyword_check(text)
+        
+        # Log the matched keywords for debugging
+        if matched:
+            logger.debug(f"Keyword check matched: {matched}")
+        
         return is_toxic, keyword_score
 
 def is_toxic_content(text: str, threshold: float = 0.7, use_cache: bool = True) -> Tuple[bool, float]:
@@ -411,81 +413,6 @@ def is_toxic_content(text: str, threshold: float = 0.7, use_cache: bool = True) 
         return cached_toxicity_check(text, threshold)
     else:
         return _is_toxic_content_impl(text, threshold)
-
-def batch_toxicity_check(texts: List[str], threshold: float = 0.7) -> List[Tuple[bool, float]]:
-    """Process multiple texts efficiently"""
-    if len(texts) == 0:
-        return []
-    
-    if len(texts) == 1:
-        return [is_toxic_content(texts[0], threshold, use_cache=False)]
-    
-    # For small batches, just process individually
-    if len(texts) <= 5:
-        return [is_toxic_content(text, threshold, use_cache=False) for text in texts]
-    
-    model = get_toxicity_model()
-    if not model:
-        return [is_toxic_content(text, threshold, use_cache=False) for text in texts]
-    
-    try:
-        # Filter valid texts
-        valid_texts = []
-        indices = []
-        for i, text in enumerate(texts):
-            if text and len(text.strip()) >= 5 and not is_likely_code_or_gibberish(text):
-                valid_texts.append(text.strip())
-                indices.append(i)
-        
-        if not valid_texts:
-            return [(False, 0.0) for _ in texts]
-        
-        # Process in smaller batches
-        results = []
-        batch_size = 4  # Smaller batch size for reliability
-        
-        for i in range(0, len(valid_texts), batch_size):
-            batch = valid_texts[i:i+batch_size]
-            try:
-                batch_results = model(batch)
-                
-                for j, result in enumerate(batch_results):
-                    if isinstance(result, list):
-                        result = result[0] if len(result) > 0 else {'label': '', 'score': 0.0}
-                    
-                    label = result.get('label', '')
-                    score = result.get('score', 0.0)
-                    
-                    toxic_labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-                    is_toxic = label in toxic_labels and score > threshold
-                    
-                    # Check context if borderline
-                    if 0.4 <= score <= 0.6:
-                        text = batch[j]
-                        keyword_toxic, keyword_score, _ = intelligent_keyword_check(text)
-                        if keyword_toxic:
-                            combined_score = (score * 0.6) + (keyword_score * 0.4)
-                            is_toxic = combined_score > threshold
-                            score = combined_score
-                    
-                    results.append((is_toxic, score))
-                    
-            except Exception as batch_error:
-                logger.error(f"Error in batch processing: {batch_error}")
-                # Process this batch individually
-                for text in batch:
-                    results.append(is_toxic_content(text, threshold, use_cache=False))
-        
-        # Reconstruct full results
-        full_results = [(False, 0.0) for _ in texts]
-        for idx, result in zip(indices, results):
-            full_results[idx] = result
-        
-        return full_results
-        
-    except Exception as e:
-        logger.error(f"Error in batch toxicity check: {e}")
-        return [is_toxic_content(text, threshold, use_cache=False) for text in texts]
 
 def get_toxicity_breakdown(text: str) -> Dict:
     """Get detailed breakdown of toxicity scores"""
@@ -507,8 +434,8 @@ def get_toxicity_breakdown(text: str) -> Dict:
             'confidence': 'medium' if keyword_score > 0.3 else 'low'
         }
     
-    toxic_labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-    toxic_scores = {label: scores.get(label, 0.0) for label in toxic_labels}
+    toxic_labels = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate', 'profanity', 'offensive']
+    toxic_scores = {label: scores.get(label, 0.0) for label in toxic_labels if label in scores}
     max_toxic_score = max(toxic_scores.values()) if toxic_scores else 0.0
     
     # Check context
@@ -584,19 +511,20 @@ def test_moderation_system():
     """Test the moderation system"""
     print("Testing moderation system...")
     
-    # Test device detection
-    device = get_device()
-    print(f"Device: {device}")
-    print(f"PyTorch version: {torch.__version__}")
-    print(f"Cuda available: {torch.cuda.is_available()}")
-    
-    # Test model loading
-    print("\nLoading toxicity model...")
-    model = get_toxicity_model()
-    if model:
-        print("✅ Model loaded successfully")
+    if AI_AVAILABLE:
+        print(f"✅ AI dependencies available")
+        # Test model loading
+        print("\nLoading toxicity model...")
+        model = get_toxicity_model()
+        if model:
+            print("✅ Model loaded successfully")
+        else:
+            print("❌ Model failed to load")
     else:
-        print("❌ Model failed to load")
+        print("⚠️ AI dependencies not available, using keyword-based detection")
+    
+    if PROFANITY_AVAILABLE:
+        print("✅ Better-profanity available")
     
     # Test toxicity checking
     test_cases = [

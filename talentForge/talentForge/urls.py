@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 
-from ..utils.api_views import check_content_safety
+from utils.api_views import check_content_safety
 
 urlpatterns = [
     path('admin/', admin.site.urls),

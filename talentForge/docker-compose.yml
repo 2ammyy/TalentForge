@@ -1,26 +1,15 @@
 ﻿version: '3.8'
 
 services:
-  # Base de données (externe dans votre cas)
-  # Vous utilisez déjà une DB externe sur 192.168.0.60
-  
   # Service IA - Ollama
   ollama:
     image: ollama/ollama:latest
     container_name: talentforge_ollama
     restart: unless-stopped
-    volumes:
-      - ollama_data:/root/.ollama
     ports:
-      - "11435:11434"  # Externe:11435 → Interne:11434
+      - "11435:11434"
     environment:
       - OLLAMA_HOST=0.0.0.0
-    deploy:
-      resources:
-        limits:
-          memory: 4G  # Réduit de 8G à 4G
-        reservations:
-          memory: 2G
 
   # Application Django
   web:
@@ -29,15 +18,11 @@ services:
     restart: unless-stopped
     volumes:
       - .:/app
-      - huggingface_cache:/root/.cache/huggingface
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
     ports:
       - "8000:8000"
     environment:
-      # Django
-      - DEBUG=0  # Changé à 0 pour la production
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this}
+      - DEBUG=1  # Changé à 1 pour développement
+      - SECRET_KEY=dev-secret-key-change-in-production
       - ALLOWED_HOSTS=localhost,127.0.0.1,192.168.0.60
       
       # Database (votre configuration existante)
@@ -50,77 +35,11 @@ services:
       # Ollama
       - OLLAMA_BASE_URL=http://ollama:11434
       
-      # Hugging Face / Transformers
-      - TRANSFORMERS_CACHE=/root/.cache/huggingface
-      - HF_HOME=/root/.cache/huggingface
-      - TORCH_HOME=/root/.cache/torch
-      - HF_DATASETS_CACHE=/root/.cache/huggingface/datasets
-      
-      # Optimisation IA
-      - USE_LIGHTWEIGHT_MODELS=true  # Utiliser vos modèles légers
-      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
-      
       # Performance
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
     
     depends_on:
-      ollama:
-        condition: service_started
+      - ollama
     
-    deploy:
-      resources:
-        limits:
-          memory: 2G  # Augmenté pour l'IA
-          cpus: '1.5'
-    
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    
-    command: >
-      sh -c "
-      echo '=== Démarrage TalentForge ===' &&
-      echo '1. Collecting static files...' &&
-      python manage.py collectstatic --noinput --clear &&
-      echo '2. Applying migrations...' &&
-      python manage.py migrate --noinput &&
-      echo '3. Testing AI models...' &&
-      python -c '
-      import os
-      os.environ[\"HF_HOME\"] = \"/root/.cache/huggingface\"
-      try:
-          from profanity_check import predict_prob
-          result = predict_prob([\"test\"])[0]
-          print(f\"✅ profanity-check: {result:.3f}\")
-      except Exception as e:
-          print(f\"⚠️ profanity-check: {e}\")
-      try:
-          from transformers import pipeline
-          pipe = pipeline(\"text-classification\", 
-                        model=\"mrm8488/bert-tiny-finetuned-spam\",
-                        device=-1)
-          test = pipe(\"Hello\")
-          print(f\"✅ transformers: Model loaded\")
-      except Exception as e:
-          print(f\"⚠️ transformers: {str(e)[:100]}\")
-      ' &&
-            echo '4. Starting Gunicorn...' &&
-            gunicorn --bind 0.0.0.0:8000 \
-                    --workers 3 \
-                    --threads 2 \
-                    --timeout 120 \
-                    --access-logfile - \
-                    --error-logfile - \
-                    --log-level info \
-                    talentForge.wsgi:application
-            "
-
-volumes:
-  ollama_data:
-  huggingface_cache:
-  static_volume:
-  media_volume:
+    command: python manage.py runserver 0.0.0.0:8000
