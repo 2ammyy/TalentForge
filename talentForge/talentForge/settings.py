@@ -20,19 +20,17 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-dn&4fms=t@)h23#^s8#93)=bmt0l$o6$6(wwl4f#!g-!hc@8du'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dn&4fms=t@)h23#^s8#93)=bmt0l$o6$6(wwl4f#!g-!hc@8du')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web', 'nginx', '192.168.0.60']
+# ALLOWED_HOSTS configuration
+ALLOWED_HOSTS = ['talentforge-1-gvoe.onrender.com', 'localhost', '127.0.0.1']  # ← Option B
 
+# Or use wildcard (simpler):
+# ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
 # Application definition
 
@@ -63,8 +61,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ← MOVE HERE (2nd position)
+    'corsheaders.middleware.CorsMiddleware',  # ← CORS can stay or move to 3rd
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -112,24 +111,15 @@ WSGI_APPLICATION = 'talentForge.wsgi.application'
 #     }
 # }
 
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        # 'NAME': 'djangodb',
-        # 'USER': 'django_user',
-        # 'PASSWORD': 'DjangoSecurePass123!',
-        #'HOST': 'localhost',
-        #'HOST': '192.168.0.60',  # Amira ipv4 address Machine -- Server
-        #'HOST': '10.209.202.115',  #ip address Tekup
-        #'HOST': os.environ.get('DB_HOST', 'db'),
-        # 'PORT': os.environ.get('DB_PORT', '5432'),
-        #'PORT': '5432',
-        'NAME': os.environ.get('DB_NAME', 'djangodb'),
-        'USER': os.environ.get('DB_USER', 'django_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'DjangoSecurePass123!'),
-        'HOST': os.environ.get('DB_HOST', '192.168.0.60'),  # Amira's IP
-        'PORT': os.environ.get('DB_PORT', '5432'),
-    }
+    'default': dj_database_url.config(
+        # This automatically uses DATABASE_URL from environment
+        default='sqlite:///db.sqlite3',  # Fallback for local dev
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 # Password validation
@@ -257,6 +247,7 @@ STATICFILES_DIRS = [
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files configuration
 MEDIA_URL = '/media/'

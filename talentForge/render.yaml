@@ -1,24 +1,26 @@
-# render.yaml
 services:
   - type: web
-    name: talentforge
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    name: talentforge-amira
+    env: python
+    region: oregon
     plan: free
+    rootDir: talentForge
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn talentForge.wsgi:application
     envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: TalentForge.settings.production
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: DEBUG
-        value: "False"
+      - key: DATABASE_URL
+        sync: false
       - key: SECRET_KEY
         generateValue: true
-      - key: WEB_CONCURRENCY
-        value: "4"
-    domains:
-      - talentforge.onrender.com
-    healthCheckPath: /health/
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
     autoDeploy: true
-    numInstances: 1
+
+databases:
+  - name: talentforge-db
+    plan: free
