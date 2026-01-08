@@ -1,0 +1,24 @@
+# render.yaml
+services:
+  - type: web
+    name: talentforge
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: TalentForge.settings.production
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: "4"
+    domains:
+      - talentforge.onrender.com
+    healthCheckPath: /health/
+    autoDeploy: true
+    numInstances: 1

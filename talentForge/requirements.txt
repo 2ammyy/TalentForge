@@ -1,8 +1,8 @@
-﻿Django
+﻿Django>=4.2,<5.0
 djangorestframework
-psycopg2-binary
-gunicorn
-Pillow
+psycopg2-binary==2.9.9
+gunicorn==21.2.0
+Pillow==10.2.0
 requests
 python-dotenv
 better-profanity
@@ -11,3 +11,5 @@ django-cors-headers
 PyJWT
 cryptography
 django-sites
+whitenoise==6.6.0
+dj-database-url==2.1.0

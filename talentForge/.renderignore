@@ -1,0 +1,13 @@
+# .renderignore
+*.pyc
+__pycache__
+*.sqlite3
+media/
+.env
+.git
+.gitignore
+README.md
+*.md
+*.txt
+tests/
+test.py

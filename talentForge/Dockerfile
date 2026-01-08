@@ -1,25 +1,35 @@
+# Dockerfile
 FROM python:3.11-slim
 
-WORKDIR /app
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Installation des dépendances système
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
+    build-essential \
     libpq-dev \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier requirements d'abord
+# Create and set working directory
+WORKDIR /app
+
+# Install Python dependencies
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Installer les dépendances
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copier l'application
+# Copy project files
 COPY . .
 
-# Exposer le port
-EXPOSE 8000
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
-# Commande simple
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Create a non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Run gunicorn
+CMD gunicorn --bind 0.0.0.0:$PORT TalentForge.wsgi:application --workers 2 --threads 4 --worker-class gthread
