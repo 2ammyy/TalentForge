@@ -123,7 +123,7 @@ WSGI_APPLICATION = 'talentForge.wsgi.application'
 
 # ==================== DATABASE CONFIGURATION ====================
 # Priority 1: Use DATABASE_URL from Render
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = os.environ.get('postgresql://talentforge_db_user:yhFVsrR8HY8NN8sad7n2cyxVx9r9AKNy@dpg-d5fr8595pdvs73fgp7p0-a/talentforge_db')
 
 if DATABASE_URL:
     # Render PostgreSQL with optimizations
