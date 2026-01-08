@@ -30,5 +30,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Start command (optimized for Render)
-CMD ["gunicorn", "talentForge.wsgi:application", "--bind", "0.0.0.0:$PORT", "--workers", "2", "--timeout", "120"]
+# Start command
+CMD ["gunicorn", "talentForge.wsgi:application", "--bind", "0.0.0.0:$PORT"]
