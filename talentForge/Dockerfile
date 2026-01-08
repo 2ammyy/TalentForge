@@ -2,24 +2,33 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Installation des dépendances système
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier requirements d'abord
+# Copy requirements
 COPY requirements.txt .
 
-# Installer les dépendances
+# Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copier l'application
+# Copy application
 COPY . .
 
-# Exposer le port
+# Collect static files
+RUN python manage.py collectstatic --noinput
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
 EXPOSE 8000
 
-# Commande simple
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Start command (optimized for Render)
+CMD ["gunicorn", "talentForge.wsgi:application", "--bind", "0.0.0.0:$PORT", "--workers", "2", "--timeout", "120"]
