@@ -1,10 +1,20 @@
+
 # 🎨 TalentForge  
 ### AI-Powered Talent Development & Creative Networking Platform
+![Django](https://img.shields.io/badge/Django-4.x-092E20?style=for-the-badge&logo=django&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![AI](https://img.shields.io/badge/AI-NLP%20%7C%20Moderation-FF6F00?style=for-the-badge&logo=openai&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-Caching%20%26%20Queues-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Render](https://img.shields.io/badge/Deployed%20On-Render-46E3B7?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Academic-blue?style=for-the-badge)
 
 TalentForge is an **AI-driven professional platform** designed to bridge the gap between **creative talent and industry opportunities**.  
 Unlike traditional professional networks that rely on text-heavy resumes, TalentForge follows a **“show, don’t tell” philosophy**, where **creative work itself becomes the resume**.
 
 Built with **Django**, **PostgreSQL**, and **Docker**, the platform combines **social networking**, **content creation**, **AI-powered moderation**, and **professional analytics** into a single scalable ecosystem.
+
 
 ---
 
