@@ -15,9 +15,18 @@ Unlike traditional professional networks that rely on text-heavy resumes, Talent
 
 Built with **Django**, **PostgreSQL**, and **Docker**, the platform combines **social networking**, **content creation**, **AI-powered moderation**, and **professional analytics** into a single scalable ecosystem.
 
+
 ## 🎥 Demo
 
-[▶ Watch Demo Video](https://github.com/2ammyy/TalentForge/releases/tag/untagged-5de8ec44de23b9939733)
+
+
+
+
+
+
+
+
+https://github.com/user-attachments/assets/fbb211c9-5775-4c2e-9a61-2a02f62e900a
 
 
 ---
