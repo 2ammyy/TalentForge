@@ -6,7 +6,6 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![AI](https://img.shields.io/badge/AI-NLP%20%7C%20Moderation-FF6F00?style=for-the-badge&logo=openai&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-Caching%20%26%20Queues-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 ![Render](https://img.shields.io/badge/Deployed%20On-Render-46E3B7?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Academic-blue?style=for-the-badge)
 
